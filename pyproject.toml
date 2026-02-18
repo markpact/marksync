@@ -4,14 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "marksync"
-version = "0.1.1"
+version = "0.1.2"
 description = "Multi-agent collaborative editing and deployment of Markpact projects via CRDT delta sync"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.11"
 authors = [
-    { name = "Softreck", email = "info@softreck.dev" },
-    "Tom Sapletta <tom@sapletta.com>",
+    { name = "Tom Sapletta", email = "tom@sapletta.com" },
 ]
 keywords = ["markpact", "crdt", "sync", "markdown", "agents", "collaborative"]
 
@@ -33,6 +32,7 @@ dependencies = [
 [project.optional-dependencies]
 ollama = ["ollama>=0.4"]
 mqtt = ["paho-mqtt>=2.1"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.24"]
 all = ["marksync[ollama,mqtt]"]
 
 [project.scripts]
@@ -43,4 +43,4 @@ Homepage = "https://github.com/wronai/marksync"
 Repository = "https://github.com/wronai/marksync"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/marksync"]
+packages = ["marksync"]

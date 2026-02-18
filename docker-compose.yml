@@ -134,7 +134,7 @@ services:
       - |
         if [ ! -f /project/README.md ]; then
           echo "Seeding project with example README.md..."
-          cp /app/examples/demo-project.md /project/README.md
+          cp /app/examples/1/README.md /project/README.md
           echo "Done."
         else
           echo "README.md already exists, skipping seed."
