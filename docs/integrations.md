@@ -1,0 +1,51 @@
+# marksync Integrations — External System Plugins
+
+> **Pliki źródłowe:** [`marksync/plugins/integrations/`](../marksync/plugins/integrations/__init__.py)
+> **Base class:** [`Integration`](../marksync/plugins/base.py)
+
+## Obsługiwane integracje
+
+| System | Plik | Opis |
+|---|---|---|
+| **GitHub Actions** | [`github.py`](../marksync/plugins/integrations/github.py) | Workflow YAML, environment approvals |
+| **GitLab CI** | [`gitlab.py`](../marksync/plugins/integrations/gitlab.py) | `.gitlab-ci.yml`, manual jobs |
+| **Kubernetes** | [`kubernetes.py`](../marksync/plugins/integrations/kubernetes.py) | Job manifests, initContainers |
+| **Terraform** | [`terraform.py`](../marksync/plugins/integrations/terraform.py) | HCL, Docker infrastructure |
+| **Ansible** | [`ansible.py`](../marksync/plugins/integrations/ansible.py) | Playbook YAML, pause prompts |
+| **Apache Airflow** | [`airflow.py`](../marksync/plugins/integrations/airflow.py) | DAG Python files, sensors |
+| **n8n** | [`n8n.py`](../marksync/plugins/integrations/n8n.py) | Workflow JSON, HTTP/Code/Wait nodes |
+
+## Mapowanie pipeline → system
+
+| marksync actor | GitHub Actions | GitLab CI | Kubernetes | Airflow | n8n |
+|---|---|---|---|---|---|
+| `llm` | `run:` step | `script:` job | Container | PythonOperator | Code node |
+| `script` | `run:` step | `script:` job | initContainer | BashOperator | Execute node |
+| `human` | environment approval | `when: manual` | wait container | ExternalTaskSensor | Wait node |
+
+## Użycie
+
+```python
+from marksync.plugins.integrations.github import Plugin as GitHubPlugin
+from marksync.plugins.base import PipelineSpec, StepSpec
+
+pipeline = PipelineSpec(name="deploy", steps=[
+    StepSpec(name="build", actor="script", config={"script": "make build"}),
+    StepSpec(name="approve", actor="human"),
+    StepSpec(name="deploy", actor="script", config={"script": "make deploy"}),
+])
+
+plugin = GitHubPlugin()
+result = plugin.export_pipeline(pipeline)
+print(result.content)  # .github/workflows/deploy.yml
+```
+
+---
+
+**Powiązane dokumenty:**
+- [Plugin System Overview](./plugins.md)
+- [BPM Formats](./formats.md)
+- [API Adapters](./api-adapters.md)
+- [Channels](./channels.md)
+- [Pipeline Generation](./generate.md)
+- [Comparisons](./comparisons/)

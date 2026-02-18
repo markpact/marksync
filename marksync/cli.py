@@ -12,6 +12,7 @@ import asyncio
 import logging
 import os
 import sys
+from pathlib import Path
 
 import click
 from rich.console import Console
@@ -218,6 +219,583 @@ def sandbox(host, port):
     console.print(f"  Open in browser: [bold cyan]http://localhost:{port}[/]")
     console.print(f"  API docs:        http://localhost:{port}/docs")
     uvicorn.run(app, host=host, port=port, log_level="info")
+
+
+def _ensure_dotenv() -> Path:
+    """Ensure .env file exists. Copy from .env.example if needed. Return path."""
+    env_path = Path.cwd() / ".env"
+    if env_path.is_file():
+        return env_path
+
+    example_path = Path.cwd() / ".env.example"
+    if not example_path.is_file():
+        pkg_example = Path(__file__).resolve().parent.parent / ".env.example"
+        if pkg_example.is_file():
+            example_path = pkg_example
+
+    if example_path.is_file():
+        console.print(f"\n[yellow]No .env file found.[/] Creating from .env.example...")
+        import shutil
+        shutil.copy2(example_path, env_path)
+        console.print(f"  Created: {env_path}")
+    else:
+        console.print(f"\n[yellow]No .env file found.[/] Creating new one...")
+        env_path.write_text(
+            "# marksync configuration\n"
+            "# See .env.example for all options\n\n"
+            "LITELLM_MODEL=openrouter/qwen/qwen2.5-coder-32b-instruct\n"
+            "OPENROUTER_API_KEY=\n",
+            encoding="utf-8",
+        )
+        console.print(f"  Created: {env_path}")
+
+    return env_path
+
+
+def _save_key_to_dotenv(env_path: Path, key: str, value: str):
+    """Update or append a key=value in .env file."""
+    lines = env_path.read_text("utf-8").splitlines()
+    found = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith(f"{key}=") or stripped.startswith(f"{key} ="):
+            lines[i] = f"{key}={value}"
+            found = True
+            break
+    if not found:
+        lines.append(f"{key}={value}")
+    env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _prompt_api_key(env_path: Path) -> str:
+    """Interactively ask the user for their OpenRouter API key."""
+    console.print()
+    console.print("[bold yellow]┌─ OpenRouter API Key Required ─────────────────────────────┐[/]")
+    console.print("[yellow]│[/]                                                          [yellow]│[/]")
+    console.print("[yellow]│[/]  marksync uses [bold]LiteLLM + OpenRouter[/] to call LLM models.  [yellow]│[/]")
+    console.print("[yellow]│[/]                                                          [yellow]│[/]")
+    console.print("[yellow]│[/]  Get your free key at:                                   [yellow]│[/]")
+    console.print("[yellow]│[/]    [bold cyan]https://openrouter.ai/keys[/]                          [yellow]│[/]")
+    console.print("[yellow]│[/]                                                          [yellow]│[/]")
+    console.print("[yellow]│[/]  The key will be saved to [dim].env[/] (gitignored).          [yellow]│[/]")
+    console.print("[yellow]└───────────────────────────────────────────────────────────┘[/]")
+    console.print()
+
+    api_key = click.prompt(
+        click.style("  Enter OPENROUTER_API_KEY", fg="yellow"),
+        type=str,
+        default="",
+        show_default=False,
+    ).strip()
+
+    if not api_key:
+        console.print("  [dim]Skipped. You can set it later in .env[/]")
+        return ""
+
+    if not api_key.startswith("sk-or-"):
+        console.print(f"  [yellow]Warning:[/] Key doesn't look like an OpenRouter key (expected sk-or-...)")
+        if not click.confirm("  Save anyway?", default=True):
+            return ""
+
+    _save_key_to_dotenv(env_path, "OPENROUTER_API_KEY", api_key)
+    os.environ["OPENROUTER_API_KEY"] = api_key
+    console.print(f"  [green]✓[/] Saved to {env_path}")
+    return api_key
+
+
+def _prompt_model_choice(current_model: str) -> str:
+    """Let user confirm or change the model."""
+    models = [
+        ("openrouter/qwen/qwen2.5-coder-32b-instruct", "Qwen 2.5 Coder 32B (recommended)"),
+        ("openrouter/qwen/qwen3-vl-32b-instruct", "Qwen 3 VL 32B (vision)"),
+        ("openrouter/anthropic/claude-sonnet-4", "Claude Sonnet 4"),
+        ("openrouter/google/gemini-2.5-flash-preview", "Gemini 2.5 Flash"),
+    ]
+
+    console.print(f"\n  Current model: [cyan]{current_model}[/]")
+
+    if not click.confirm("  Change model?", default=False):
+        return current_model
+
+    console.print()
+    for i, (model_id, desc) in enumerate(models, 1):
+        marker = " [green]◀ current[/]" if model_id == current_model else ""
+        console.print(f"    {i}. [cyan]{model_id}[/]")
+        console.print(f"       {desc}{marker}")
+
+    console.print(f"    {len(models) + 1}. Enter custom model ID")
+    console.print()
+
+    choice = click.prompt("  Choice", type=int, default=1)
+
+    if 1 <= choice <= len(models):
+        return models[choice - 1][0]
+    else:
+        return click.prompt("  Enter model ID", type=str).strip()
+
+
+_PROVIDERS = [
+    ("ollama",      "Ollama (local, free)"),
+    ("openrouter",  "OpenRouter  (cloud, many models, free tier)"),
+    ("openai",      "OpenAI      (GPT-4o, requires key)"),
+    ("anthropic",   "Anthropic   (Claude, requires key)"),
+    ("groq",        "Groq        (fast inference, free tier)"),
+    ("litellm",     "Custom      (any LiteLLM-compatible URL)"),
+]
+
+_PROVIDER_KEY_ENV = {
+    "openrouter": ("OPENROUTER_API_KEY", "https://openrouter.ai/keys", "sk-or-"),
+    "openai":     ("OPENAI_API_KEY",     "https://platform.openai.com/api-keys", "sk-"),
+    "anthropic":  ("ANTHROPIC_API_KEY",  "https://console.anthropic.com/keys", "sk-ant-"),
+    "groq":       ("GROQ_API_KEY",       "https://console.groq.com/keys", "gsk_"),
+}
+
+_PROVIDER_DEFAULT_MODELS = {
+    "openrouter": "openrouter/qwen/qwen2.5-coder-32b-instruct",
+    "openai":     "gpt-4o",
+    "anthropic":  "claude-3-5-sonnet-latest",
+    "groq":       "groq/llama-3.3-70b-versatile",
+    "litellm":    "openrouter/qwen/qwen2.5-coder-32b-instruct",
+}
+
+
+def _print_hw_summary(info) -> None:
+    if info.gpu.available:
+        console.print(f"  GPU:  [green]{info.gpu.name}[/] ({info.gpu.vram_gb} GB VRAM)")
+    else:
+        console.print("  GPU:  [dim]not detected[/]")
+    console.print(f"  RAM:  {info.ram_gb} GB")
+    console.print(f"  Ollama installed: {'[green]yes[/]' if info.ollama_installed else '[yellow]no[/]'}")
+    console.print(f"  Ollama running:   {'[green]yes[/]' if info.ollama_running else '[yellow]no[/]'}")
+
+
+def _setup_ollama(env_path: Path, info) -> tuple[str, str]:
+    """Interactive Ollama setup. Returns (model, ollama_url)."""
+    from marksync.settings import settings
+
+    ollama_url = settings.OLLAMA_URL
+
+    if not info.ollama_installed:
+        console.print("\n  [yellow]Ollama is not installed.[/]")
+        console.print("  Install it from: [cyan]https://ollama.com[/]")
+        console.print("  Then run [bold]ollama serve[/] and re-run [bold]marksync init[/].")
+        raise SystemExit(0)
+
+    if not info.ollama_running:
+        console.print("\n  [yellow]Ollama is not running.[/] Start it with: [bold]ollama serve[/]")
+        if not click.confirm("  Continue anyway?", default=False):
+            raise SystemExit(0)
+
+    available = info.ollama_models
+    if available:
+        console.print(f"\n  Available models ({len(available)}):")
+        for m in available[:10]:
+            console.print(f"    [cyan]{m}[/]")
+        if len(available) > 10:
+            console.print(f"    [dim]...and {len(available) - 10} more[/]")
+
+    suggested = info.suggested_model
+    if info.recommend_api:
+        console.print("\n  [yellow]Warning:[/] Low resources detected.")
+        console.print("  Recommendation: use an API provider (OpenRouter has free models).")
+        suggested = available[0] if available else "qwen2.5-coder:7b"
+    elif suggested:
+        console.print(f"\n  Suggested model for your hardware: [cyan]{suggested}[/]")
+
+    default_model = suggested or (available[0] if available else "qwen2.5-coder:7b")
+    if available:
+        model = click.prompt("  Select model", default=default_model)
+    else:
+        console.print(f"\n  [dim]No models pulled yet. Pull one with: ollama pull qwen2.5-coder:7b[/]")
+        model = click.prompt("  Model name to use", default=default_model)
+
+    _save_key_to_dotenv(env_path, "LLM_PROVIDER", "ollama")
+    _save_key_to_dotenv(env_path, "OLLAMA_MODEL", model)
+    _save_key_to_dotenv(env_path, "OLLAMA_URL", ollama_url)
+    return model, ollama_url
+
+
+def _setup_api_provider(env_path: Path, provider: str) -> tuple[str, str]:
+    """Prompt API key + model for cloud providers. Returns (model, api_key)."""
+    env_var, key_url, key_prefix = _PROVIDER_KEY_ENV[provider]
+    default_model = _PROVIDER_DEFAULT_MODELS[provider]
+
+    console.print(f"\n  Get your API key at: [cyan]{key_url}[/]")
+    api_key = click.prompt(
+        f"  Enter {env_var}",
+        type=str, default="", show_default=False,
+    ).strip()
+
+    if not api_key:
+        console.print("  [dim]Skipped. Configure it later in .env[/]")
+        return default_model, ""
+
+    if not api_key.startswith(key_prefix):
+        console.print(f"  [yellow]Warning:[/] Key doesn't look like a {provider} key (expected {key_prefix}...)")
+        if not click.confirm("  Save anyway?", default=True):
+            return default_model, ""
+
+    model = click.prompt("  Model", default=default_model)
+
+    _save_key_to_dotenv(env_path, "LLM_PROVIDER", provider)
+    _save_key_to_dotenv(env_path, env_var, api_key)
+    _save_key_to_dotenv(env_path, "LITELLM_MODEL", model)
+    if provider == "openrouter":
+        _save_key_to_dotenv(env_path, "OPENROUTER_API_KEY", api_key)
+    os.environ[env_var] = api_key
+    return model, api_key
+
+
+def _setup_litellm_custom(env_path: Path) -> tuple[str, str]:
+    """Prompt for custom LiteLLM base URL + model. Returns (model, api_base)."""
+    api_base = click.prompt("  LiteLLM API base URL", default="http://localhost:4000")
+    model = click.prompt("  Model ID", default="openrouter/qwen/qwen2.5-coder-32b-instruct")
+    api_key = click.prompt("  API key (leave blank if not required)", default="", show_default=False).strip()
+
+    _save_key_to_dotenv(env_path, "LLM_PROVIDER", "litellm")
+    _save_key_to_dotenv(env_path, "LLM_API_BASE", api_base)
+    _save_key_to_dotenv(env_path, "LITELLM_MODEL", model)
+    if api_key:
+        _save_key_to_dotenv(env_path, "LLM_API_KEY", api_key)
+        os.environ["LLM_API_KEY"] = api_key
+    return model, api_base
+
+
+def _test_connection(provider: str, model: str, api_key: str = "", api_base: str = "") -> bool:
+    """Send a ping message to the configured LLM. Returns True on success."""
+    try:
+        from marksync.pipeline.llm_client import LLMClient, LLMConfig
+
+        if provider == "ollama":
+            cfg = LLMConfig(model=model, api_key="", api_base=api_base)
+        else:
+            cfg = LLMConfig(model=model, api_key=api_key, api_base=api_base)
+
+        client = LLMClient(cfg)
+        resp = client.complete([{"role": "user", "content": "ping"}], max_tokens=8)
+        if resp.ok:
+            return True
+        console.print(f"  [red]LLM error:[/] {resp.error}")
+        return False
+    except Exception as e:
+        console.print(f"  [red]Connection error:[/] {e}")
+        return False
+
+
+@main.command()
+def init():
+    """First-run wizard: choose LLM provider, configure API key, test connection."""
+    console.print("\n[bold cyan]marksync init[/] — LLM configuration wizard\n")
+
+    # ── 1. .env check ────────────────────────────────────────────────
+    env_path = Path.cwd() / ".env"
+    if env_path.is_file():
+        console.print(f"  [green]✓[/] Found existing .env at {env_path}")
+        if not click.confirm("  Reconfigure?", default=False):
+            console.print("  [dim]Nothing changed.[/]")
+            return
+    else:
+        env_path = _ensure_dotenv()
+
+    # ── 2. Hardware detection ─────────────────────────────────────────
+    console.print("\n[bold]Detecting system resources...[/]")
+    from marksync import hardware_detect
+    info = hardware_detect.detect()
+    _print_hw_summary(info)
+
+    # ── 3. Provider selection ─────────────────────────────────────────
+    console.print("\n[bold]Select LLM provider:[/]\n")
+    for i, (pid, desc) in enumerate(_PROVIDERS, 1):
+        hint = " [dim]← recommended for your hardware[/]" if (
+            pid == "ollama" and not info.recommend_api or
+            pid == "openrouter" and info.recommend_api
+        ) else ""
+        console.print(f"  {i}. [cyan]{desc}[/]{hint}")
+
+    default_choice = 2 if info.recommend_api else 1
+    choice = click.prompt("\n  Choice", type=int, default=default_choice)
+    if not 1 <= choice <= len(_PROVIDERS):
+        console.print("[red]Invalid choice.[/]")
+        raise SystemExit(1)
+
+    provider, _ = _PROVIDERS[choice - 1]
+    console.print(f"\n  Provider: [bold]{provider}[/]")
+
+    # ── 4. Provider-specific setup ────────────────────────────────────
+    api_key = ""
+    api_base = ""
+
+    if provider == "ollama":
+        model, api_base = _setup_ollama(env_path, info)
+    elif provider == "litellm":
+        model, api_base = _setup_litellm_custom(env_path)
+    else:
+        model, api_key = _setup_api_provider(env_path, provider)
+
+    # ── 5. Connection test ────────────────────────────────────────────
+    console.print(f"\n[bold]Testing connection[/] ({model})...")
+    llm_model = f"ollama/{model}" if provider == "ollama" else model
+    ok = _test_connection(provider, llm_model, api_key=api_key, api_base=api_base)
+
+    if ok:
+        console.print(f"\n[bold green]✓ System ready![/]")
+        console.print(f"  Provider: [cyan]{provider}[/]")
+        console.print(f"  Model:    [cyan]{model}[/]")
+        console.print(f"\n  Describe what you want to build:")
+        console.print(f"    [bold]marksync generate --prompt pipeline.yaml[/]")
+    else:
+        console.print(f"\n[yellow]Connection test failed.[/] Settings saved to {env_path}.")
+        if provider == "ollama":
+            console.print("  Diagnostics:")
+            console.print("    • Is Ollama running?  [bold]ollama serve[/]")
+            console.print(f"    • Is the model pulled?  [bold]ollama pull {model}[/]")
+            console.print("    • No GPU? Try a smaller model: [bold]ollama pull qwen2.5-coder:1.5b[/]")
+        else:
+            console.print("  Diagnostics:")
+            console.print("    • Check your API key is valid and has credits")
+            console.print("    • Check your internet connection")
+            console.print(f"    • Edit .env and re-run: [bold]marksync init[/]")
+
+
+@main.command()
+@click.option("--prompt", "-p", required=True, help="Path to pipeline prompt YAML file")
+@click.option("--output", "-o", default=None, help="Output directory (overrides YAML output_dir)")
+@click.option("--model", default=None, envvar="LITELLM_MODEL", help="LLM model (e.g. openrouter/qwen/qwen2.5-coder-32b-instruct)")
+@click.option("--dry-run", is_flag=True, help="Show prompt without calling LLM")
+@click.option("--build", is_flag=True, help="Also run docker compose build after generation")
+@click.option("--up", is_flag=True, help="Also run docker compose up -d after generation")
+def generate(prompt, output, model, dry_run, build, up):
+    """Generate a Docker service from a YAML prompt via LLM (LiteLLM/OpenRouter).
+
+    \b
+    Examples:
+        marksync generate --prompt pipeline.yaml
+        marksync generate --prompt pipeline.yaml --model openrouter/qwen/qwen2.5-coder-32b-instruct
+        marksync generate --prompt pipeline.yaml --build --up
+    """
+    from marksync.pipeline.llm_client import LLMConfig
+    from marksync.pipeline.prompt_generator import PromptSpec, PromptGenerator, write_generated
+
+    # ── 1. Load prompt YAML ──────────────────────────────────────────
+    try:
+        spec = PromptSpec.from_yaml(prompt)
+    except FileNotFoundError:
+        console.print(f"[red]Error:[/] Prompt file not found: [bold]{prompt}[/]")
+        console.print(f"\n  Create one from the example:")
+        console.print(f"    cp examples/pipeline_prompt.yaml {prompt}")
+        raise SystemExit(1)
+    except Exception as e:
+        console.print(f"[red]Error:[/] Failed to parse prompt YAML: {e}")
+        raise SystemExit(1)
+
+    console.print(f"[bold cyan]Pipeline:[/] {spec.name}")
+    console.print(f"  Prompt: {prompt}")
+
+    if model:
+        spec.model = model
+
+    # ── 2. Resolve output directory ──────────────────────────────────
+    output_dir = output or spec.output_dir or settings.GENERATE_OUTPUT_DIR
+    if not output_dir:
+        output_dir = f"./generated/{spec.name}"
+    console.print(f"  Output: {output_dir}")
+
+    # ── 3. Build LLM config + ensure API key ─────────────────────────
+    llm_config = LLMConfig.from_settings()
+    if model:
+        llm_config = LLMConfig(
+            model=model,
+            api_key=llm_config.api_key,
+            api_base=llm_config.api_base,
+            temperature=spec.temperature,
+            max_tokens=spec.max_tokens,
+        )
+
+    effective_model = spec.model or llm_config.model
+    console.print(f"  Model:  {effective_model}")
+
+    if llm_config.api_key:
+        key_preview = llm_config.api_key[:10] + "..." + llm_config.api_key[-4:]
+        console.print(f"  API key: [green]✓[/] {key_preview}")
+    else:
+        console.print(f"  API key: [yellow]✗ not configured[/]")
+
+    # ── 4. Dry run ───────────────────────────────────────────────────
+    if dry_run:
+        gen = PromptGenerator(llm_config=llm_config)
+        user_prompt = gen._build_user_prompt(spec)
+        console.print(f"\n[bold]System prompt:[/] ({len(gen.client.config.model)} model)")
+        console.print(f"[dim]{gen.client.config.model}[/]\n")
+        console.print("[bold]User prompt:[/]")
+        console.print(user_prompt)
+        console.print(f"\n[dim]Dry run — no LLM call made.[/]")
+        return
+
+    # ── 5. Interactive API key setup if missing ──────────────────────
+    if not llm_config.api_key:
+        env_path = _ensure_dotenv()
+        api_key = _prompt_api_key(env_path)
+
+        if not api_key:
+            console.print("\n[red]Cannot generate without an API key.[/]")
+            console.print(f"  Set OPENROUTER_API_KEY in .env and re-run:")
+            console.print(f"    marksync generate --prompt {prompt}")
+            raise SystemExit(1)
+
+        # Rebuild config with new key
+        llm_config = LLMConfig(
+            model=llm_config.model,
+            api_key=api_key,
+            api_base=llm_config.api_base,
+            temperature=spec.temperature,
+            max_tokens=spec.max_tokens,
+        )
+
+        # Offer model selection
+        new_model = _prompt_model_choice(effective_model)
+        if new_model != effective_model:
+            llm_config = LLMConfig(
+                model=new_model,
+                api_key=llm_config.api_key,
+                api_base=llm_config.api_base,
+                temperature=llm_config.temperature,
+                max_tokens=llm_config.max_tokens,
+            )
+            _save_key_to_dotenv(env_path, "LITELLM_MODEL", new_model)
+            effective_model = new_model
+            console.print(f"  [green]✓[/] Model saved: {new_model}")
+
+    # ── 6. Check litellm is installed ────────────────────────────────
+    try:
+        import litellm  # noqa: F401
+    except ImportError:
+        console.print("\n[red]Error:[/] [bold]litellm[/] is not installed.")
+        console.print(f"\n  Install it:")
+        console.print(f"    pip install litellm")
+        console.print(f"    [dim]# or: pip install marksync[generate][/]")
+        raise SystemExit(1)
+
+    # ── 7. Generate via LLM ──────────────────────────────────────────
+    console.print(f"\n[bold green]Generating with {effective_model}...[/] (this may take 30-60s)")
+    gen = PromptGenerator(llm_config=llm_config)
+
+    try:
+        result = gen.generate(spec)
+    except KeyboardInterrupt:
+        console.print(f"\n[yellow]Cancelled.[/]")
+        raise SystemExit(130)
+    except Exception as e:
+        error_msg = str(e)
+        console.print(f"\n[red]LLM call failed:[/] {error_msg}")
+
+        # Helpful hints for common errors
+        if "401" in error_msg or "Unauthorized" in error_msg or "invalid" in error_msg.lower():
+            console.print(f"\n  [yellow]Hint:[/] Your API key may be invalid or expired.")
+            console.print(f"  Get a new one at: [cyan]https://openrouter.ai/keys[/]")
+            env_path = _ensure_dotenv()
+            if click.confirm("\n  Enter a new API key now?", default=True):
+                new_key = _prompt_api_key(env_path)
+                if new_key:
+                    console.print(f"\n  Re-run: marksync generate --prompt {prompt}")
+        elif "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
+            console.print(f"\n  [yellow]Hint:[/] Request timed out. The model may be overloaded.")
+            console.print(f"  Try again or use a different model:")
+            console.print(f"    marksync generate --prompt {prompt} --model openrouter/google/gemini-2.5-flash-preview")
+        elif "rate" in error_msg.lower() or "429" in error_msg:
+            console.print(f"\n  [yellow]Hint:[/] Rate limited. Wait a moment and try again.")
+        elif "model" in error_msg.lower() and ("not found" in error_msg.lower() or "404" in error_msg):
+            console.print(f"\n  [yellow]Hint:[/] Model '{effective_model}' not available.")
+            console.print(f"  Try: marksync generate --prompt {prompt} --model openrouter/qwen/qwen2.5-coder-32b-instruct")
+        elif "connection" in error_msg.lower() or "network" in error_msg.lower():
+            console.print(f"\n  [yellow]Hint:[/] Network error. Check your internet connection.")
+
+        raise SystemExit(1)
+
+    if not result.ok:
+        console.print(f"\n[red]Generation failed:[/]")
+        for err in result.errors:
+            console.print(f"  • {err}")
+
+        if any("parse" in e.lower() or "yaml" in e.lower() or "json" in e.lower() for e in result.errors):
+            console.print(f"\n  [yellow]Hint:[/] LLM returned malformed output. Try again or use a larger model:")
+            console.print(f"    marksync generate --prompt {prompt}")
+
+        if result.files.get("_raw_response.md"):
+            raw_path = Path(output_dir) / "_raw_response.md"
+            raw_path.parent.mkdir(parents=True, exist_ok=True)
+            raw_path.write_text(result.files["_raw_response.md"], encoding="utf-8")
+            console.print(f"\n  Raw LLM response saved: {raw_path}")
+
+        raise SystemExit(1)
+
+    # ── 8. Write generated files ─────────────────────────────────────
+    try:
+        write_generated(result, output_dir)
+    except Exception as e:
+        console.print(f"\n[red]Error writing files:[/] {e}")
+        raise SystemExit(1)
+
+    console.print(f"\n[bold green]✓ Generated {len(result.files)} files:[/]")
+    for f in sorted(result.files.keys()):
+        size = len(result.files[f])
+        console.print(f"  [cyan]{f}[/] ({size} bytes)")
+
+    # Token usage
+    if result.llm_response and result.llm_response.usage:
+        u = result.llm_response.usage
+        console.print(f"\n  [dim]LLM usage: {u.get('prompt_tokens', 0)} prompt + "
+                      f"{u.get('completion_tokens', 0)} completion = "
+                      f"{u.get('total_tokens', 0)} total tokens[/]")
+
+    # ── 9. Docker build / up ─────────────────────────────────────────
+    import subprocess
+
+    if build or up:
+        console.print(f"\n[bold]Building Docker services...[/]")
+        try:
+            subprocess.run(
+                ["docker", "compose", "build"],
+                cwd=output_dir, check=True, capture_output=False,
+            )
+        except FileNotFoundError:
+            console.print(f"[red]Error:[/] 'docker' command not found. Install Docker first.")
+            console.print(f"  https://docs.docker.com/get-docker/")
+            build = False
+            up = False
+        except subprocess.CalledProcessError as e:
+            console.print(f"[red]Docker build failed[/] (exit code {e.returncode})")
+            console.print(f"  Check the Dockerfile in {output_dir}")
+            up = False
+
+    if up:
+        console.print(f"\n[bold]Starting services...[/]")
+        try:
+            subprocess.run(
+                ["docker", "compose", "up", "-d"],
+                cwd=output_dir, check=True, capture_output=False,
+            )
+            console.print(f"\n[bold green]✓ Services running![/]")
+
+            # Show service URLs
+            if result.llm_response:
+                parsed = result.llm_response.json_block()
+                if parsed:
+                    for svc in parsed.get("services", []):
+                        port = svc.get("port", 8000)
+                        name = svc.get("name", "service")
+                        console.print(f"    [cyan]{name}[/]: http://localhost:{port}")
+        except subprocess.CalledProcessError as e:
+            console.print(f"[red]Docker compose up failed[/] (exit code {e.returncode})")
+            console.print(f"  Check logs: docker compose -f {output_dir}/docker-compose.yml logs")
+
+    # ── 10. Next steps ───────────────────────────────────────────────
+    console.print(f"\n[bold]Next steps:[/]")
+    console.print(f"  cd {output_dir}")
+    if not build:
+        console.print(f"  docker compose build")
+    if not up:
+        console.print(f"  docker compose up -d")
+    console.print(f"  docker compose logs -f")
 
 
 if __name__ == "__main__":

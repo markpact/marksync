@@ -1,26 +1,34 @@
-# marksync | 28f 6346L | python:28
+# marksync | 71f 14974L | python:71
 # Keys: M=modules, D=details, i=imports, c=classes, f=functions, m=methods
-M[28]:
+M[71]:
+  examples/bpmn_multiagent.py,361
   tests/test_settings.py,66
   tests/test_orchestrator.py,161
+  tests/test_hardware_detect.py,204
   tests/test_pipeline_scenarios.py,465
   tests/test_dsl.py,192
   tests/test_marksync.py,7
   tests/test_examples.py,110
   tests/test_pipeline.py,278
-  marksync/cli.py,178
-  marksync/__init__.py,18
+  marksync/cli.py,643
+  marksync/__init__.py,29
   marksync/orchestrator.py,247
-  marksync/settings.py,102
+  marksync/hardware_detect.py,146
+  marksync/settings.py,153
   marksync/sync/engine.py,228
   marksync/sync/crdt.py,68
   marksync/sync/__init__.py,92
   marksync/transport/__init__.py,0
+  marksync/plugins/base.py,429
+  marksync/plugins/registry.py,194
+  marksync/plugins/__init__.py,71
   marksync/sandbox/app.py,245
   marksync/sandbox/__init__.py,1
   marksync/sandbox/html.py,619
   marksync/pipeline/engine.py,466
+  marksync/pipeline/prompt_generator.py,276
   marksync/pipeline/__init__.py,35
+  marksync/pipeline/llm_client.py,170
   marksync/pipeline/api.py,405
   marksync/agents/base.py,2
   marksync/agents/__init__.py,219
@@ -29,7 +37,51 @@ M[28]:
   marksync/dsl/api.py,167
   marksync/dsl/executor.py,366
   marksync/dsl/shell.py,166
+  marksync/plugins/channels/sse.py,69
+  marksync/plugins/channels/websocket.py,88
+  marksync/plugins/channels/nats.py,113
+  marksync/plugins/channels/__init__.py,16
+  marksync/plugins/channels/grpc_stream.py,66
+  marksync/plugins/channels/cli_stdio.py,68
+  marksync/plugins/channels/amqp.py,110
+  marksync/plugins/channels/slack.py,96
+  marksync/plugins/channels/http_webhook.py,103
+  marksync/plugins/channels/mqtt.py,114
+  marksync/plugins/channels/redis_pubsub.py,104
+  marksync/plugins/formats/petri.py,138
+  marksync/plugins/formats/uml_activity.py,143
+  marksync/plugins/formats/epc.py,105
+  marksync/plugins/formats/__init__.py,12
+  marksync/plugins/formats/bpel.py,138
+  marksync/plugins/formats/dmn.py,97
+  marksync/plugins/formats/cmmn.py,113
+  marksync/plugins/formats/bpmn.py,528
+  marksync/plugins/formats/xpdl.py,130
+  marksync/plugins/integrations/__init__.py,11
+  marksync/plugins/integrations/kubernetes.py,186
+  marksync/plugins/integrations/gitlab.py,104
+  marksync/plugins/integrations/n8n.py,160
+  marksync/plugins/integrations/ansible.py,135
+  marksync/plugins/integrations/github.py,141
+  marksync/plugins/integrations/airflow.py,177
+  marksync/plugins/integrations/terraform.py,200
+  marksync/plugins/api/__init__.py,9
+  marksync/plugins/api/asyncapi.py,172
+  marksync/plugins/api/jsonschema.py,144
+  marksync/plugins/api/openapi.py,225
+  marksync/plugins/api/graphql.py,161
+  marksync/plugins/api/grpc.py,190
+  examples/channels/test_channels_e2e.py,243
 D:
+  examples/bpmn_multiagent.py:
+    i: importlib,os,sys,types,marksync.plugins.base
+    e: _ROOT,OUTPUT_DIR,ensure_output_dir,scenario_parallel_review,scenario_async_notification,scenario_approval_gateway,scenario_full_collaboration,main
+    ensure_output_dir()
+    scenario_parallel_review()->PipelineSpec
+    scenario_async_notification()->PipelineSpec
+    scenario_approval_gateway()->PipelineSpec
+    scenario_full_collaboration()->PipelineSpec
+    main()
   tests/test_settings.py:
     i: os,pytest,marksync.settings.{Settings,_find_dotenv,_load_dotenv,load_settings}
     e: TestSettingsDefaults,TestDotenvParser,TestLoadSettings
@@ -44,6 +96,17 @@ D:
     TestPlanFiltering: test_filter_role(0),test_filter_keeps_relevant_pipelines(0),test_filter_keeps_relevant_routes(0),test_filter_nonexistent_role(0)
     TestDSLGeneration: test_to_dsl_agents(0),test_to_dsl_pipelines(0),test_to_dsl_routes(0),test_to_msdsl_string(0),test_to_msdsl_file(1)
     TestExampleConfigs: test_example_1(0),test_example_2(0),test_example_3(0),test_all_examples_generate_valid_dsl(0)
+  tests/test_hardware_detect.py:
+    i: marksync.hardware_detect,unittest.mock
+    e: test_suggest_model_high_vram,test_suggest_model_medium_vram,test_suggest_model_min_vram_boundary,test_suggest_model_cpu_enough_ram,test_suggest_model_cpu_boundary_ram,test_suggest_model_low_resources,test_suggest_model_no_resources,test_detect_nvidia_gpu_not_installed
+    test_suggest_model_high_vram()
+    test_suggest_model_medium_vram()
+    test_suggest_model_min_vram_boundary()
+    test_suggest_model_cpu_enough_ram()
+    test_suggest_model_cpu_boundary_ram()
+    test_suggest_model_low_resources()
+    test_suggest_model_no_resources()
+    test_detect_nvidia_gpu_not_installed()
   tests/test_pipeline_scenarios.py:
     i: asyncio,pytest,marksync.pipeline.api.{_demo_account_creation,_demo_code_review,_demo_doc_generation,_demo_payment},marksync.pipeline.engine.{ActorType,PipelineEngine,Step,StepStatus}
     e: run,approve_all_tasks,resolve_run_fully,TestCodeReviewScenario,TestAccountCreationScenario,TestPaymentScenario,TestDocGenerationScenario,TestIncidentResponseScenario
@@ -80,7 +143,7 @@ D:
     TestHumanInTheLoop: test_human_step_creates_task(0),test_approve_unblocks_pipeline(0),test_reject_stops_pipeline(0),test_resolve_nonexistent_task(0),test_resolve_already_resolved(0)
     run(coro)
   marksync/cli.py:
-    i: asyncio,logging,os,sys,click,marksync.settings,rich.console.Console,rich.logging.RichHandler,rich.table.Table
+    i: asyncio,logging,os,sys,click,marksync.settings,pathlib.Path,rich.console.Console,rich.logging.RichHandler,rich.table.Table
     e: main,server,agent,push,blocks,shell,orchestrate,api
     _setup_logging(verbose:bool=False)
     main(verbose)
@@ -90,6 +153,8 @@ D:
     blocks(readme)
     shell(server_uri;ollama_url;script)
     orchestrate(config;role;server_uri;ollama_url;model;dry_run;...+1)
+  marksync/__init__.py:
+    __getattr__(name:str)
   marksync/orchestrator.py:
     i: asyncio,logging,time,yaml,dataclasses.{dataclass,field},marksync.settings,pathlib.Path,typing.Any
     e: AgentDef,PipelineDef,RouteDef,OrchestrationPlan,Orchestrator
@@ -98,10 +163,23 @@ D:
     RouteDef:   # Declarative route from agents.yml.
     OrchestrationPlan: agent_names(0),filter_role(1)  # Fully resolved orchestration plan.
     Orchestrator: __init__(4),from_file(1),from_dict(1),_parse_plan(1),run(1)  # Reads agents.yml and orchestrates age...
+  marksync/hardware_detect.py:
+    i: json,logging,shutil,subprocess,dataclasses.{dataclass,field},urllib.request
+    e: GPUInfo,SystemInfo,detect_nvidia_gpu,detect_amd_gpu,detect_gpu,detect_ram,is_ollama_installed,is_ollama_running
+    GPUInfo: 
+    SystemInfo: 
+    detect_nvidia_gpu()->GPUInfo
+    detect_amd_gpu()->GPUInfo
+    detect_gpu()->GPUInfo
+    detect_ram()->int
+    is_ollama_installed()->bool
+    is_ollama_running(url:str='http://localhost:11434')->bool
+    list_ollama_models(url:str='http://localhost:11434')->list[str]
+    suggest_model(gpu_vram_gb:int;ram_gb:int)->tuple[str, bool]
   marksync/settings.py:
     i: os,dataclasses.{dataclass,field},pathlib.Path
     e: Settings,load_settings
-    Settings: server_uri(0),ollama_url(0),api_host(0),api_port(0)  # Immutable application settings.
+    Settings: server_uri(0),ollama_url(0),api_host(0),api_port(0),llm_config(0)  # Immutable application settings.
     _find_dotenv()->Path | None
     _load_dotenv(path:Path)->dict[str, str]
     _env(key:str;default:str;dotenv:dict[str;str])->str
@@ -123,6 +201,18 @@ D:
     e: MarkpactBlock,_PATTERNS,BlockParser
     MarkpactBlock: __post_init__(0)  # Single executable code block from a M...
     BlockParser: parse(1),_make_id(2),rebuild_markdown(2),manifest(1)  # Extracts all markpact:* blocks from a...
+  marksync/plugins/base.py:
+    i: abc,time,dataclasses.{dataclass,field},enum.Enum,typing.Any
+    e: CommMode,GatewayType,MultiInstanceType,PluginType,PluginMeta,ConversionResult,Pool,Lane
+    CommMode:   # Communication mode between agents / s...
+    GatewayType:   # BPMN gateway types for agent coordina...
+    MultiInstanceType:   # Multi-instance task execution mode (B...
+    PluginType: 
+    PluginMeta: to_dict(0)  # Metadata describing a plugin.
+  marksync/plugins/registry.py:
+    i: importlib,logging,marksync.plugins.base,typing.Any
+    e: _BUILTIN_FORMATS,_BUILTIN_API,_BUILTIN_INTEGRATIONS,PluginRegistry
+    PluginRegistry: __init__(0),register(1),discover(1),_load_lazy(1),get(1)  # Central registry for all marksync plu...
   marksync/sandbox/app.py:
     i: asyncio,json,logging,time,fastapi.{FastAPI,HTTPException,WebSocket,WebSocketDisconnect},pathlib.Path,typing.Any
     e: EXAMPLES_DIR,_STATUS_TTL,BlockUpdate,OrchestrationRequest,create_sandbox_app
@@ -138,6 +228,19 @@ D:
     TaskAction: 
     Step: to_dict(0)  # A single step in a pipeline.
     StepResult: duration_ms(0),to_dict(0)  # Result of executing a single step.
+  marksync/pipeline/prompt_generator.py:
+    i: json,logging,os,textwrap,yaml,dataclasses.{dataclass,field},marksync.pipeline.llm_client.LLMClient,pathlib.Path,typing.Any
+    e: SYSTEM_PROMPT,PromptSpec,GeneratedService,PromptGenerator,write_generated
+    PromptSpec: from_yaml(1),from_dict(1)  # Parsed YAML prompt specification.
+    GeneratedService:   # Result of pipeline generation.
+    PromptGenerator: __init__(1),generate(1),_build_user_prompt(1),_parse_response(2),_build_docker_compose(3)  # Generate complete Docker services fro...
+    write_generated(result:GeneratedService;output_dir:Any)
+  marksync/pipeline/llm_client.py:
+    i: json,logging,os,dataclasses.{dataclass,field},typing.Any
+    e: LLMConfig,LLMResponse,LLMClient
+    LLMConfig: from_settings(0),from_env(0)  # Configuration for LLM calls.
+    LLMResponse: json_block(0)  # Parsed LLM response.
+    LLMClient: __init__(1),_setup_env(0),complete(5),generate_yaml(3),generate_json(3)  # LiteLLM-based client for calling LLMs.
   marksync/pipeline/api.py:
     i: fastapi.{APIRouter,HTTPException},marksync.pipeline.engine.{ActorType,PipelineEngine,Step},pydantic.BaseModel,typing.Any
     e: StartPipelineRequest,ResolveTaskRequest,DemoRequest,create_pipeline_router
@@ -187,3 +290,146 @@ D:
     e: BANNER,PROMPT,DSLShell
     DSLShell: __init__(1),run(0),_render(1),_render_help(1),_render_agents(1)  # Interactive DSL shell with rich output.
     _fmt_time(ts:float)->str
+  marksync/plugins/channels/sse.py:
+    i: asyncio,json,logging,time,uuid,marksync.plugins.base.{Channel,ChannelMessage,PluginMeta,PluginType},typing.Any
+    e: Plugin
+    Plugin: __init__(0),meta(0),connect(1),disconnect(0),send(1)
+  marksync/plugins/channels/websocket.py:
+    i: asyncio,json,logging,time,uuid,marksync.plugins.base.{Channel,ChannelType,PluginMeta,PluginType},typing.Any
+    e: Plugin
+    Plugin: __init__(0),meta(0),connect(1),disconnect(0),send(1)
+  marksync/plugins/channels/nats.py:
+    i: asyncio,json,logging,time,uuid,marksync.plugins.base.{Channel,ChannelMessage,PluginMeta,PluginType},typing.Any
+    e: Plugin
+    Plugin: __init__(0),meta(0),connect(1),disconnect(0),send(1)
+  marksync/plugins/channels/grpc_stream.py:
+    i: asyncio,json,logging,time,uuid,marksync.plugins.base.{Channel,ChannelMessage,PluginMeta,PluginType},typing.Any
+    e: Plugin
+    Plugin: __init__(0),meta(0),connect(1),disconnect(0),send(1)
+  marksync/plugins/channels/cli_stdio.py:
+    i: asyncio,json,logging,sys,time,uuid,marksync.plugins.base.{Channel,PluginMeta,PluginType},typing.Any
+    e: Plugin
+    Plugin: __init__(0),meta(0),connect(1),disconnect(0),send(1)
+  marksync/plugins/channels/amqp.py:
+    i: asyncio,json,logging,time,uuid,marksync.plugins.base.{Channel,ChannelMessage,PluginMeta,PluginType},typing.Any
+    e: Plugin
+    Plugin: __init__(0),meta(0),connect(1),disconnect(0),send(1)
+  marksync/plugins/channels/slack.py:
+    i: asyncio,json,logging,time,uuid,marksync.plugins.base.{Channel,ChannelMessage,PluginMeta,PluginType},typing.Any
+    e: Plugin
+    Plugin: __init__(0),meta(0),connect(1),disconnect(0),send(1)
+  marksync/plugins/channels/http_webhook.py:
+    i: asyncio,json,logging,time,uuid,marksync.plugins.base.{Channel,ChannelMessage,PluginMeta,PluginType},typing.Any
+    e: Plugin
+    Plugin: __init__(0),meta(0),connect(1),disconnect(0),send(1)
+  marksync/plugins/channels/mqtt.py:
+    i: asyncio,json,logging,time,uuid,marksync.plugins.base.{Channel,ChannelType,PluginMeta,PluginType},typing.Any
+    e: Plugin
+    Plugin: __init__(0),meta(0),connect(1),disconnect(0),send(1)
+  marksync/plugins/channels/redis_pubsub.py:
+    i: asyncio,json,logging,time,uuid,marksync.plugins.base.{Channel,ChannelMessage,PluginMeta,PluginType},typing.Any
+    e: Plugin
+    Plugin: __init__(0),meta(0),connect(1),disconnect(0),send(1)
+  marksync/plugins/formats/petri.py:
+    i: marksync.plugins.base,xml.dom.minidom,xml.etree.ElementTree
+    e: Plugin
+    Plugin: meta(0),export_pipeline(1),import_pipeline(1)
+    _pretty_xml(elem:Any)->str
+  marksync/plugins/formats/uml_activity.py:
+    i: marksync.plugins.base,xml.dom.minidom,xml.etree.ElementTree
+    e: _XMI_NS,_UML_NS,_ACTOR_STEREOTYPE,Plugin
+    Plugin: meta(0),export_pipeline(1),import_pipeline(1)
+    _pretty_xml(elem:Any)->str
+  marksync/plugins/formats/epc.py:
+    i: marksync.plugins.base,xml.dom.minidom,xml.etree.ElementTree
+    e: Plugin
+    Plugin: meta(0),export_pipeline(1),import_pipeline(1)
+    _pretty_xml(elem:Any)->str
+  marksync/plugins/formats/bpel.py:
+    i: marksync.plugins.base,xml.dom.minidom,xml.etree.ElementTree
+    e: _NS,Plugin
+    Plugin: meta(0),export_pipeline(1),import_pipeline(1)
+    _pretty_xml(elem:Any)->str
+  marksync/plugins/formats/dmn.py:
+    i: marksync.plugins.base,xml.dom.minidom,xml.etree.ElementTree
+    e: _NS,Plugin
+    Plugin: meta(0),export_pipeline(1),import_pipeline(1)
+    _pretty_xml(elem:Any)->str
+  marksync/plugins/formats/cmmn.py:
+    i: marksync.plugins.base,xml.dom.minidom,xml.etree.ElementTree
+    e: _NS,Plugin
+    Plugin: meta(0),export_pipeline(1),import_pipeline(1)
+    _pretty_xml(elem:Any)->str
+  marksync/plugins/formats/bpmn.py:
+    i: marksync.plugins.base,xml.dom.minidom,xml.etree.ElementTree
+    e: _NS,_DI,_DC,_MS,_ACTOR_TO_BPMN,_BPMN_TO_ACTOR,_GATEWAY_TO_BPMN,_BPMN_TO_GATEWAY
+    Plugin: meta(0),export_pipeline(1),_export_single_process(2),_export_collaboration(2),_build_process_body(4)
+    _pretty_xml(elem:Any)->str
+    _safe_id(name:str)->str
+    _local(tag:str)->str
+    _find_child(elem:Any;local_name:str)->ET.Element | None
+  marksync/plugins/formats/xpdl.py:
+    i: marksync.plugins.base,xml.dom.minidom,xml.etree.ElementTree
+    e: _NS,_ACTOR_TO_XPDL_TASK,Plugin
+    Plugin: meta(0),export_pipeline(1),import_pipeline(1)
+    _pretty_xml(elem:Any)->str
+  marksync/plugins/integrations/kubernetes.py:
+    i: yaml,marksync.plugins.base
+    e: Plugin
+    Plugin: meta(0),export_pipeline(1),import_pipeline(1)
+  marksync/plugins/integrations/gitlab.py:
+    i: yaml,marksync.plugins.base
+    e: Plugin
+    Plugin: meta(0),export_pipeline(1),import_pipeline(1)
+  marksync/plugins/integrations/n8n.py:
+    i: json,marksync.plugins.base
+    e: Plugin
+    Plugin: meta(0),export_pipeline(1),import_pipeline(1)
+  marksync/plugins/integrations/ansible.py:
+    i: yaml,marksync.plugins.base
+    e: Plugin
+    Plugin: meta(0),export_pipeline(1),import_pipeline(1)
+  marksync/plugins/integrations/github.py:
+    i: yaml,marksync.plugins.base
+    e: Plugin
+    Plugin: meta(0),export_pipeline(1),import_pipeline(1)
+  marksync/plugins/integrations/airflow.py:
+    i: re,textwrap,marksync.plugins.base
+    e: Plugin
+    Plugin: meta(0),export_pipeline(1),import_pipeline(1)
+  marksync/plugins/integrations/terraform.py:
+    i: marksync.plugins.base
+    e: Plugin
+    Plugin: meta(0),export_pipeline(1)
+  marksync/plugins/api/asyncapi.py:
+    i: yaml,marksync.plugins.base
+    e: Plugin
+    Plugin: meta(0),export_schema(1),import_schema(1)
+  marksync/plugins/api/jsonschema.py:
+    i: json,marksync.plugins.base
+    e: Plugin
+    Plugin: meta(0),export_schema(1),import_schema(1)
+  marksync/plugins/api/openapi.py:
+    i: json,yaml,marksync.plugins.base
+    e: Plugin
+    Plugin: meta(0),export_schema(1),import_schema(1),validate_schema(1),_build_schemas(1)
+  marksync/plugins/api/graphql.py:
+    i: re,marksync.plugins.base
+    e: Plugin
+    Plugin: meta(0),export_schema(1),import_schema(1)
+  marksync/plugins/api/grpc.py:
+    i: re,marksync.plugins.base
+    e: Plugin
+    Plugin: meta(0),export_schema(1),import_schema(1)
+  examples/channels/test_channels_e2e.py:
+    i: asyncio,json,os,sys,time,types,uuid,marksync.plugins.base.ChannelMessage
+    e: _ROOT,msg,Results,test_mqtt,test_redis,test_amqp,test_nats,test_sse
+    Results: __init__(0),ok(2),fail(2),skip(2),summary(0)
+    msg(sender:str='test';recipient:str='';payload:dict=None)->ChannelMessage
+    test_mqtt()
+    test_redis()
+    test_amqp()
+    test_nats()
+    test_sse()
+    test_cli()
+    test_http_webhook()

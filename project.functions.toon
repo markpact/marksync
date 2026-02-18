@@ -1,26 +1,34 @@
 project: marksync
-generated: "2026-02-18T21:23:10.340116"
-modules[28]{path,lang,items}:
+generated: "2026-02-18T22:31:31.028886"
+modules[71]{path,lang,items}:
+  examples/bpmn_multiagent.py,python,6
   tests/test_settings.py,python,13
   tests/test_orchestrator.py,python,24
+  tests/test_hardware_detect.py,python,30
   tests/test_pipeline_scenarios.py,python,32
   tests/test_dsl.py,python,38
   tests/test_marksync.py,python,2
   tests/test_examples.py,python,24
   tests/test_pipeline.py,python,24
-  marksync/cli.py,python,10
-  marksync/__init__.py,python,0
+  marksync/cli.py,python,21
+  marksync/__init__.py,python,1
   marksync/orchestrator.py,python,12
-  marksync/settings.py,python,9
+  marksync/hardware_detect.py,python,9
+  marksync/settings.py,python,10
   marksync/sync/engine.py,python,16
   marksync/sync/crdt.py,python,10
   marksync/sync/__init__.py,python,5
   marksync/transport/__init__.py,python,0
+  marksync/plugins/base.py,python,32
+  marksync/plugins/registry.py,python,10
+  marksync/plugins/__init__.py,python,0
   marksync/sandbox/app.py,python,2
   marksync/sandbox/__init__.py,python,0
   marksync/sandbox/html.py,python,0
   marksync/pipeline/engine.py,python,25
+  marksync/pipeline/prompt_generator.py,python,8
   marksync/pipeline/__init__.py,python,0
+  marksync/pipeline/llm_client.py,python,8
   marksync/pipeline/api.py,python,8
   marksync/agents/base.py,python,0
   marksync/agents/__init__.py,python,18
@@ -29,8 +37,51 @@ modules[28]{path,lang,items}:
   marksync/dsl/api.py,python,2
   marksync/dsl/executor.py,python,27
   marksync/dsl/shell.py,python,12
+  marksync/plugins/channels/sse.py,python,10
+  marksync/plugins/channels/websocket.py,python,9
+  marksync/plugins/channels/nats.py,python,9
+  marksync/plugins/channels/__init__.py,python,0
+  marksync/plugins/channels/grpc_stream.py,python,7
+  marksync/plugins/channels/cli_stdio.py,python,8
+  marksync/plugins/channels/amqp.py,python,9
+  marksync/plugins/channels/slack.py,python,8
+  marksync/plugins/channels/http_webhook.py,python,8
+  marksync/plugins/channels/mqtt.py,python,12
+  marksync/plugins/channels/redis_pubsub.py,python,10
+  marksync/plugins/formats/petri.py,python,4
+  marksync/plugins/formats/uml_activity.py,python,4
+  marksync/plugins/formats/epc.py,python,4
+  marksync/plugins/formats/__init__.py,python,0
+  marksync/plugins/formats/bpel.py,python,4
+  marksync/plugins/formats/dmn.py,python,4
+  marksync/plugins/formats/cmmn.py,python,4
+  marksync/plugins/formats/bpmn.py,python,11
+  marksync/plugins/formats/xpdl.py,python,4
+  marksync/plugins/integrations/__init__.py,python,0
+  marksync/plugins/integrations/kubernetes.py,python,3
+  marksync/plugins/integrations/gitlab.py,python,3
+  marksync/plugins/integrations/n8n.py,python,3
+  marksync/plugins/integrations/ansible.py,python,3
+  marksync/plugins/integrations/github.py,python,3
+  marksync/plugins/integrations/airflow.py,python,3
+  marksync/plugins/integrations/terraform.py,python,2
+  marksync/plugins/api/__init__.py,python,0
+  marksync/plugins/api/asyncapi.py,python,3
+  marksync/plugins/api/jsonschema.py,python,3
+  marksync/plugins/api/openapi.py,python,5
+  marksync/plugins/api/graphql.py,python,3
+  marksync/plugins/api/grpc.py,python,3
+  examples/channels/test_channels_e2e.py,python,14
 
 function_details:
+  examples/bpmn_multiagent.py:
+    functions[6]{name,kind,sig,loc,async,lines,cc,does}:
+      ensure_output_dir,function,(),42-43,false,2,1,ensure output dir
+      scenario_parallel_review,function,() -> PipelineSpec,55-100,false,46,1,scenario parallel review
+      scenario_async_notification,function,() -> PipelineSpec,118-178,false,61,1,scenario async notification
+      scenario_approval_gateway,function,() -> PipelineSpec,192-238,false,47,1,scenario approval gateway
+      scenario_full_collaboration,function,() -> PipelineSpec,265-411,false,147,1,scenario full collaboration
+      main,function,(),416-457,false,42,5,main
   tests/test_settings.py:
     functions[13]{name,kind,sig,loc,async,lines,cc,does}:
       TestSettingsDefaults.test_default_values,method,(),11-19,false,9,1,checks default values
@@ -72,6 +123,38 @@ function_details:
       TestExampleConfigs.test_example_2,method,(),191-195,false,5,1,checks example 2
       TestExampleConfigs.test_example_3,method,(),197-201,false,5,1,checks example 3
       TestExampleConfigs.test_all_examples_generate_valid_dsl,method,(),203-209,false,7,3,checks all examples generate valid dsl
+  tests/test_hardware_detect.py:
+    functions[30]{name,kind,sig,loc,async,lines,cc,does}:
+      test_suggest_model_high_vram,function,(),24-27,false,4,1,checks suggest model high vram
+      test_suggest_model_medium_vram,function,(),30-33,false,4,1,checks suggest model medium vram
+      test_suggest_model_min_vram_boundary,function,(),36-39,false,4,1,checks suggest model min vram boundary
+      test_suggest_model_cpu_enough_ram,function,(),42-45,false,4,1,checks suggest model cpu enough ram
+      test_suggest_model_cpu_boundary_ram,function,(),48-51,false,4,1,checks suggest model cpu boundary ram
+      test_suggest_model_low_resources,function,(),54-57,false,4,1,checks suggest model low resources
+      test_suggest_model_no_resources,function,(),60-63,false,4,1,checks suggest model no resources
+      test_detect_nvidia_gpu_not_installed,function,(),68-73,false,6,1,checks detect nvidia gpu not installed
+      test_detect_nvidia_gpu_success,function,(),76-85,false,10,1,checks detect nvidia gpu success
+      test_detect_nvidia_gpu_nonzero_return,function,(),88-95,false,8,1,checks detect nvidia gpu nonzero return
+      test_detect_nvidia_gpu_exception,function,(),98-102,false,5,1,checks detect nvidia gpu exception
+      test_detect_amd_gpu_not_installed,function,(),107-110,false,4,1,checks detect amd gpu not installed
+      test_detect_amd_gpu_success,function,(),113-121,false,9,1,checks detect amd gpu success
+      test_detect_gpu_prefers_nvidia,function,(),126-132,false,7,1,checks detect gpu prefers nvidia
+      test_detect_gpu_falls_back_to_amd,function,(),135-141,false,7,1,checks detect gpu falls back to amd
+      test_detect_gpu_none_available,function,(),144-149,false,6,1,checks detect gpu none available
+      test_detect_ram_from_free,function,(),154-162,false,9,1,checks detect ram from free
+      test_detect_ram_fallback_proc,function,(),165-170,false,6,1,checks detect ram fallback proc
+      test_detect_ram_all_fail,function,(),173-177,false,5,1,checks detect ram all fail
+      test_is_ollama_installed_true,function,(),182-184,false,3,1,checks is ollama installed true
+      test_is_ollama_installed_false,function,(),187-189,false,3,1,checks is ollama installed false
+      test_is_ollama_running_true,function,(),194-200,false,7,1,checks is ollama running true
+      test_is_ollama_running_false,function,(),203-205,false,3,1,checks is ollama running false
+      test_is_ollama_running_custom_url,function,(),208-210,false,3,1,checks is ollama running custom url
+      test_list_ollama_models_success,function,(),215-224,false,10,1,checks list ollama models success
+      test_list_ollama_models_empty,function,(),227-234,false,8,1,checks list ollama models empty
+      test_list_ollama_models_failure,function,(),237-240,false,4,1,checks list ollama models failure
+      test_detect_full_gpu,function,(),245-260,false,16,1,checks detect full gpu
+      test_detect_recommend_api,function,(),263-274,false,12,1,checks detect recommend api
+      test_detect_skips_model_list_when_not_running,function,(),277-288,false,12,1,checks detect skips model list when not running
   tests/test_pipeline_scenarios.py:
     functions[32]{name,kind,sig,loc,async,lines,cc,does}:
       run,function,(coro),38-39,false,2,1,starts
@@ -203,17 +286,31 @@ function_details:
       TestEvents.test_event_emitted_on_start,method,(),346-353,false,8,1,checks event emitted on start
       TestEvents.test_event_emitted_on_human_task,method,(),355-363,false,9,1,checks event emitted on human task
   marksync/cli.py:
-    functions[10]{name,kind,sig,loc,async,lines,cc,does}:
-      _setup_logging,function,"(verbose:bool=False)",26-31,false,6,2,initializes logging
-      main,function,(verbose),36-38,false,3,1,marksync — Multi-agent collaborative editing for Markpact projects.
-      server,function,"(readme, host, port)",45-52,false,8,1,Start the sync server.
-      agent,function,"(role, name, server_uri, ollama_url, model, auto_edit)",63-78,false,16,2,Start an AI agent that collaborates on the project.
-      push,function,"(readme, server_uri, name)",85-93,false,9,1,Push local README changes to sync server (one-shot).
-      blocks,function,(readme),98-122,false,25,3,"Show all markpact:* blocks in a README."
-      shell,function,"(server_uri, ollama_url, script)",129-145,false,17,4,Interactive DSL shell for agent orchestration.
-      orchestrate,function,"(config, role, server_uri, ollama_url, model, dry_run, export_dsl)",156-184,false,29,5,Orchestrate all agents from agents.yml (replaces N containers with 1).
-      api,function,"(host, port, server_uri, ollama_url)",192-205,false,14,1,Start the REST/WS API server for DSL remote control.
-      sandbox,function,"(host, port)",211-220,false,10,1,"Start the web sandbox for testing examples (edit, run, orchestrate)."
+    functions[21]{name,kind,sig,loc,async,lines,cc,does}:
+      _setup_logging,function,"(verbose:bool=False)",27-32,false,6,2,initializes logging
+      main,function,(verbose),37-39,false,3,1,marksync — Multi-agent collaborative editing for Markpact projects.
+      server,function,"(readme, host, port)",46-53,false,8,1,Start the sync server.
+      agent,function,"(role, name, server_uri, ollama_url, model, auto_edit)",64-79,false,16,2,Start an AI agent that collaborates on the project.
+      push,function,"(readme, server_uri, name)",86-94,false,9,1,Push local README changes to sync server (one-shot).
+      blocks,function,(readme),99-123,false,25,3,"Show all markpact:* blocks in a README."
+      shell,function,"(server_uri, ollama_url, script)",130-146,false,17,4,Interactive DSL shell for agent orchestration.
+      orchestrate,function,"(config, role, server_uri, ollama_url, model, dry_run, export_dsl)",157-185,false,29,5,Orchestrate all agents from agents.yml (replaces N containers with 1).
+      api,function,"(host, port, server_uri, ollama_url)",193-206,false,14,1,Start the REST/WS API server for DSL remote control.
+      sandbox,function,"(host, port)",212-221,false,10,1,"Start the web sandbox for testing examples (edit, run, orchestrate)."
+      _ensure_dotenv,function,() -> Path,224-252,false,29,5,Ensure .env file exists.
+      _save_key_to_dotenv,function,"(env_path:Path, key:str, value:str)",255-267,false,13,5,Update or append a key=value in .env file.
+      _prompt_api_key,function,"(env_path:Path) -> str",270-303,false,34,4,Interactively ask the user for their OpenRouter API key.
+      _prompt_model_choice,function,"(current_model:str) -> str",306-334,false,29,5,Let user confirm or change the model.
+      _print_hw_summary,function,(info) -> None,362-369,false,8,4,logs hw summary
+      _setup_ollama,function,"(env_path:Path, info) -> tuple[str, str]",372-415,false,44,13,Interactive Ollama setup.
+      _setup_api_provider,function,"(env_path:Path, provider:str) -> tuple[str, str]",418-446,false,29,5,Prompt API key + model for cloud providers.
+      _setup_litellm_custom,function,"(env_path:Path) -> tuple[str, str]",449-461,false,13,2,Prompt for custom LiteLLM base URL + model.
+      _test_connection,function,"(provider:str, model:str, api_key:str='', api_base:str='') -> bool",464-482,false,19,4,Send a ping message to the configured LLM.
+      init,function,(),486-557,false,72,15,"First-run wizard: choose LLM provider, configure API key, test connection."
+      generate,function,"(prompt, output, model, dry_run, build, up)",567-798,false,232,53,Generate a Docker service from a YAML prompt via LLM (LiteLLM/OpenRouter).
+  marksync/__init__.py:
+    functions[1]{name,kind,sig,loc,async,lines,cc,does}:
+      __getattr__,function,"(name:str)",22-36,false,15,7,Lazy imports — heavy deps only loaded when actually accessed.
   marksync/orchestrator.py:
     functions[12]{name,kind,sig,loc,async,lines,cc,does}:
       OrchestrationPlan.agent_names,method,"() -> list[str]",68-69,false,2,2,agent names
@@ -228,17 +325,29 @@ function_details:
       Orchestrator.to_dsl,method,"() -> list[str]",237-261,false,25,8,Convert the orchestration plan to DSL commands.
       Orchestrator.to_msdsl,method,"(path:Any=None) -> str",263-284,false,22,2,Generate a .msdsl script file from the orchestration plan.
       Orchestrator.summary,method,() -> str,288-310,false,23,9,Human-readable summary of the plan.
-  marksync/settings.py:
+  marksync/hardware_detect.py:
     functions[9]{name,kind,sig,loc,async,lines,cc,does}:
+      detect_nvidia_gpu,function,() -> GPUInfo,41-58,false,18,4,Query nvidia-smi for GPU name and VRAM.
+      detect_amd_gpu,function,() -> GPUInfo,61-85,false,25,9,Query rocm-smi for AMD GPU VRAM.
+      detect_gpu,function,() -> GPUInfo,88-93,false,6,2,"Detect best available GPU (NVIDIA preferred, then AMD)."
+      detect_ram,function,() -> int,96-112,false,17,7,Return total system RAM in GB.
+      is_ollama_installed,function,() -> bool,115-117,false,3,1,Check if the ollama binary is in PATH.
+      is_ollama_running,function,"(url:str='http://localhost:11434') -> bool",120-126,false,7,2,Check if Ollama HTTP API is reachable.
+      list_ollama_models,function,"(url:str='http://localhost:11434') -> list[str]",129-136,false,8,3,Return list of model names available in Ollama.
+      suggest_model,function,"(gpu_vram_gb:int, ram_gb:int) -> tuple[str, bool]",139-154,false,16,4,"Return (suggested_model, recommend_api_instead) based on available resources."
+      detect,function,"(ollama_url:str='http://localhost:11434') -> SystemInfo",157-173,false,17,3,Run full system detection and return a SystemInfo summary.
+  marksync/settings.py:
+    functions[10]{name,kind,sig,loc,async,lines,cc,does}:
       _find_dotenv,function,() -> Path | None,24-33,false,10,3,Walk up from CWD and package dir to find .env.
       _load_dotenv,function,"(path:Path) -> dict[str, str]",36-52,false,17,8,Minimal .env parser — no external dependency required.
       _env,function,"(key:str, default:str, dotenv:dict[str,str]) -> str",55-57,false,3,1,"Read from os.environ first, then dotenv, then default."
       _env_int,function,"(key:str, default:int, dotenv:dict[str,str]) -> int",60-65,false,6,2,env int
-      load_settings,function,() -> Settings,115-135,false,21,2,Load settings from environment + .env file.
-      Settings.server_uri,method,() -> str,99-100,false,2,1,server uri
-      Settings.ollama_url,method,() -> str,103-104,false,2,1,ollama url
-      Settings.api_host,method,() -> str,107-108,false,2,1,api host
-      Settings.api_port,method,() -> int,111-112,false,2,1,api port
+      load_settings,function,() -> Settings,157-194,false,38,4,Load settings from environment + .env file.
+      Settings.server_uri,method,() -> str,115-116,false,2,1,server uri
+      Settings.ollama_url,method,() -> str,119-120,false,2,1,ollama url
+      Settings.api_host,method,() -> str,123-124,false,2,1,api host
+      Settings.api_port,method,() -> int,127-128,false,2,1,api port
+      Settings.llm_config,method,(),130-154,false,25,4,Build LLMConfig for the active provider.
   marksync/sync/engine.py:
     functions[16]{name,kind,sig,loc,async,lines,cc,does}:
       _signal,function,"(type:str) -> str",38-39,false,2,1,signal
@@ -276,6 +385,52 @@ function_details:
       BlockParser._make_id,method,"(kind:str, meta:str) -> str",82-88,false,7,3,creates id
       BlockParser.rebuild_markdown,method,"(original:str, blocks:dict[str,str]) -> str",91-106,false,16,6,Replace block contents in original markdown with updated versions.
       BlockParser.manifest,method,"(blocks:list[MarkpactBlock]) -> dict[str, str]",109-111,false,3,2,block_id -> sha256 map for delta detection.
+  marksync/plugins/base.py:
+    functions[32]{name,kind,sig,loc,async,lines,cc,does}:
+      PluginMeta.to_dict,method,() -> dict,72-83,false,12,1,converts dict
+      ConversionResult.to_dict,method,() -> dict,99-107,false,9,2,converts dict
+      Pool.to_dict,method,() -> dict,127-135,false,9,2,converts dict
+      Lane.to_dict,method,() -> dict,151-157,false,7,1,converts dict
+      MessageFlow.to_dict,method,() -> dict,179-190,false,12,1,converts dict
+      Gateway.to_dict,method,() -> dict,212-220,false,9,1,converts dict
+      PipelineSpec.to_dict,method,() -> dict,254-265,false,12,5,converts dict
+      StepSpec.to_dict,method,() -> dict,310-337,false,28,8,converts dict
+      FormatPlugin.meta,method,() -> PluginMeta,351-353,false,3,1,Return plugin metadata.
+      FormatPlugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",356-358,false,3,1,Convert a marksync pipeline to the target format.
+      FormatPlugin.import_pipeline,method,"(source:Any) -> PipelineSpec",361-363,false,3,1,Parse the target format and return a marksync PipelineSpec.
+      FormatPlugin.validate,method,"(source:Any) -> list[str]",365-367,false,3,1,Validate source against the format schema.
+      FormatPlugin.file_extension,method,() -> str,369-372,false,4,2,Primary file extension for this format.
+      APIAdapter.meta,method,() -> PluginMeta,386-388,false,3,1,Return plugin metadata.
+      APIAdapter.export_schema,method,"(pipeline:PipelineSpec) -> ConversionResult",391-393,false,3,1,Generate API schema from a marksync pipeline.
+      APIAdapter.import_schema,method,"(source:Any) -> PipelineSpec",396-398,false,3,1,Parse API schema and return a marksync PipelineSpec.
+      APIAdapter.validate_schema,method,"(source:Any) -> list[str]",400-402,false,3,1,Validate source against the API schema spec.
+      Integration.meta,method,() -> PluginMeta,416-418,false,3,1,Return plugin metadata.
+      Integration.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",421-423,false,3,1,Generate target system config from a marksync pipeline.
+      Integration.import_pipeline,method,"(source:Any) -> PipelineSpec",426-428,false,3,1,Parse target system config into a marksync PipelineSpec.
+      Integration.deploy,method,"(pipeline:PipelineSpec) -> dict[str, Any]",430-432,false,3,1,Deploy/apply the pipeline to the target system.
+      Integration.status,method,"() -> dict[str, Any]",434-436,false,3,1,Check status of a deployed pipeline.
+      ChannelMessage.to_dict,method,() -> dict,461-472,false,12,1,converts dict
+      Channel.meta,method,() -> PluginMeta,494-496,false,3,1,Return plugin metadata.
+      Channel.connect,method,"(config:dict[str,Any]) -> None",499-501,true,3,1,Open the channel connection.
+      Channel.disconnect,method,() -> None,504-506,true,3,1,Close the channel connection.
+      Channel.send,method,"(message:ChannelMessage) -> None",509-511,true,3,1,Send a message through the channel.
+      Channel.receive,method,() -> ChannelMessage,514-516,true,3,1,Receive the next message (blocking async).
+      Channel.subscribe,method,"(topic:str) -> None",518-520,true,3,1,Subscribe to a topic/queue.
+      Channel.unsubscribe,method,"(topic:str) -> None",522-524,true,3,1,Unsubscribe from a topic/queue.
+      Channel.is_connected,method,() -> bool,526-528,false,3,1,Check if channel is currently connected.
+      Channel.request,method,"(message:ChannelMessage, timeout:float=30.0) -> ChannelMessage",530-534,true,5,1,Send a request and wait for reply (request/reply pattern).
+  marksync/plugins/registry.py:
+    functions[10]{name,kind,sig,loc,async,lines,cc,does}:
+      PluginRegistry.__init__,method,(),84-86,false,3,1,creates
+      PluginRegistry.register,method,"(plugin:Any)",90-94,false,5,1,Register a plugin instance.
+      PluginRegistry.discover,method,"(include_builtins:bool=True)",96-109,false,14,5,Discover and register available plugins.
+      PluginRegistry._load_lazy,method,"(format_id:str) -> FormatPlugin | APIAdapter | Integration | None",111-132,false,22,4,Load a lazily-registered plugin module.
+      PluginRegistry.get,method,"(format_id:str) -> FormatPlugin | APIAdapter | Integration | None",136-141,false,6,2,Get a plugin by format ID.
+      PluginRegistry.list_plugins,method,"(plugin_type:Any=None) -> list[dict]",143-181,false,39,11,List all registered + available plugins.
+      PluginRegistry.available_formats,method,"() -> list[str]",183-185,false,3,1,List all available format IDs (loaded + lazy).
+      PluginRegistry.export,method,"(format_id:str, pipeline:PipelineSpec) -> ConversionResult",189-206,false,18,4,Export a pipeline to the specified format.
+      PluginRegistry.import_from,method,"(format_id:str, source:Any) -> PipelineSpec | None",208-219,false,12,4,Import a pipeline from the specified format.
+      PluginRegistry.pipeline_from_marksync,method,"(name:str, steps:list[dict], description:str='') -> PipelineSpec",224-245,false,22,2,Create a PipelineSpec from marksync internal format.
   marksync/sandbox/app.py:
     functions[2]{name,kind,sig,loc,async,lines,cc,does}:
       create_sandbox_app,function,() -> FastAPI,68-304,false,237,1,creates sandbox app
@@ -307,6 +462,26 @@ function_details:
       PipelineEngine.snapshot,method,() -> dict,563-568,false,6,2,snapshot
       PipelineEngine.on,method,"(event:str, handler:Callable)",572-573,false,2,1,handles
       PipelineEngine._emit,method,"(event:str, data:Any=None)",575-580,false,6,3,sends
+  marksync/pipeline/prompt_generator.py:
+    functions[8]{name,kind,sig,loc,async,lines,cc,does}:
+      write_generated,function,"(result:GeneratedService, output_dir:Any)",334-343,false,10,2,Write all generated files to disk.
+      PromptSpec.from_yaml,method,"(path:Any) -> PromptSpec",111-125,false,15,1,Load from YAML file.
+      PromptSpec.from_dict,method,"(data:dict) -> PromptSpec",128-140,false,13,1,from dict
+      PromptGenerator.__init__,method,"(llm_config:Any=None)",165-166,false,2,1,creates
+      PromptGenerator.generate,method,"(spec:PromptSpec) -> GeneratedService",168-192,false,25,3,Generate a complete service from a prompt specification.
+      PromptGenerator._build_user_prompt,method,"(spec:PromptSpec) -> str",194-227,false,34,9,Build the user prompt from spec.
+      PromptGenerator._parse_response,method,"(spec:PromptSpec, response:LLMResponse) -> GeneratedService",229-285,false,57,12,Parse LLM response into GeneratedService.
+      PromptGenerator._build_docker_compose,method,"(spec:PromptSpec, services_data:list[dict], files:dict[str,str]) -> str",287-331,false,45,3,Build docker-compose.yml from service definitions.
+  marksync/pipeline/llm_client.py:
+    functions[8]{name,kind,sig,loc,async,lines,cc,does}:
+      LLMConfig.from_settings,method,() -> LLMConfig,38-50,false,13,2,Load from marksync settings (which reads .env).
+      LLMConfig.from_env,method,() -> LLMConfig,53-61,false,9,1,Load directly from os.environ (bypasses marksync settings).
+      LLMResponse.json_block,method,() -> dict | None,73-98,false,26,6,Extract first JSON block from response content.
+      LLMClient.__init__,method,"(config:Any=None)",111-113,false,3,2,creates
+      LLMClient._setup_env,method,(),115-120,false,6,3,Set environment variables that LiteLLM reads.
+      LLMClient.complete,method,"(messages:list[dict[str,str]], model:Any=None, temperature:Any=None, max_tokens:Any=None, response_format:Any=None) -> LLMResponse",122-186,false,65,13,Call LLM with messages.
+      LLMClient.generate_yaml,method,"(system_prompt:str, user_prompt:str, model:Any=None) -> LLMResponse",188-194,false,7,1,"Convenience: generate YAML output from system + user prompt."
+      LLMClient.generate_json,method,"(system_prompt:str, user_prompt:str, model:Any=None) -> LLMResponse",196-202,false,7,1,"Convenience: generate JSON output from system + user prompt."
   marksync/pipeline/api.py:
     functions[8]{name,kind,sig,loc,async,lines,cc,does}:
       create_pipeline_router,function,"(engine:PipelineEngine) -> APIRouter",43-173,false,131,1,creates pipeline router
@@ -394,3 +569,245 @@ function_details:
       DSLShell._render_config,method,"(config:dict)",165-171,false,7,2,formats config
       DSLShell._render_log,method,"(entries:list[dict])",173-180,false,8,3,formats log
       DSLShell._render_status,method,"(result:dict)",182-189,false,8,2,formats status
+  marksync/plugins/channels/sse.py:
+    functions[10]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.__init__,method,(),32-35,false,4,1,creates
+      Plugin.meta,method,() -> PluginMeta,37-47,false,11,1,meta
+      Plugin.connect,method,"(config:dict[str,Any]) -> None",49-51,true,3,1,registers
+      Plugin.disconnect,method,() -> None,53-56,true,4,1,disconnect
+      Plugin.send,method,"(message:ChannelMessage) -> None",58-68,true,11,3,Broadcast SSE event to all connected subscribers.
+      Plugin.receive,method,() -> ChannelMessage,70-71,true,2,1,handles
+      Plugin.add_subscriber,method,() -> asyncio.Queue,73-77,false,5,1,Add a new SSE client subscriber.
+      Plugin.remove_subscriber,method,"(q:Any) -> None",79-81,false,3,3,Remove a disconnected SSE client.
+      Plugin.is_connected,method,() -> bool,83-84,false,2,1,checks connected
+      Plugin.subscriber_count,method,() -> int,87-88,false,2,1,subscriber count
+  marksync/plugins/channels/websocket.py:
+    functions[9]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.__init__,method,(),32-36,false,5,1,creates
+      Plugin.meta,method,() -> PluginMeta,38-48,false,11,1,meta
+      Plugin.connect,method,"(config:dict[str,Any]) -> None",50-61,true,12,1,registers
+      Plugin.disconnect,method,() -> None,63-68,true,6,2,disconnect
+      Plugin.send,method,"(message:ChannelMessage) -> None",70-73,true,4,2,sends
+      Plugin.receive,method,() -> ChannelMessage,75-76,true,2,1,handles
+      Plugin.subscribe,method,"(topic:str) -> None",78-83,true,6,1,handles
+      Plugin.is_connected,method,() -> bool,85-86,false,2,2,checks connected
+      Plugin._reader_loop,method,(),88-108,true,21,4,reader loop
+  marksync/plugins/channels/nats.py:
+    functions[9]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.__init__,method,(),33-37,false,5,1,creates
+      Plugin.meta,method,() -> PluginMeta,39-49,false,11,1,meta
+      Plugin.connect,method,"(config:dict[str,Any]) -> None",51-69,true,19,3,registers
+      Plugin.disconnect,method,() -> None,71-79,true,9,3,disconnect
+      Plugin.send,method,"(message:ChannelMessage) -> None",81-87,true,7,5,sends
+      Plugin.receive,method,() -> ChannelMessage,89-90,true,2,1,handles
+      Plugin.subscribe,method,"(topic:str, queue_group:str='') -> None",92-118,true,27,3,handles
+      Plugin.is_connected,method,() -> bool,120-121,false,2,3,checks connected
+      Plugin.request,method,"(message:ChannelMessage, timeout:float=30.0) -> ChannelMessage",123-137,true,15,2,request
+  marksync/plugins/channels/grpc_stream.py:
+    functions[7]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.__init__,method,(),32-36,false,5,1,creates
+      Plugin.meta,method,() -> PluginMeta,38-48,false,11,1,meta
+      Plugin.connect,method,"(config:dict[str,Any]) -> None",50-65,true,16,2,registers
+      Plugin.disconnect,method,() -> None,67-72,true,6,2,disconnect
+      Plugin.send,method,"(message:ChannelMessage) -> None",74-83,true,10,2,sends
+      Plugin.receive,method,() -> ChannelMessage,85-86,true,2,1,handles
+      Plugin.is_connected,method,() -> bool,88-89,false,2,1,checks connected
+  marksync/plugins/channels/cli_stdio.py:
+    functions[8]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.__init__,method,(),33-36,false,4,1,creates
+      Plugin.meta,method,() -> PluginMeta,38-47,false,10,1,meta
+      Plugin.connect,method,"(config:dict[str,Any]) -> None",49-52,true,4,1,registers
+      Plugin.disconnect,method,() -> None,54-56,true,3,1,disconnect
+      Plugin.send,method,"(message:ChannelMessage) -> None",58-62,true,5,3,sends
+      Plugin.receive,method,() -> ChannelMessage,64-75,true,12,1,handles
+      Plugin.is_connected,method,() -> bool,77-78,false,2,1,checks connected
+      Plugin.request,method,"(message:ChannelMessage, timeout:float=0) -> ChannelMessage",80-85,true,6,2,Send a prompt and wait for user input.
+  marksync/plugins/channels/amqp.py:
+    functions[9]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.__init__,method,(),35-41,false,7,1,creates
+      Plugin.meta,method,() -> PluginMeta,43-53,false,11,1,meta
+      Plugin.connect,method,"(config:dict[str,Any]) -> None",55-87,true,33,2,registers
+      Plugin.disconnect,method,() -> None,89-95,true,7,2,disconnect
+      Plugin.send,method,"(message:ChannelMessage) -> None",97-107,true,11,3,sends
+      Plugin.receive,method,() -> ChannelMessage,109-110,true,2,1,handles
+      Plugin.subscribe,method,"(topic:str) -> None",112-117,true,6,3,handles
+      Plugin.is_connected,method,() -> bool,119-120,false,2,1,checks connected
+      Plugin._on_message,method,(message) -> None,122-138,true,17,3,handles message
+  marksync/plugins/channels/slack.py:
+    functions[8]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.__init__,method,(),32-37,false,6,1,creates
+      Plugin.meta,method,() -> PluginMeta,39-49,false,11,1,meta
+      Plugin.connect,method,"(config:dict[str,Any]) -> None",51-73,true,23,3,registers
+      Plugin.disconnect,method,() -> None,75-80,true,6,2,disconnect
+      Plugin.send,method,"(message:ChannelMessage) -> None",82-99,true,18,5,sends
+      Plugin.receive,method,() -> ChannelMessage,101-102,true,2,1,handles
+      Plugin.is_connected,method,() -> bool,104-105,false,2,1,checks connected
+      Plugin.inject_event,method,"(event:dict[str,Any]) -> None",107-121,false,15,1,Called by Slack event webhook/Socket Mode handler to inject messages.
+  marksync/plugins/channels/http_webhook.py:
+    functions[8]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.__init__,method,(),33-39,false,7,1,creates
+      Plugin.meta,method,() -> PluginMeta,41-51,false,11,1,meta
+      Plugin.connect,method,"(config:dict[str,Any]) -> None",53-66,true,14,1,registers
+      Plugin.disconnect,method,() -> None,68-73,true,6,2,disconnect
+      Plugin.send,method,"(message:ChannelMessage) -> None",75-105,true,31,5,sends
+      Plugin.receive,method,() -> ChannelMessage,107-108,true,2,1,handles
+      Plugin.is_connected,method,() -> bool,110-111,false,2,1,checks connected
+      Plugin.inject_webhook,method,"(data:dict[str,Any]) -> None",113-125,false,13,1,Called by the webhook HTTP endpoint to inject incoming messages.
+  marksync/plugins/channels/mqtt.py:
+    functions[12]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.__init__,method,(),35-39,false,5,1,creates
+      Plugin.meta,method,() -> PluginMeta,41-51,false,11,1,meta
+      Plugin.connect,method,"(config:dict[str,Any]) -> None",53-84,true,32,3,registers
+      Plugin.disconnect,method,() -> None,86-92,true,7,2,disconnect
+      Plugin.send,method,"(message:ChannelMessage) -> None",94-99,true,6,3,sends
+      Plugin.receive,method,() -> ChannelMessage,101-102,true,2,1,handles
+      Plugin.subscribe,method,"(topic:str) -> None",104-108,true,5,2,handles
+      Plugin.unsubscribe,method,"(topic:str) -> None",110-113,true,4,2,unsubscribe
+      Plugin.is_connected,method,() -> bool,115-116,false,2,1,checks connected
+      Plugin._on_message,method,"(client, userdata, msg)",118-133,false,16,2,handles message
+      Plugin._on_connect,method,"(client, userdata, flags, rc, properties=None)",135-139,false,5,2,handles connect
+      Plugin._on_disconnect,method,"(client, userdata, flags, rc, properties=None)",141-143,false,3,1,handles disconnect
+  marksync/plugins/channels/redis_pubsub.py:
+    functions[10]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.__init__,method,(),32-37,false,6,1,creates
+      Plugin.meta,method,() -> PluginMeta,39-49,false,11,1,meta
+      Plugin.connect,method,"(config:dict[str,Any]) -> None",51-63,true,13,2,registers
+      Plugin.disconnect,method,() -> None,65-76,true,12,4,disconnect
+      Plugin.send,method,"(message:ChannelMessage) -> None",78-83,true,6,3,sends
+      Plugin.receive,method,() -> ChannelMessage,85-86,true,2,1,handles
+      Plugin.subscribe,method,"(topic:str) -> None",88-91,true,4,2,handles
+      Plugin.unsubscribe,method,"(topic:str) -> None",93-95,true,3,2,unsubscribe
+      Plugin.is_connected,method,() -> bool,97-98,false,2,1,checks connected
+      Plugin._reader_loop,method,(),100-125,true,26,8,reader loop
+  marksync/plugins/formats/petri.py:
+    functions[4]{name,kind,sig,loc,async,lines,cc,does}:
+      _pretty_xml,function,"(elem:Any) -> str",29-31,false,3,1,pretty xml
+      Plugin.meta,method,() -> PluginMeta,36-48,false,13,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",50-129,false,80,4,export pipeline
+      Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",131-179,false,49,28,import pipeline
+  marksync/plugins/formats/uml_activity.py:
+    functions[4]{name,kind,sig,loc,async,lines,cc,does}:
+      _pretty_xml,function,"(elem:Any) -> str",34-36,false,3,1,pretty xml
+      Plugin.meta,method,() -> PluginMeta,48-60,false,13,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",62-146,false,85,4,export pipeline
+      Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",148-181,false,34,12,import pipeline
+  marksync/plugins/formats/epc.py:
+    functions[4]{name,kind,sig,loc,async,lines,cc,does}:
+      _pretty_xml,function,"(elem:Any) -> str",29-31,false,3,1,pretty xml
+      Plugin.meta,method,() -> PluginMeta,36-48,false,13,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",50-107,false,58,4,export pipeline
+      Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",109-143,false,35,16,import pipeline
+  marksync/plugins/formats/bpel.py:
+    functions[4]{name,kind,sig,loc,async,lines,cc,does}:
+      _pretty_xml,function,"(elem:Any) -> str",30-32,false,3,1,pretty xml
+      Plugin.meta,method,() -> PluginMeta,37-49,false,13,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",51-144,false,94,9,export pipeline
+      Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",146-178,false,33,10,import pipeline
+  marksync/plugins/formats/dmn.py:
+    functions[4]{name,kind,sig,loc,async,lines,cc,does}:
+      _pretty_xml,function,"(elem:Any) -> str",30-32,false,3,1,pretty xml
+      Plugin.meta,method,() -> PluginMeta,37-49,false,13,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",51-95,false,45,6,export pipeline
+      Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",97-125,false,29,11,import pipeline
+  marksync/plugins/formats/cmmn.py:
+    functions[4]{name,kind,sig,loc,async,lines,cc,does}:
+      _pretty_xml,function,"(elem:Any) -> str",31-33,false,3,1,pretty xml
+      Plugin.meta,method,() -> PluginMeta,38-50,false,13,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",52-104,false,53,6,export pipeline
+      Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",106-143,false,38,19,import pipeline
+  marksync/plugins/formats/bpmn.py:
+    functions[11]{name,kind,sig,loc,async,lines,cc,does}:
+      _pretty_xml,function,"(elem:Any) -> str",70-72,false,3,1,pretty xml
+      _safe_id,function,"(name:str) -> str",75-76,false,2,1,safe id
+      _local,function,"(tag:str) -> str",648-650,false,3,2,Strip namespace from XML tag.
+      _find_child,function,"(elem:Any, local_name:str) -> ET.Element | None",653-658,false,6,3,Find direct child by local tag name (namespace-agnostic).
+      Plugin.meta,method,() -> PluginMeta,81-97,false,17,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",101-156,false,56,11,Convert a marksync PipelineSpec to BPMN 2.0 XML with full multi-agent support.
+      Plugin._export_single_process,method,"(root:Any, pipeline:PipelineSpec)",158-170,false,13,2,Export as a single <process> (no pools/lanes collaboration).
+      Plugin._export_collaboration,method,"(root:Any, pipeline:PipelineSpec)",172-267,false,96,22,Export as a BPMN <collaboration> with multiple pools/processes.
+      Plugin._build_process_body,method,"(process:Any, steps:list[StepSpec], gateways:list[Gateway], pipeline:PipelineSpec)",269-436,false,168,25,"Build the flow inside a <process>: start → tasks/gateways/events → end."
+      Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",440-593,false,154,40,Parse BPMN 2.0 XML and return a marksync PipelineSpec with multi-agent info.
+      Plugin.validate,method,"(source:Any) -> list[str]",597-643,false,47,17,BPMN XML validation with multi-agent checks.
+  marksync/plugins/formats/xpdl.py:
+    functions[4]{name,kind,sig,loc,async,lines,cc,does}:
+      _pretty_xml,function,"(elem:Any) -> str",35-37,false,3,1,pretty xml
+      Plugin.meta,method,() -> PluginMeta,42-54,false,13,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",56-126,false,71,7,export pipeline
+      Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",128-171,false,44,17,import pipeline
+  marksync/plugins/integrations/kubernetes.py:
+    functions[3]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.meta,method,() -> PluginMeta,30-42,false,13,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",44-188,false,145,7,export pipeline
+      Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",190-215,false,26,9,import pipeline
+  marksync/plugins/integrations/gitlab.py:
+    functions[3]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.meta,method,() -> PluginMeta,30-42,false,13,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",44-106,false,63,6,export pipeline
+      Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",108-129,false,22,7,import pipeline
+  marksync/plugins/integrations/n8n.py:
+    functions[3]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.meta,method,() -> PluginMeta,31-43,false,13,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",45-161,false,117,6,export pipeline
+      Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",163-191,false,29,12,import pipeline
+  marksync/plugins/integrations/ansible.py:
+    functions[3]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.meta,method,() -> PluginMeta,31-43,false,13,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",45-131,false,87,7,export pipeline
+      Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",133-163,false,31,11,import pipeline
+  marksync/plugins/integrations/github.py:
+    functions[3]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.meta,method,() -> PluginMeta,30-42,false,13,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",44-144,false,101,7,export pipeline
+      Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",146-169,false,24,8,import pipeline
+  marksync/plugins/integrations/airflow.py:
+    functions[3]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.meta,method,() -> PluginMeta,32-44,false,13,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",46-169,false,124,8,export pipeline
+      Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",171-204,false,34,8,import pipeline
+  marksync/plugins/integrations/terraform.py:
+    functions[2]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.meta,method,() -> PluginMeta,29-41,false,13,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",43-219,false,177,1,export pipeline
+  marksync/plugins/api/asyncapi.py:
+    functions[3]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.meta,method,() -> PluginMeta,31-43,false,13,1,meta
+      Plugin.export_schema,method,"(pipeline:PipelineSpec) -> ConversionResult",45-179,false,135,5,export schema
+      Plugin.import_schema,method,"(source:Any) -> PipelineSpec",181-197,false,17,4,import schema
+  marksync/plugins/api/jsonschema.py:
+    functions[3]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.meta,method,() -> PluginMeta,27-39,false,13,1,meta
+      Plugin.export_schema,method,"(pipeline:PipelineSpec) -> ConversionResult",41-142,false,102,5,export schema
+      Plugin.import_schema,method,"(source:Any) -> PipelineSpec",144-164,false,21,4,import schema
+  marksync/plugins/api/openapi.py:
+    functions[5]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.meta,method,() -> PluginMeta,33-45,false,13,1,meta
+      Plugin.export_schema,method,"(pipeline:PipelineSpec) -> ConversionResult",47-160,false,114,5,export schema
+      Plugin.import_schema,method,"(source:Any) -> PipelineSpec",162-184,false,23,7,import schema
+      Plugin.validate_schema,method,"(source:Any) -> list[str]",186-206,false,21,7,validates schema
+      Plugin._build_schemas,method,"(pipeline:PipelineSpec) -> dict",209-257,false,49,1,creates schemas
+  marksync/plugins/api/graphql.py:
+    functions[3]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.meta,method,() -> PluginMeta,31-43,false,13,1,meta
+      Plugin.export_schema,method,"(pipeline:PipelineSpec) -> ConversionResult",45-163,false,119,3,export schema
+      Plugin.import_schema,method,"(source:Any) -> PipelineSpec",165-182,false,18,4,import schema
+  marksync/plugins/api/grpc.py:
+    functions[3]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.meta,method,() -> PluginMeta,32-44,false,13,1,meta
+      Plugin.export_schema,method,"(pipeline:PipelineSpec) -> ConversionResult",46-192,false,147,3,export schema
+      Plugin.import_schema,method,"(source:Any) -> PipelineSpec",194-211,false,18,4,import schema
+  examples/channels/test_channels_e2e.py:
+    functions[14]{name,kind,sig,loc,async,lines,cc,does}:
+      msg,function,"(sender:str='test', recipient:str='', payload:dict=None) -> ChannelMessage",42-50,false,9,2,msg
+      test_mqtt,function,(),87-114,true,28,4,checks mqtt
+      test_redis,function,(),119-147,true,29,4,checks redis
+      test_amqp,function,(),152-182,true,31,4,checks amqp
+      test_nats,function,(),187-214,true,28,4,checks nats
+      test_sse,function,(),219-246,true,28,2,checks sse
+      test_cli,function,(),251-265,true,15,2,checks cli
+      test_http_webhook,function,(),270-296,true,27,3,checks http webhook
+      main,function,(),301-321,true,21,2,main
+      Results.__init__,method,(),54-58,false,5,1,creates
+      Results.ok,method,"(name:str, info:str='')",60-63,false,4,1,ok
+      Results.fail,method,"(name:str, err:str)",65-68,false,4,1,fail
+      Results.skip,method,"(name:str, reason:str)",70-73,false,4,1,skip
+      Results.summary,method,(),75-79,false,5,1,summary

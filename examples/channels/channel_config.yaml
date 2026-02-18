@@ -1,0 +1,135 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  marksync Channel Configuration — Example for E2E testing                  ║
+# ╠══════════════════════════════════════════════════════════════════════════════╣
+# ║  Each channel defines:                                                     ║
+# ║    - type: human_machine | machine_machine | broadcast                     ║
+# ║    - driver: websocket | mqtt | grpc | redis | amqp | nats | ...           ║
+# ║    - config: driver-specific connection parameters                         ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+# ── Human ↔ Machine channels ─────────────────────────────────────────────────
+
+channels:
+  # Real-time browser collaboration
+  browser-ws:
+    type: human_machine
+    driver: websocket
+    config:
+      uri: ws://localhost:8765
+      ping_interval: 30
+
+  # Terminal interaction (approvals, prompts)
+  terminal:
+    type: human_machine
+    driver: cli_stdio
+    config:
+      prompt_prefix: "🔧 marksync> "
+      color: true
+
+  # HTTP webhooks (approval links, external callbacks)
+  approval-webhook:
+    type: human_machine
+    driver: http_webhook
+    config:
+      base_url: http://localhost:8080
+      callback_path: /webhooks/approval
+      auth_token: ${WEBHOOK_AUTH_TOKEN:-}
+
+  # Slack bot (chat-based approvals)
+  slack-bot:
+    type: human_machine
+    driver: slack
+    config:
+      bot_token: ${SLACK_BOT_TOKEN:-}
+      app_token: ${SLACK_APP_TOKEN:-}
+      channel: ${SLACK_CHANNEL:-}
+
+  # Server-Sent Events (live dashboard)
+  dashboard-sse:
+    type: broadcast
+    driver: sse
+    config:
+      endpoint: /events/pipeline
+      reconnect_ms: 3000
+
+  # ── Machine ↔ Machine channels ───────────────────────────────────────────
+
+  # MQTT for lightweight agent messaging
+  agent-mqtt:
+    type: machine_machine
+    driver: mqtt
+    config:
+      broker: localhost
+      port: 1883
+      qos: 1
+      topics:
+        - marksync/pipeline/#
+        - marksync/agents/#
+
+  # Redis pub/sub for in-cluster fast messaging
+  cluster-redis:
+    type: machine_machine
+    driver: redis_pubsub
+    config:
+      url: redis://localhost:6379/0
+      channels:
+        - marksync:pipeline
+        - marksync:agents
+        - marksync:events
+
+  # RabbitMQ for reliable task queuing
+  task-queue:
+    type: machine_machine
+    driver: amqp
+    config:
+      url: amqp://marksync:marksync@localhost:5672/
+      exchange: marksync
+      exchange_type: topic
+      routing_key: pipeline.#
+      durable: true
+      prefetch_count: 10
+
+  # NATS for cloud-native request/reply
+  service-nats:
+    type: machine_machine
+    driver: nats
+    config:
+      servers:
+        - nats://localhost:4222
+      subject: marksync.pipeline.>
+      queue_group: marksync-agents
+
+  # gRPC for high-performance typed communication
+  agent-grpc:
+    type: machine_machine
+    driver: grpc_stream
+    config:
+      target: localhost:50051
+      tls: false
+
+# ── Pipeline routing rules ──────────────────────────────────────────────────
+# Map pipeline steps to channels based on actor type and communication mode
+
+routing:
+  # Human tasks → Slack or terminal (fallback)
+  human:
+    primary: slack-bot
+    fallback: terminal
+
+  # LLM agents communicate via MQTT (lightweight, fast)
+  llm:
+    primary: agent-mqtt
+    fallback: cluster-redis
+
+  # Script agents use AMQP (reliable, durable queues)
+  script:
+    primary: task-queue
+    fallback: cluster-redis
+
+  # All events broadcast via SSE to dashboard
+  events:
+    primary: dashboard-sse
+
+  # Cross-pool async communication via NATS (request/reply)
+  async_message:
+    primary: service-nats

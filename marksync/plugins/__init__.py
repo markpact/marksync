@@ -35,6 +35,7 @@ from marksync.plugins.base import (
     FormatPlugin,
     APIAdapter,
     Integration,
+    Channel,
     PluginMeta,
     ConversionResult,
     PipelineSpec,
@@ -43,9 +44,11 @@ from marksync.plugins.base import (
     Lane,
     MessageFlow,
     Gateway,
+    ChannelMessage,
     CommMode,
     GatewayType,
     MultiInstanceType,
+    ChannelType,
 )
 from marksync.plugins.registry import PluginRegistry
 
@@ -64,5 +67,8 @@ __all__ = [
     "CommMode",
     "GatewayType",
     "MultiInstanceType",
+    "Channel",
+    "ChannelType",
+    "ChannelMessage",
     "PluginRegistry",
 ]

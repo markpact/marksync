@@ -599,3 +599,29 @@ This can be a cron job, a webhook, or a Zapier/n8n automation.
 
 **Q: Where is the log database?**
 `sandbox_logs.db` in the directory where you run `marksync sandbox`.
+
+**Q: How do I change the communication channel for human tasks?**
+Use channel plugins — see [Channels documentation](./channels.md). Configure in `channel_config.yaml`:
+```yaml
+routing:
+  human:
+    primary: slack-bot     # or: terminal, approval-webhook, browser-ws
+    fallback: terminal
+```
+
+**Q: How do I generate a pipeline from a prompt?**
+See [Pipeline Generation](./generate.md):
+```bash
+marksync generate --prompt pipeline.yaml --build --up
+```
+
+---
+
+**Powiązane dokumenty:**
+- [Plugin System](./plugins.md)
+- [Channels](./channels.md) — Human↔Machine, Machine↔Machine
+- [Pipeline Generation](./generate.md) — Prompt → LLM → Docker
+- [BPM Formats](./formats.md)
+- [Comparisons](./comparisons/) — vs Camunda, n8n, Airflow, Temporal
+- [DSL Reference](./dsl-reference.md)
+- [Architecture](./architecture.md)

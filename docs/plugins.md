@@ -1,4 +1,12 @@
-# marksync Plugin System — Formats, API Adapters & Integrations
+# marksync Plugin System — Formats, API Adapters, Integrations & Channels
+
+> **Szczegółowa dokumentacja poszczególnych kategorii:**
+> - [Kanały komunikacji](./channels.md) — Human↔Machine, Machine↔Machine (MQTT, gRPC, WebSocket, Slack...)
+> - [Formaty BPM](./formats.md) — BPMN, XPDL, BPEL, Petri Net, EPC, DMN, CMMN, UML
+> - [Adaptery API](./api-adapters.md) — OpenAPI, AsyncAPI, GraphQL, gRPC/Protobuf, JSON Schema
+> - [Integracje](./integrations.md) — GitHub Actions, GitLab CI, K8s, Terraform, Ansible, Airflow, n8n
+> - [Pipeline Generation](./generate.md) — Prompt → LLM → Docker service
+> - [Porównania](./comparisons/) — vs Camunda, n8n, Airflow, Temporal, Ansible/Terraform
 
 ## Spis treści
 
@@ -6,9 +14,10 @@
 2. [Formaty BPM / Workflow](#formaty-bpm--workflow)
 3. [Adaptery API](#adaptery-api)
 4. [Integracje z systemami zewnętrznymi](#integracje-z-systemami-zewnętrznymi)
-5. [Tabela mapowań](#tabela-mapowań)
-6. [Użycie](#użycie)
-7. [Tworzenie własnych pluginów](#tworzenie-własnych-pluginów)
+5. [Kanały komunikacji](#kanały-komunikacji)
+6. [Tabela mapowań](#tabela-mapowań)
+7. [Użycie](#użycie)
+8. [Tworzenie własnych pluginów](#tworzenie-własnych-pluginów)
 
 ---
 
@@ -34,6 +43,17 @@ marksync/plugins/
 │   ├── graphql.py           # GraphQL SDL
 │   ├── grpc.py              # gRPC / Protocol Buffers 3
 │   └── jsonschema.py        # JSON Schema 2020-12
+├── channels/               # Kanały komunikacji (human↔machine, machine↔machine)
+│   ├── websocket.py         # WebSocket (real-time, full-duplex)
+│   ├── mqtt.py              # MQTT 5.0 (lightweight pub/sub)
+│   ├── grpc_stream.py       # gRPC bidirectional streaming
+│   ├── redis_pubsub.py      # Redis Pub/Sub (in-cluster)
+│   ├── amqp.py              # AMQP 0.9.1 / RabbitMQ
+│   ├── nats.py              # NATS (cloud-native messaging)
+│   ├── http_webhook.py      # HTTP Webhook (callbacks)
+│   ├── cli_stdio.py         # CLI stdin/stdout (terminal)
+│   ├── slack.py             # Slack Bot (chat approvals)
+│   └── sse.py               # Server-Sent Events (push)
 └── integrations/            # Integracje z systemami zewnętrznymi
     ├── github.py            # GitHub Actions workflows
     ├── gitlab.py            # GitLab CI pipelines
@@ -492,6 +512,31 @@ class Plugin(FormatPlugin):
 
 ---
 
+## Kanały komunikacji
+
+> **Pełna dokumentacja:** [docs/channels.md](./channels.md)
+> **Konfiguracja YAML:** [`examples/channels/channel_config.yaml`](../examples/channels/channel_config.yaml)
+> **Testy E2E:** [`examples/channels/test_channels_e2e.py`](../examples/channels/test_channels_e2e.py)
+
+| Kanał | Typ | Driver | Użycie |
+|---|---|---|---|
+| **WebSocket** | Human↔Machine | `websocket` | Browser UI, live editing |
+| **HTTP Webhook** | Human↔Machine | `http_webhook` | Approval links, callbacks |
+| **CLI stdio** | Human↔Machine | `cli_stdio` | Terminal dev/test |
+| **Slack Bot** | Human↔Machine | `slack` | Chat approvals |
+| **SSE** | Broadcast | `sse` | Dashboard push |
+| **MQTT 5.0** | Machine↔Machine | `mqtt` | Agent messaging (QoS 0/1/2) |
+| **Redis Pub/Sub** | Machine↔Machine | `redis_pubsub` | In-cluster signaling |
+| **AMQP/RabbitMQ** | Machine↔Machine | `amqp` | Reliable task queues |
+| **NATS** | Machine↔Machine | `nats` | Cloud-native request/reply |
+| **gRPC Stream** | Machine↔Machine | `grpc_stream` | High-performance typed RPC |
+
+E2E test infrastructure:
+```bash
+docker compose -f examples/channels/docker-compose.e2e.yml up -d
+python examples/channels/test_channels_e2e.py
+```
+
 ---
 
 ## BPMN Multi-Agent Patterns — Komunikacja synchroniczna i asynchroniczna
@@ -499,31 +544,31 @@ class Plugin(FormatPlugin):
 ### Architektura komunikacji agentów w BPMN
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    marksync Multi-Agent BPMN                        │
-│                                                                     │
+┌────────────────────────────────────────────────────────────────────┐
+│                    marksync Multi-Agent BPMN                       │
+│                                                                    │
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │ Pool: Editor System                                         │   │
-│  │ ┌──────────────┐  sync   ┌──────────────┐                  │   │
+│  │ ┌──────────────┐  sync   ┌──────────────┐                   │   │
 │  │ │ Lane: Editor  │───────→│Lane: Formatter│──✉throw(ready)   │   │
 │  │ │ ☐ serviceTask │  seqF  │ ☐ scriptTask  │                  │   │
-│  │ └──────────────┘         └──────────────┘                  │   │
+│  │ └──────────────┘         └──────────────┘                   │   │
 │  └─────────────────────────────┬───────────────────────────────┘   │
-│                                │ messageFlow (async, dashed)        │
+│                                │ messageFlow (async, dashed)       │
 │  ┌─────────────────────────────▼───────────────────────────────┐   │
 │  │ Pool: Review System                                         │   │
-│  │ ┌──────────────┐         ┌──────────────┐                  │   │
+│  │ ┌──────────────┐         ┌──────────────┐                   │   │
 │  │ │Lane: Reviewer │  ◆AND  │Lane: Approver │                  │   │
-│  │ │ ☐☐☐ ||| task  │──fork──│ ☐ userTask    │──✉throw(ok)     │   │
+│  │ │ ☐☐☐ ||| task  │──fork──│ ☐ userTask    │──✉throw(ok)      │   │
 │  │ │(multi-inst.)  │  join  │ (approval)    │                  │   │
-│  │ └──────────────┘         └──────────────┘                  │   │
+│  │ └──────────────┘         └──────────────┘                   │   │
 │  └─────────────────────────────┬───────────────────────────────┘   │
-│                                │ messageFlow (async)                │
+│                                │ messageFlow (async)               │
 │  ┌─────────────────────────────▼───────────────────────────────┐   │
 │  │ Pool: Deployment System                                     │   │
-│  │ ✉catch(ok) ──→ ☐ Deploy ──→ ☐ Monitor ──→ ●                │   │
+│  │ ✉catch(ok) ──→ ☐ Deploy ──→ ☐ Monitor ──→ ●                 │   │
 │  └─────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────────┘
 
 Legenda:
   ──→  sequenceFlow (sync, w obrębie pool)
@@ -747,4 +792,15 @@ python3 examples/bpmn_multiagent.py
 
 ---
 
-*Plugin system v0.2.0 — 20 pluginów (8 formatów BPM + 5 adapterów API + 7 integracji) + multi-agent BPMN*
+*Plugin system v0.3.0 — 30 pluginów (8 formatów BPM + 5 adapterów API + 7 integracji + 10 kanałów) + multi-agent BPMN*
+
+**Powiązane dokumenty:**
+- [Kanały komunikacji](./channels.md) — Human↔Machine, Machine↔Machine
+- [Formaty BPM](./formats.md) — BPMN, XPDL, BPEL, Petri, EPC, DMN, CMMN, UML
+- [Adaptery API](./api-adapters.md) — OpenAPI, AsyncAPI, GraphQL, gRPC, JSON Schema
+- [Integracje](./integrations.md) — GitHub, GitLab, K8s, Terraform, Ansible, Airflow, n8n
+- [Pipeline Generation](./generate.md) — Prompt → LLM → Docker
+- [Porównania](./comparisons/) — vs Camunda, n8n, Airflow, Temporal, IaC
+- [DSL Reference](./dsl-reference.md)
+- [Architecture](./architecture.md)
+- [API](./api.md)

@@ -86,12 +86,28 @@ class Settings:
     OLLAMA_URL_DOCKER: str = "http://host.docker.internal:11434"
     OLLAMA_MODEL: str = "qwen2.5-coder:7b"
 
+    # LiteLLM / OpenRouter
+    LITELLM_MODEL: str = "openrouter/qwen/qwen2.5-coder-32b-instruct"
+    VISION_MODEL: str = "openrouter/qwen/qwen3-vl-32b-instruct"
+    OPENROUTER_API_KEY: str = ""
+    LITELLM_API_BASE: str = ""  # override base URL if needed
+    LITELLM_TEMPERATURE: float = 0.3
+    LITELLM_MAX_TOKENS: int = 8192
+
+    # Multi-provider LLM config (provider-agnostic, backward-compatible)
+    LLM_PROVIDER: str = "ollama"   # ollama | openai | anthropic | groq | openrouter | litellm
+    LLM_API_KEY: str = ""
+    LLM_API_BASE: str = ""
+    LLM_TEMPERATURE: float = 0.3
+    LLM_MAX_TOKENS: int = 8192
+
     # Markpact
     MARKPACT_PORT: int = 8088
 
     # Project
     PROJECT_README: str = "README.md"
     LOG_LEVEL: str = "INFO"
+    GENERATE_OUTPUT_DIR: str = "./generated"
 
     # ── Derived helpers ────────────────────────────────────────────────
 
@@ -111,11 +127,42 @@ class Settings:
     def api_port(self) -> int:
         return self.MARKSYNC_API_PORT
 
+    def llm_config(self):
+        """Build LLMConfig for the active provider. Bridges to pipeline.llm_client."""
+        from marksync.pipeline.llm_client import LLMConfig
+
+        provider = self.LLM_PROVIDER
+        api_key = self.LLM_API_KEY or self.OPENROUTER_API_KEY
+        api_base = self.LLM_API_BASE or self.LITELLM_API_BASE
+        temperature = self.LLM_TEMPERATURE
+        max_tokens = self.LLM_MAX_TOKENS
+
+        if provider == "ollama":
+            return LLMConfig(
+                model=f"ollama/{self.OLLAMA_MODEL}",
+                api_key="",
+                api_base=self.OLLAMA_URL,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+        return LLMConfig(
+            model=self.LITELLM_MODEL,
+            api_key=api_key,
+            api_base=api_base,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+
 
 def load_settings() -> Settings:
     """Load settings from environment + .env file."""
     dotenv_path = _find_dotenv()
     dotenv = _load_dotenv(dotenv_path) if dotenv_path else {}
+
+    openrouter_key = _env("OPENROUTER_API_KEY", "", dotenv)
+    llm_api_key = _env("LLM_API_KEY", openrouter_key, dotenv)
+    llm_provider_explicit = _env("LLM_PROVIDER", "", dotenv)
+    llm_provider = llm_provider_explicit if llm_provider_explicit else ("openrouter" if llm_api_key else "ollama")
 
     return Settings(
         MARKSYNC_HOST=_env("MARKSYNC_HOST", "0.0.0.0", dotenv),
@@ -129,9 +176,21 @@ def load_settings() -> Settings:
         OLLAMA_URL=_env("OLLAMA_URL", "http://localhost:11434", dotenv),
         OLLAMA_URL_DOCKER=_env("OLLAMA_URL_DOCKER", "http://host.docker.internal:11434", dotenv),
         OLLAMA_MODEL=_env("OLLAMA_MODEL", "qwen2.5-coder:7b", dotenv),
+        LITELLM_MODEL=_env("LITELLM_MODEL", "openrouter/qwen/qwen2.5-coder-32b-instruct", dotenv),
+        VISION_MODEL=_env("VISION_MODEL", "openrouter/qwen/qwen3-vl-32b-instruct", dotenv),
+        OPENROUTER_API_KEY=_env("OPENROUTER_API_KEY", "", dotenv),
+        LITELLM_API_BASE=_env("LITELLM_API_BASE", "", dotenv),
+        LITELLM_TEMPERATURE=float(_env("LITELLM_TEMPERATURE", "0.3", dotenv)),
+        LITELLM_MAX_TOKENS=_env_int("LITELLM_MAX_TOKENS", 8192, dotenv),
+        LLM_PROVIDER=llm_provider,
+        LLM_API_KEY=llm_api_key,
+        LLM_API_BASE=_env("LLM_API_BASE", _env("LITELLM_API_BASE", "", dotenv), dotenv),
+        LLM_TEMPERATURE=float(_env("LLM_TEMPERATURE", _env("LITELLM_TEMPERATURE", "0.3", dotenv), dotenv)),
+        LLM_MAX_TOKENS=_env_int("LLM_MAX_TOKENS", _env_int("LITELLM_MAX_TOKENS", 8192, dotenv), dotenv),
         MARKPACT_PORT=_env_int("MARKPACT_PORT", 8088, dotenv),
         PROJECT_README=_env("PROJECT_README", "README.md", dotenv),
         LOG_LEVEL=_env("LOG_LEVEL", "INFO", dotenv),
+        GENERATE_OUTPUT_DIR=_env("GENERATE_OUTPUT_DIR", "./generated", dotenv),
     )
 
 

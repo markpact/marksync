@@ -1,0 +1,70 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  marksync pipeline prompt — Example                                        ║
+# ╠══════════════════════════════════════════════════════════════════════════════╣
+# ║                                                                            ║
+# ║  Usage:                                                                    ║
+# ║    marksync generate --prompt examples/pipeline_prompt.yaml                ║
+# ║                                                                            ║
+# ║  This file describes WHAT you want to build.                               ║
+# ║  LLM generates HOW — complete working code + Docker service.               ║
+# ║                                                                            ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+name: markdown-api
+
+description: >
+  REST API service that converts Markdown documents to HTML, PDF bookmarks,
+  and provides a collaborative editing endpoint via WebSocket.
+
+# ── Main prompt (detailed requirements for LLM) ──────────────────────────────
+prompt: |
+  Build a FastAPI-based REST API service with the following endpoints:
+
+  1. POST /convert/html
+     - Accepts Markdown text in request body
+     - Returns rendered HTML
+     - Supports GitHub Flavored Markdown (tables, task lists, code highlighting)
+
+  2. POST /convert/json
+     - Accepts Markdown text
+     - Returns structured JSON with parsed sections, headings, code blocks
+
+  3. GET /health
+     - Returns {"status": "ok", "version": "1.0.0"}
+
+  4. WebSocket /ws/edit
+     - Collaborative Markdown editing endpoint
+     - Broadcasts changes to all connected clients
+     - Returns current document state on connect
+
+  Requirements:
+  - Use markdown-it-py for Markdown parsing
+  - Use Pygments for code highlighting
+  - Add CORS middleware for browser access
+  - Include Pydantic models for request/response validation
+  - Async endpoints
+  - Docker container must be < 200MB
+
+# ── Agents involved in pipeline ───────────────────────────────────────────────
+agents:
+  - role: editor
+    model: openrouter/qwen/qwen2.5-coder-32b-instruct
+    description: Generates the main application code
+
+  - role: reviewer
+    description: Reviews code quality and security
+
+# ── Service definitions (what Docker containers to create) ────────────────────
+services:
+  - name: api
+    port: 8000
+    framework: fastapi
+    healthcheck: /health
+
+# ── LLM configuration ────────────────────────────────────────────────────────
+# model: openrouter/qwen/qwen2.5-coder-32b-instruct  # override LITELLM_MODEL
+# temperature: 0.3
+# max_tokens: 8192
+
+# ── Output ────────────────────────────────────────────────────────────────────
+output_dir: ./generated/markdown-api

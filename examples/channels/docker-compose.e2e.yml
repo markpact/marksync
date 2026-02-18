@@ -1,0 +1,93 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  marksync E2E Channel Test Infrastructure                                  ║
+# ║                                                                            ║
+# ║  Starts all message brokers + marksync for end-to-end channel testing.     ║
+# ║                                                                            ║
+# ║  Usage:                                                                    ║
+# ║    docker compose -f examples/channels/docker-compose.e2e.yml up -d        ║
+# ║    python examples/channels/test_channels_e2e.py                           ║
+# ║    docker compose -f examples/channels/docker-compose.e2e.yml down -v      ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+name: marksync-channels-e2e
+
+services:
+
+  # ── MQTT Broker (Mosquitto) ──────────────────────────────────────────────
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: marksync-mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/#", "-C", "1", "-i", "healthcheck", "-W", "3"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ── Redis ────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: marksync-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ── RabbitMQ (AMQP) ─────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: marksync-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: marksync
+      RABBITMQ_DEFAULT_PASS: marksync
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── NATS ─────────────────────────────────────────────────────────────────
+  nats:
+    image: nats:2-alpine
+    container_name: marksync-nats
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["--js", "--http_port", "8222"]
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ── marksync API (WebSocket + HTTP webhook endpoint) ─────────────────────
+  marksync-api:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    container_name: marksync-e2e-api
+    command: ["api", "--host", "0.0.0.0", "--port", "8080"]
+    ports:
+      - "8080:8080"
+      - "8765:8765"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MARKSYNC_PORT=8765
+      - MARKSYNC_API_PORT=8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

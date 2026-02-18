@@ -1,3 +1,46 @@
+## [0.2.12] - 2026-02-18
+
+### Summary
+
+feat(docs): CLI interface improvements
+
+### Docs
+
+- docs: update api-adapters.md
+- docs: update channels.md
+- docs: update README
+- docs: update vs-airflow.md
+- docs: update vs-camunda.md
+- docs: update vs-iac.md
+- docs: update vs-n8n.md
+- docs: update vs-temporal.md
+- docs: update formats.md
+- docs: update generate.md
+- ... and 3 more
+
+### Test
+
+- update tests/test_hardware_detect.py
+
+### Build
+
+- update pyproject.toml
+
+### Other
+
+- update .env.example
+- update .gitignore
+- config: update channel_config.yaml
+- config: update docker-compose.e2e.yml
+- update examples/channels/mosquitto.conf
+- update examples/channels/test_channels_e2e.py
+- config: update pipeline_prompt.yaml
+- update marksync/__init__.py
+- update marksync/cli.py
+- update marksync/hardware_detect.py
+- ... and 18 more
+
+
 ## [0.2.11] - 2026-02-18
 
 ### Summary

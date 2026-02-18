@@ -219,6 +219,10 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
+# marksync generated pipeline output
+generated/
+examples/output/
+
 # Generated test artifacts and local data
 # (avoid adding rapidly changing files created by test/e2e scripts)
 frontend/tests/all-pages-documentation.md

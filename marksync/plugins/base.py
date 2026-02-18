@@ -434,3 +434,101 @@ class Integration(abc.ABC):
     def status(self, **kwargs) -> dict[str, Any]:
         """Check status of a deployed pipeline. Override if supported."""
         return {"ok": False, "error": "status not implemented for this integration"}
+
+
+# ── Abstract base: Channel ──────────────────────────────────────────────
+
+class ChannelType(str, Enum):
+    """Communication channel category."""
+    HUMAN_MACHINE = "human_machine"      # UI, CLI, Slack, email
+    MACHINE_MACHINE = "machine_machine"  # MQTT, gRPC, AMQP, Redis
+    BROADCAST = "broadcast"              # pub/sub, WebSocket fan-out
+
+
+@dataclass
+class ChannelMessage:
+    """A message sent through a channel."""
+    id: str
+    channel: str                          # channel_id
+    sender: str                           # agent / user id
+    recipient: str = ""                   # "" = broadcast
+    payload: dict[str, Any] = field(default_factory=dict)
+    content_type: str = "application/json"
+    timestamp: float = field(default_factory=time.time)
+    headers: dict[str, str] = field(default_factory=dict)
+    reply_to: str = ""                    # correlation id for request/reply
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "channel": self.channel,
+            "sender": self.sender,
+            "recipient": self.recipient,
+            "payload": self.payload,
+            "content_type": self.content_type,
+            "timestamp": self.timestamp,
+            "headers": self.headers,
+            "reply_to": self.reply_to,
+        }
+
+
+class Channel(abc.ABC):
+    """
+    Base class for communication channel plugins.
+
+    Channels transport messages between agents (machine↔machine)
+    or between humans and agents (human↔machine).
+
+    Patterns supported:
+        - Request / Reply (sync)
+        - Publish / Subscribe (async broadcast)
+        - Fire-and-forget (async one-way)
+        - Streaming (continuous data flow)
+
+    Each channel implementation wraps a specific transport:
+        WebSocket, MQTT, gRPC stream, HTTP webhook, Redis pub/sub,
+        AMQP (RabbitMQ), Slack, email, CLI stdio, SSE, etc.
+    """
+
+    @abc.abstractmethod
+    def meta(self) -> PluginMeta:
+        """Return plugin metadata."""
+        ...
+
+    @abc.abstractmethod
+    async def connect(self, config: dict[str, Any]) -> None:
+        """Open the channel connection."""
+        ...
+
+    @abc.abstractmethod
+    async def disconnect(self) -> None:
+        """Close the channel connection."""
+        ...
+
+    @abc.abstractmethod
+    async def send(self, message: ChannelMessage) -> None:
+        """Send a message through the channel."""
+        ...
+
+    @abc.abstractmethod
+    async def receive(self) -> ChannelMessage:
+        """Receive the next message (blocking async)."""
+        ...
+
+    async def subscribe(self, topic: str) -> None:
+        """Subscribe to a topic/queue. Override for pub/sub channels."""
+        pass
+
+    async def unsubscribe(self, topic: str) -> None:
+        """Unsubscribe from a topic/queue."""
+        pass
+
+    def is_connected(self) -> bool:
+        """Check if channel is currently connected."""
+        return False
+
+    async def request(self, message: ChannelMessage, timeout: float = 30.0) -> ChannelMessage:
+        """Send a request and wait for reply (request/reply pattern)."""
+        await self.send(message)
+        import asyncio
+        return await asyncio.wait_for(self.receive(), timeout=timeout)

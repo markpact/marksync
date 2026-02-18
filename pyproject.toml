@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "marksync"
-version = "0.2.11"
+version = "0.2.12"
 description = "Multi-agent collaborative editing and deployment of Markpact projects via CRDT delta sync"
 readme = "README.md"
 license = "Apache-2.0"
@@ -34,8 +34,9 @@ dependencies = [
 [project.optional-dependencies]
 ollama = ["ollama>=0.4"]
 mqtt = ["paho-mqtt>=2.1"]
+generate = ["litellm>=1.40"]
 dev = ["pytest>=8.0", "pytest-asyncio>=0.24"]
-all = ["marksync[ollama,mqtt]"]
+all = ["marksync[ollama,mqtt,generate]"]
 
 [project.scripts]
 marksync = "marksync.cli:main"
