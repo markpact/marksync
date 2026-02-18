@@ -371,13 +371,22 @@ class PactownMonitor(AgentWorker):
     results to markpact:state and markpact:log in the CRDT document.
 
     On degraded health, it appends an auto-fix event to markpact:history
-    so the ConversationEngine or a human can take action.
+    and optionally triggers a PipelineEngine run named 'pactown-autofix'.
+
+    Two usage modes:
+        1. WebSocket mode  — call ``run()``  (inherited from AgentWorker)
+        2. Standalone mode — call ``watch()`` with a local CRDTDocument
     """
 
     def __init__(self, config: AgentConfig, poll_interval: float = 10.0):
         super().__init__(config)
         self._poll_interval = poll_interval
         self._pactown_config_path: str = ""
+        self._pipeline_engine = None   # injected via set_pipeline_engine()
+
+    def set_pipeline_engine(self, engine) -> None:
+        """Inject a PipelineEngine for auto-fix pipeline triggers."""
+        self._pipeline_engine = engine
 
     async def _connect_and_run(self):
         async with websockets.connect(self.config.server_uri) as ws:
@@ -462,6 +471,9 @@ class PactownMonitor(AgentWorker):
                     await self._push_block("markpact:history", _json.dumps(history))
                     log.warning(f"[{self.config.name}] Health degraded: {status}")
 
+                    if self._pipeline_engine:
+                        await self._trigger_autofix(self._pipeline_engine, status)
+
             except Exception as e:
                 log.error(f"[{self.config.name}] Poll error: {e}")
 
@@ -488,3 +500,116 @@ class PactownMonitor(AgentWorker):
             return {"health": "unknown", "error": "pactown CLI not found"}
         except subprocess.TimeoutExpired:
             return {"health": "degraded", "error": "timeout"}
+
+    async def _trigger_autofix(self, pipeline_engine, status: dict,
+                               crdt_doc=None) -> str | None:
+        """
+        Start a 'pactown-autofix' pipeline run when health is degraded.
+
+        Returns the run_id if triggered, None otherwise.
+        Logs the trigger event to markpact:log if crdt_doc is provided.
+        """
+        pipeline_name = "pactown-autofix"
+        if pipeline_name not in pipeline_engine.definitions:
+            log.warning(f"[{self.config.name}] Auto-fix pipeline not registered: "
+                        f"{pipeline_name}")
+            return None
+
+        try:
+            run_id = await pipeline_engine.start(
+                pipeline_name,
+                input_data={
+                    "health_status": status,
+                    "config_path": self._pactown_config_path,
+                    "triggered_by": self.config.name,
+                },
+            )
+            log.info(f"[{self.config.name}] Auto-fix pipeline triggered: {run_id}")
+
+            if crdt_doc:
+                ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                crdt_doc.append_block(
+                    "markpact:log",
+                    f"[{ts}] AUTOFIX_TRIGGERED: pipeline={pipeline_name}, run={run_id}",
+                )
+            return run_id
+        except Exception as e:
+            log.error(f"[{self.config.name}] Auto-fix trigger failed: {e}")
+            return None
+
+    async def watch(self, crdt_doc=None, pipeline_engine=None,
+                    stop_after: int = 0) -> list[dict]:
+        """
+        Standalone health-watch loop — no WebSocket sync server required.
+
+        Polls Pactown health every ``poll_interval`` seconds, writes results to
+        ``markpact:state`` and ``markpact:log`` in *crdt_doc*, and triggers
+        ``pactown-autofix`` via *pipeline_engine* on degraded health.
+
+        Args:
+            crdt_doc: Local CRDTDocument to update (optional).
+            pipeline_engine: PipelineEngine for auto-fix triggers (optional).
+            stop_after: Stop after this many checks (0 = run forever).
+                        Set to a positive integer in tests/scripts.
+
+        Returns:
+            List of health-check result dicts (one per check performed).
+        """
+        import json as _json
+
+        if pipeline_engine and self._pipeline_engine is None:
+            self._pipeline_engine = pipeline_engine
+
+        results: list[dict] = []
+        checks = 0
+
+        while stop_after == 0 or checks < stop_after:
+            await asyncio.sleep(self._poll_interval)
+            try:
+                status = self._check_health()
+                ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                checks += 1
+                results.append(status)
+
+                if crdt_doc:
+                    state_raw = crdt_doc.get_block("markpact:state") or "{}"
+                    try:
+                        state = _json.loads(state_raw)
+                    except ValueError:
+                        state = {}
+                    state["health"] = status["health"]
+                    state["last_check"] = ts
+                    crdt_doc.set_block("markpact:state", _json.dumps(state, indent=2))
+
+                    log_line = (
+                        f"[{ts}] HEALTH_CHECK: status={status['health']}"
+                        + (f", latency={status.get('latency_ms')}ms"
+                           if status.get("latency_ms") is not None else "")
+                    )
+                    crdt_doc.append_block("markpact:log", log_line)
+
+                    if status["health"] != "ok":
+                        history_raw = crdt_doc.get_block("markpact:history") or "[]"
+                        try:
+                            history = _json.loads(history_raw)
+                        except ValueError:
+                            history = []
+                        history.append({
+                            "ts": ts,
+                            "actor": f"monitor:{self.config.name}",
+                            "action": "health_degraded",
+                            "data": status,
+                        })
+                        crdt_doc.set_block("markpact:history", _json.dumps(history))
+                        log.warning(f"[{self.config.name}] Health degraded: {status}")
+
+                        _engine = pipeline_engine or self._pipeline_engine
+                        if _engine:
+                            await self._trigger_autofix(_engine, status, crdt_doc)
+
+                log.info(f"[{self.config.name}] Check #{checks}: {status['health']}")
+
+            except Exception as e:
+                log.error(f"[{self.config.name}] Watch error: {e}")
+
+        return results

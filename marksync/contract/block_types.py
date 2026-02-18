@@ -39,12 +39,46 @@ BLOCK_STATE = "state"
 BLOCK_HISTORY = "history"
 BLOCK_PATTERN = "pattern"
 BLOCK_CONFIG = "config"
+BLOCK_ENV = "env"            # multi-environment: dev/staging/prod profiles
+BLOCK_PIPELINE_RUNS = "pipeline-runs"  # persisted run history
 
 ALL_BLOCK_TYPES: list[str] = [
     BLOCK_INTENT, BLOCK_PIPELINE, BLOCK_ORCHESTRATION, BLOCK_DEPLOY,
     BLOCK_LOG, BLOCK_STATE, BLOCK_HISTORY, BLOCK_PATTERN, BLOCK_CONFIG,
+    BLOCK_ENV, BLOCK_PIPELINE_RUNS,
     BLOCK_DEPS, BLOCK_FILE, BLOCK_RUN, BLOCK_BOOTSTRAP, BLOCK_TARGET, BLOCK_BUILD,
 ]
+
+# ── Environment profile ──────────────────────────────────────────────────
+
+@dataclass
+class EnvProfile:
+    """Environment-specific overrides for a contract (dev/staging/prod)."""
+    name: str                    # dev | staging | prod
+    vars: dict[str, str] = field(default_factory=dict)
+    pactown_suffix: str = ""     # e.g. "-staging"
+    replicas: int = 1
+
+    def to_yaml(self) -> str:
+        import yaml
+        return yaml.dump({
+            "name": self.name,
+            "vars": self.vars,
+            "pactown_suffix": self.pactown_suffix,
+            "replicas": self.replicas,
+        }, default_flow_style=False)
+
+    @classmethod
+    def from_yaml(cls, text: str) -> "EnvProfile":
+        import yaml
+        data = yaml.safe_load(text) or {}
+        return cls(
+            name=data.get("name", "dev"),
+            vars=data.get("vars", {}),
+            pactown_suffix=data.get("pactown_suffix", ""),
+            replicas=data.get("replicas", 1),
+        )
+
 
 # ── Block ID helpers ──────────────────────────────────────────────────────
 

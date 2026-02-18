@@ -1,3 +1,28 @@
+## [0.2.15] - 2026-02-18
+
+### Summary
+
+feat(build): configuration management system
+
+### Docs
+
+- docs: update TODO-v2-implementation.md
+
+### Other
+
+- build: update Makefile
+- update marksync/agents/__init__.py
+- update marksync/auth/__init__.py
+- update marksync/auth/middleware.py
+- update marksync/auth/roles.py
+- update marksync/auth/tokens.py
+- update marksync/contract/block_types.py
+- update marksync/pipeline/engine.py
+- update marksync/plugins/integrations/pactown.py
+- update marksync/sync/crdt.py
+- ... and 2 more
+
+
 ## [0.2.14] - 2026-02-18
 
 ### Summary

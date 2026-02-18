@@ -153,6 +153,63 @@ class Plugin(Integration):
         except subprocess.TimeoutExpired:
             return {"status": "error", "error": "pactown status timed out"}
 
+    def health_check(self, crdt_doc=None) -> dict:
+        """
+        Run a health check against the deployed config with latency measurement.
+
+        Optionally writes result to markpact:state and appends to markpact:log
+        if crdt_doc is provided.  Returns a dict with at minimum:
+            {health: "ok"|"degraded"|"error"|"unknown", ...}
+        """
+        import json as _json
+        import time as _time
+
+        if not self._config_path:
+            result = {"health": "unknown", "error": "No deployed config"}
+            if crdt_doc:
+                ts = _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime())
+                crdt_doc.append_block("markpact:log",
+                                      f"[{ts}] HEALTH_CHECK: status=unknown (no config)")
+            return result
+
+        try:
+            t0 = _time.monotonic()
+            proc = subprocess.run(
+                ["pactown", "status", self._config_path],
+                capture_output=True, text=True, timeout=30,
+            )
+            latency_ms = round((_time.monotonic() - t0) * 1000)
+            health = "ok" if proc.returncode == 0 else "error"
+            result = {
+                "health": health,
+                "latency_ms": latency_ms,
+                "output": proc.stdout[:200],
+                "config": self._config_path,
+            }
+        except FileNotFoundError:
+            result = {"health": "unknown", "error": "pactown CLI not found"}
+        except subprocess.TimeoutExpired:
+            result = {"health": "degraded", "error": "pactown status timed out"}
+
+        if crdt_doc:
+            ts = _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime())
+            state_raw = crdt_doc.get_block("markpact:state") or "{}"
+            try:
+                state = _json.loads(state_raw)
+            except ValueError:
+                state = {}
+            state["health"] = result["health"]
+            state["last_check"] = ts
+            crdt_doc.set_block("markpact:state", _json.dumps(state, indent=2))
+            log_line = (
+                f"[{ts}] HEALTH_CHECK: status={result['health']}"
+                + (f", latency={result.get('latency_ms')}ms"
+                   if result.get("latency_ms") is not None else "")
+            )
+            crdt_doc.append_block("markpact:log", log_line)
+
+        return result
+
     # ── Internal ──────────────────────────────────────────────────────────
 
     def _build_config(self, pipeline: PipelineSpec) -> dict:

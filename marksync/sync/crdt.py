@@ -6,6 +6,7 @@ so concurrent edits to DIFFERENT blocks produce zero conflicts.
 """
 
 import hashlib
+import json
 import time
 from pycrdt import Doc, Text, Map, Array
 from marksync.sync import BlockParser, MarkpactBlock
@@ -80,6 +81,61 @@ class CRDTDocument:
 
     def apply_update(self, update: bytes):
         self.doc.apply_update(update)
+
+    def append_block(self, block_id: str, line: str) -> str:
+        """Append a line to an existing block (for append-only logs). Returns new content."""
+        existing = self.get_block(block_id) or ""
+        new_content = (existing + "\n" + line).strip()
+        self.set_block(block_id, new_content)
+        return new_content
+
+    def get_blocks_by_kind(self, kind: str) -> dict[str, str]:
+        """Return all blocks whose id matches markpact:<kind>[=...]"""
+        prefix = f"markpact:{kind}"
+        return {
+            bid: content
+            for bid, content in self.get_all().items()
+            if bid == prefix or bid.startswith(prefix + "=")
+        }
+
+    def query_blocks(self, kinds: list[str] | None = None) -> dict[str, str]:
+        """Return blocks optionally filtered by a list of kinds."""
+        if not kinds:
+            return self.get_all()
+        result: dict[str, str] = {}
+        for kind in kinds:
+            result.update(self.get_blocks_by_kind(kind))
+        return result
+
+    def snapshot(self) -> dict:
+        """Capture the current state as a plain-dict snapshot."""
+        return {
+            "ts": time.time(),
+            "project": str(self.meta.get("project", "")),
+            "blocks": dict(self.get_all()),
+        }
+
+    def rollback_to(self, snap: dict) -> int:
+        """Restore state from a snapshot dict. Returns number of blocks restored."""
+        blocks = snap.get("blocks", {})
+        for bid, content in blocks.items():
+            self.set_block(bid, content)
+        for bid in list(self._order_list()):
+            if bid not in blocks:
+                pass
+        return len(blocks)
+
+    def compact_log(self, block_id: str = "markpact:log", keep_lines: int = 200) -> int:
+        """Trim a log block to the last keep_lines lines. Returns lines removed."""
+        content = self.get_block(block_id)
+        if not content:
+            return 0
+        lines = content.splitlines()
+        if len(lines) <= keep_lines:
+            return 0
+        removed = len(lines) - keep_lines
+        self.set_block(block_id, "\n".join(lines[-keep_lines:]))
+        return removed
 
     # ── Internal ─────────────────────────────────────────────────────────
 

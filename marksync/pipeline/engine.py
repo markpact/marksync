@@ -24,6 +24,8 @@ Actor types:
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import logging
 import time
 import uuid
@@ -61,6 +63,20 @@ class TaskAction(str, Enum):
 # ── Data models ───────────────────────────────────────────────────────────
 
 @dataclass
+class RetryPolicy:
+    """Retry configuration for a pipeline step."""
+    max_attempts: int = 1       # 1 = no retry, >1 = retry on failure
+    delay_seconds: float = 2.0  # wait between retries
+    backoff: float = 2.0        # multiply delay by this factor on each retry
+
+    def wait_for(self, attempt: int) -> float:
+        """Return the wait time (seconds) before the given attempt (0-indexed)."""
+        if attempt == 0:
+            return 0.0
+        return self.delay_seconds * (self.backoff ** (attempt - 1))
+
+
+@dataclass
 class Step:
     """A single step in a pipeline."""
     name: str
@@ -68,6 +84,7 @@ class Step:
     config: dict[str, Any] = field(default_factory=dict)
     timeout: float = 0.0     # 0 = no timeout (human steps can wait forever)
     required: bool = True     # if False, failure doesn't stop pipeline
+    retry: RetryPolicy = field(default_factory=RetryPolicy)
 
     def to_dict(self) -> dict:
         return {
@@ -76,6 +93,11 @@ class Step:
             "config": self.config,
             "timeout": self.timeout,
             "required": self.required,
+            "retry": {
+                "max_attempts": self.retry.max_attempts,
+                "delay_seconds": self.retry.delay_seconds,
+                "backoff": self.retry.backoff,
+            },
         }
 
 
@@ -166,6 +188,7 @@ class PipelineRun:
     status: str = "pending"   # pending | running | blocked | completed | failed
     created_at: float = field(default_factory=time.time)
     completed_at: float = 0.0
+    idempotency_key: str = ""  # optional dedup key
 
     @property
     def current_step_name(self) -> str:
@@ -200,18 +223,25 @@ class PipelineEngine:
       - Human tasks (task_id -> HumanTask) — pending human actions
       - Script registry (name -> callable)
       - LLM handler (pluggable)
+      - CRDT document (optional, for state persistence across restarts)
     """
 
-    def __init__(self):
+    def __init__(self, crdt_doc=None):
         self.definitions: dict[str, list[Step]] = {}
         self.runs: dict[str, PipelineRun] = {}
         self.human_tasks: dict[str, HumanTask] = {}
         self._scripts: dict[str, Callable] = {}
         self._llm_handler: Callable | None = None
         self._event_handlers: dict[str, list[Callable]] = {}
+        self._crdt_doc = crdt_doc
+        self._idempotency_keys: dict[str, str] = {}  # key -> run_id
 
         # Register built-in scripts
         self._register_builtins()
+
+        # Restore persisted runs from CRDT if available
+        if crdt_doc:
+            self._restore_from_crdt()
 
     # ── Definition ────────────────────────────────────────────────────
 
@@ -275,14 +305,24 @@ class PipelineEngine:
     # ── Execution ─────────────────────────────────────────────────────
 
     async def start(self, pipeline_name: str,
-                    input_data: dict[str, Any] | None = None) -> str:
+                    input_data: dict[str, Any] | None = None,
+                    idempotency_key: str | None = None) -> str:
         """
         Start a pipeline run. Returns run_id.
         The run executes asynchronously — human steps will block.
+
+        If idempotency_key is provided and a run with that key already exists,
+        returns the existing run_id instead of starting a new run.
         """
         steps = self.definitions.get(pipeline_name)
         if not steps:
             raise ValueError(f"Pipeline not found: {pipeline_name}")
+
+        if idempotency_key:
+            existing_run_id = self._idempotency_keys.get(idempotency_key)
+            if existing_run_id and existing_run_id in self.runs:
+                log.info(f"Idempotent: reusing run {existing_run_id} for key={idempotency_key}")
+                return existing_run_id
 
         run_id = f"run-{uuid.uuid4().hex[:8]}"
         run = PipelineRun(
@@ -290,12 +330,17 @@ class PipelineEngine:
             pipeline_name=pipeline_name,
             steps=list(steps),
             input_data=input_data or {},
+            idempotency_key=idempotency_key or "",
         )
         self.runs[run_id] = run
+
+        if idempotency_key:
+            self._idempotency_keys[idempotency_key] = run_id
 
         log.info(f"Pipeline started: {pipeline_name} (run={run_id}, "
                  f"{len(steps)} steps)")
         self._emit("pipeline.started", run.to_dict())
+        self._persist_run(run)
 
         # Execute in background
         asyncio.create_task(self._execute_run(run))
@@ -324,16 +369,7 @@ class PipelineEngine:
             })
 
             try:
-                if step.actor == ActorType.LLM:
-                    output = await self._execute_llm(step, current_data)
-                elif step.actor == ActorType.SCRIPT:
-                    output = await self._execute_script(step, current_data)
-                elif step.actor == ActorType.HUMAN:
-                    run.status = "blocked"
-                    output = await self._execute_human(step, current_data, run.id)
-                    run.status = "running"
-                else:
-                    raise ValueError(f"Unknown actor type: {step.actor}")
+                output = await self._execute_with_retry(step, current_data, run.id)
 
                 result.output_data = output
                 result.status = StepStatus.COMPLETED
@@ -381,6 +417,53 @@ class PipelineEngine:
         log.info(f"[{run.id}] Pipeline completed in "
                  f"{(run.completed_at - run.created_at)*1000:.0f}ms")
         self._emit("pipeline.completed", run.to_dict())
+        self._persist_run(run)
+
+    # ── Retry executor ────────────────────────────────────────────────────────
+
+    async def _execute_with_retry(
+        self, step: Step, data: dict[str, Any], run_id: str
+    ) -> dict[str, Any]:
+        """Execute a step with retry/timeout logic from step.retry."""
+        policy = step.retry
+        last_exc: Exception | None = None
+
+        for attempt in range(policy.max_attempts):
+            if attempt > 0:
+                wait = policy.wait_for(attempt)
+                log.info(f"[{run_id}] Retry {attempt}/{policy.max_attempts - 1} "
+                         f"for step {step.name}, waiting {wait:.1f}s")
+                await asyncio.sleep(wait)
+
+            try:
+                if step.actor == ActorType.LLM:
+                    coro = self._execute_llm(step, data)
+                elif step.actor == ActorType.SCRIPT:
+                    coro = self._execute_script(step, data)
+                elif step.actor == ActorType.HUMAN:
+                    coro = self._execute_human(step, data, run_id)
+                else:
+                    raise ValueError(f"Unknown actor type: {step.actor}")
+
+                if step.timeout > 0:
+                    return await asyncio.wait_for(coro, timeout=step.timeout)
+                return await coro
+
+            except asyncio.TimeoutError:
+                last_exc = asyncio.TimeoutError(f"Timeout after {step.timeout}s")
+                log.warning(f"[{run_id}] Step {step.name} timed out (attempt {attempt + 1})")
+                if attempt + 1 < policy.max_attempts:
+                    continue
+                raise last_exc
+
+            except Exception as e:
+                last_exc = e
+                log.warning(f"[{run_id}] Step {step.name} failed (attempt {attempt + 1}): {e}")
+                if attempt + 1 < policy.max_attempts:
+                    continue
+                raise last_exc
+
+        raise last_exc or RuntimeError("No attempts made")
 
     # ── Actor executors ───────────────────────────────────────────────
 
@@ -540,10 +623,83 @@ class PipelineEngine:
                 "deploy_note": "Simulated deploy triggered",
             }
 
+        def diagnose(step: Step, data: dict) -> dict:
+            health = data.get("health_status", {})
+            h = health.get("health", "unknown")
+            return {
+                "script": "diagnose",
+                "script_status": "pass",
+                "health": h,
+                "degraded": h != "ok",
+                "diagnose_note": f"Service health: {h}",
+            }
+
+        def pactown_restart(step: Step, data: dict) -> dict:
+            import subprocess as _sp
+            config_path = data.get("config_path", "")
+            if not config_path:
+                return {
+                    "script": "pactown_restart",
+                    "script_status": "fail",
+                    "error": "no config_path in pipeline input",
+                }
+            try:
+                proc = _sp.run(
+                    ["pactown", "restart", config_path],
+                    capture_output=True, text=True, timeout=60,
+                )
+                return {
+                    "script": "pactown_restart",
+                    "script_status": "pass" if proc.returncode == 0 else "fail",
+                    "output": proc.stdout[:200],
+                    "returncode": proc.returncode,
+                }
+            except FileNotFoundError:
+                return {
+                    "script": "pactown_restart",
+                    "script_status": "skipped",
+                    "note": "pactown CLI not found — install pactown",
+                }
+            except _sp.TimeoutExpired:
+                return {
+                    "script": "pactown_restart",
+                    "script_status": "fail",
+                    "error": "pactown restart timed out (60s)",
+                }
+
         self._scripts["lint"] = lint
         self._scripts["format"] = format_code
         self._scripts["validate"] = validate_block
         self._scripts["deploy"] = deploy
+        self._scripts["diagnose"] = diagnose
+        self._scripts["pactown_restart"] = pactown_restart
+
+    # ── Auto-fix ──────────────────────────────────────────────────────
+
+    def register_autofix_pipeline(self, restart_fn: Callable | None = None) -> None:
+        """
+        Register the built-in 'pactown-autofix' pipeline.
+
+        Steps:
+            1. diagnose      — inspect health_status from pipeline input
+            2. pactown_restart — attempt ``pactown restart <config>`` (not required)
+            3. diagnose      — verify health after restart attempt
+
+        Args:
+            restart_fn: Optional custom callable(step, data) -> dict to replace
+                        the built-in pactown_restart script.
+        """
+        if restart_fn is not None:
+            self._scripts["pactown_restart"] = restart_fn
+
+        self.define("pactown-autofix", [
+            Step(name="diagnose",        actor=ActorType.SCRIPT,
+                 config={"script": "diagnose"}),
+            Step(name="pactown-restart", actor=ActorType.SCRIPT,
+                 config={"script": "pactown_restart"}, required=False),
+            Step(name="verify",          actor=ActorType.SCRIPT,
+                 config={"script": "diagnose"}),
+        ])
 
     # ── Query ─────────────────────────────────────────────────────────
 
@@ -560,12 +716,57 @@ class PipelineEngine:
     def list_runs(self) -> list[dict]:
         return [r.to_dict() for r in self.runs.values()]
 
+    def get_task(self, task_id: str) -> HumanTask | None:
+        return self.human_tasks.get(task_id)
+
     def snapshot(self) -> dict:
         return {
             "definitions": self.list_definitions(),
             "runs": self.list_runs(),
             "pending_tasks": [t.to_dict() for t in self.get_pending_tasks()],
         }
+
+    # ── CRDT persistence ───────────────────────────────────────────────
+
+    def _persist_run(self, run: PipelineRun):
+        """Write the run state to markpact:pipeline-runs in the CRDT document."""
+        if not self._crdt_doc:
+            return
+        try:
+            raw = self._crdt_doc.get_block("markpact:pipeline-runs") or "{}"
+            runs_data: dict = json.loads(raw)
+            runs_data[run.id] = run.to_dict()
+            self._crdt_doc.set_block(
+                "markpact:pipeline-runs",
+                json.dumps(runs_data, indent=2, ensure_ascii=False),
+            )
+        except Exception as e:
+            log.warning(f"CRDT persist error: {e}")
+
+    def _restore_from_crdt(self):
+        """Restore completed/failed run history from CRDT on startup."""
+        if not self._crdt_doc:
+            return
+        try:
+            raw = self._crdt_doc.get_block("markpact:pipeline-runs")
+            if not raw:
+                return
+            runs_data: dict = json.loads(raw)
+            for run_id, run_dict in runs_data.items():
+                if run_dict.get("status") in ("completed", "failed"):
+                    self.runs[run_id] = PipelineRun(
+                        id=run_id,
+                        pipeline_name=run_dict.get("pipeline_name", ""),
+                        steps=[],
+                        input_data=run_dict.get("input_data", {}),
+                        status=run_dict.get("status", "unknown"),
+                        created_at=run_dict.get("created_at", 0.0),
+                        completed_at=run_dict.get("completed_at", 0.0),
+                        idempotency_key=run_dict.get("idempotency_key", ""),
+                    )
+            log.info(f"Restored {len(runs_data)} pipeline runs from CRDT")
+        except Exception as e:
+            log.warning(f"CRDT restore error: {e}")
 
     # ── Events ────────────────────────────────────────────────────────
 
