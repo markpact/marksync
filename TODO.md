@@ -2,7 +2,7 @@
 
 ## High Priority
 
-- [ ] **Pipeline execution engine** — actually route block updates through pipeline stages (currently defined but not executed)
+- [x] **Pipeline execution engine** — `PipelineEngine.attach_to_sync_server()` + `add_block_route(pattern, pipeline)` routes block changes to pipelines
 - [x] **Authentication** — token-based auth for REST/WS API and sync server (`marksync/auth/`)
 - [x] **TLS/WSS support** — `SyncServer(ssl_certfile, ssl_keyfile)`, `SyncClient(ssl_verify, ssl_ca_cert)`, `marksync server --ssl-cert --ssl-key`
 - [ ] **MQTT transport** — implement `marksync.transport.mqtt` for IoT/edge agent communication
@@ -21,7 +21,7 @@
 
 ## Low Priority
 
-- [ ] **Plugin system** — loadable agent roles from external packages
+- [x] **Plugin system** — `PluginRegistry._discover_entry_points()` loads external plugins via `marksync.plugins` entry_points group
 - [x] **Multi-project support** — `MultiProjectServer` routes by `?project=<name>` query param
 - [x] **Git integration** — `SyncServer(git_auto_commit=True)` auto-commits on save
 - [x] **Ollama model auto-pull** — `OllamaClient._ensure_model()` pulls missing models automatically

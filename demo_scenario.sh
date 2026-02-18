@@ -445,6 +445,199 @@ echo -e "  ${CYAN}marksync generate --prompt examples/pipeline_human_approval.ya
 sleep 1
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# FASE 5c: EWOLUCJA NA BAZIE METRYK — Optymalizacja przez Dane
+# ═══════════════════════════════════════════════════════════════════════════════
+
+echo -e "\n${BOLD}${CYAN}═══════════════════════════════════════════════════════════════════════════════${NC}"
+echo -e "${BOLD}[FASE 5c] EWOLUCJA NA BAZIE METRYK — Optymalizacja Parametrów${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════════════════════════${NC}\n"
+
+echo -e "${YELLOW}System zbiera metryki i automatycznie optymalizuje parametry:${NC}"
+echo ""
+
+cat << 'METRICS_TABLE'
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║  METRYKA              │ PRÓG      │ AKCJA PRZY PRZEKROCZENIU                  ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║  error_rate > 5%      │ CRITICAL  │ Rollback + zwiększ retry_count            ║
+║  latency_p95 > 500ms  │ WARNING   │ Dodaj cache layer                         ║
+║  memory > 80%         │ WARNING   │ Zwiększ workers, zmniejsz batch_size      ║
+║  timeout_rate > 2%    │ WARNING   │ Zwiększ timeout z 30s → 60s               ║
+║  success_rate < 95%   │ CRITICAL  │ Archiwizuj pattern, użyj backup           ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+METRICS_TABLE
+
+echo ""
+echo -e "${BOLD}Przykład ewolucji na bazie błędów:${NC}"
+echo ""
+echo -e "${CYAN}──────────────────────────────────────────────────────────────────────────────${NC}"
+cat << 'EVOLUTION_EXAMPLE'
+ITERACJA 1: REST API v1.0
+  ├─ Deploy: ✓ OK
+  ├─ Metryki po 1h:
+  │  ├─ error_rate: 8.2% (❌ > 5%)
+  │  ├─ latency_p95: 650ms (❌ > 500ms)
+  │  └─ timeout_rate: 3.5% (❌ > 2%)
+  └─ AKCJA: System generuje patch
+
+ITERACJA 2: REST API v1.1 (auto-patch)
+  ├─ Zmiany:
+  │  ├─ retry_count: 3 → 5
+  │  ├─ timeout: 30s → 60s
+  │  ├─ cache: None → Redis (TTL=300s)
+  │  └─ workers: 4 → 8
+  ├─ Deploy: ✓ OK
+  ├─ Metryki po 1h:
+  │  ├─ error_rate: 2.1% (✓ < 5%)
+  │  ├─ latency_p95: 180ms (✓ < 500ms)
+  │  └─ timeout_rate: 0.3% (✓ < 2%)
+  └─ AKCJA: Pattern zapisany jako "api-rest-optimized"
+
+ITERACJA 3: REST API v1.2 (fine-tuning)
+  ├─ Zmiany:
+  │  ├─ cache TTL: 300s → 600s (więcej cache hits)
+  │  └─ batch_size: 100 → 50 (mniejsze memory)
+  ├─ Deploy: ✓ OK
+  ├─ Metryki po 1h:
+  │  ├─ error_rate: 0.8% (✓✓ excellent)
+  │  ├─ latency_p95: 95ms (✓✓ excellent)
+  │  └─ success_rate: 99.2%
+  └─ AKCJA: Pattern promowany do "best-practice"
+EVOLUTION_EXAMPLE
+echo -e "${CYAN}──────────────────────────────────────────────────────────────────────────────${NC}"
+
+echo ""
+echo -e "${BOLD}Jak to działa w kodzie:${NC}"
+echo ""
+echo -e "${CYAN}──────────────────────────────────────────────────────────────────────────────${NC}"
+cat << 'CODE_EXAMPLE'
+# marksync/learning/optimizer.py
+
+class MetricsOptimizer:
+    def analyze_and_patch(self, contract_path: str, metrics: dict):
+        """Analizuje metryki i generuje patch do parametrów."""
+        
+        # Zbierz metryki z Prometheus/dashboard
+        error_rate = metrics.get("error_rate", 0)
+        latency_p95 = metrics.get("latency_p95", 0)
+        timeout_rate = metrics.get("timeout_rate", 0)
+        
+        patches = []
+        
+        # Reguła 1: Wysokie błędy → zwiększ retry
+        if error_rate > 0.05:  # > 5%
+            patches.append({
+                "path": "pipeline.retry_policy.max_attempts",
+                "old": 3,
+                "new": 5,
+                "reason": f"error_rate={error_rate:.1%} > 5%"
+            })
+        
+        # Reguła 2: Wolne requesty → dodaj cache
+        if latency_p95 > 500:  # > 500ms
+            patches.append({
+                "path": "services.api.cache",
+                "old": None,
+                "new": {"type": "redis", "ttl": 300},
+                "reason": f"latency_p95={latency_p95}ms > 500ms"
+            })
+        
+        # Reguła 3: Timeouty → zwiększ timeout
+        if timeout_rate > 0.02:  # > 2%
+            patches.append({
+                "path": "services.api.timeout",
+                "old": 30,
+                "new": 60,
+                "reason": f"timeout_rate={timeout_rate:.1%} > 2%"
+            })
+        
+        # Zastosuj patches do README.md
+        if patches:
+            self.apply_patches(contract_path, patches)
+            return True
+        return False
+CODE_EXAMPLE
+echo -e "${CYAN}──────────────────────────────────────────────────────────────────────────────${NC}"
+
+echo ""
+echo -e "${BOLD}DSL Commands dla optymalizacji:${NC}"
+echo ""
+echo -e "${CYAN}──────────────────────────────────────────────────────────────────────────────${NC}"
+cat << 'DSL_OPTIMIZE'
+# Zbierz metryki z ostatniej godziny
+marksync> METRICS ./generated/my-api/README.md --last 1h
+
+# Wynik:
+# {
+#   "error_rate": 0.082,
+#   "latency_p95": 650,
+#   "timeout_rate": 0.035,
+#   "success_rate": 0.918
+# }
+
+# Automatyczna optymalizacja
+marksync> OPTIMIZE ./generated/my-api/README.md --auto
+
+# System:
+# ✓ Patch 1: retry_count 3 → 5 (error_rate=8.2% > 5%)
+# ✓ Patch 2: timeout 30s → 60s (timeout_rate=3.5% > 2%)
+# ✓ Patch 3: cache added (latency_p95=650ms > 500ms)
+# ✓ Redeploy triggered
+# ⏳ Waiting for new metrics...
+
+# Po 1h sprawdź ponownie
+marksync> METRICS ./generated/my-api/README.md --last 1h
+
+# Wynik po optymalizacji:
+# {
+#   "error_rate": 0.021,      # ✓ 8.2% → 2.1%
+#   "latency_p95": 180,       # ✓ 650ms → 180ms
+#   "timeout_rate": 0.003,    # ✓ 3.5% → 0.3%
+#   "success_rate": 0.979     # ✓ 91.8% → 97.9%
+# }
+
+# Zapisz jako best-practice pattern
+marksync> LEARN ./generated/my-api/README.md --success true --tag optimized
+DSL_OPTIMIZE
+echo -e "${CYAN}──────────────────────────────────────────────────────────────────────────────${NC}"
+
+echo ""
+echo -e "${YELLOW}Feedback loop w praktyce:${NC}"
+echo ""
+cat << 'FEEDBACK_LOOP'
+  ┌──────────────────────────────────────────────────────────────┐
+  │                    CONTINUOUS EVOLUTION                       │
+  └──────────────────────────────────────────────────────────────┘
+  
+  1. DEPLOY → Production
+     │
+  2. MONITOR → Zbierz metryki (error_rate, latency, timeouts)
+     │
+  3. ANALYZE → Porównaj z progami (5%, 500ms, 2%)
+     │
+  4. DECIDE → Jeśli przekroczone:
+     │         ├─ Generuj patches (retry, timeout, cache)
+     │         └─ Trigger redeploy
+     │
+  5. VERIFY → Sprawdź nowe metryki po 1h
+     │
+  6. LEARN → Jeśli lepsze:
+     │        ├─ Zapisz pattern z wyższym success_rate
+     │        └─ Użyj w kolejnych projektach
+     │
+  └─→ REPEAT (ciągła optymalizacja)
+FEEDBACK_LOOP
+
+echo ""
+echo -e "${YELLOW}Przykłady automatycznych optymalizacji:${NC}"
+echo "  • Błędy 8% → 2%: retry_count 3→5, circuit_breaker dodany"
+echo "  • Latencja 650ms → 180ms: Redis cache, connection pooling"
+echo "  • Timeouty 3.5% → 0.3%: timeout 30s→60s, async workers"
+echo "  • Memory 85% → 45%: batch_size 100→50, garbage collection"
+echo ""
+sleep 1
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # FASE 6: PEŁNY WORKFLOW — Od Promptu do Deploymentu
 # ═══════════════════════════════════════════════════════════════════════════════
 

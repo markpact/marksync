@@ -68,9 +68,10 @@ async def resolve_run_fully_async(engine: PipelineEngine, run_id: str,
 
 
 class TestCodeReviewScenario:
-    def test_starts_successfully(self):
+    @pytest.mark.anyio
+    async def test_starts_successfully(self):
         engine = PipelineEngine()
-        result = run(_demo_code_review(engine))
+        result = await _demo_code_review(engine)
         assert "run_id" in result
         assert result["scenario"] == "code-review"
 
@@ -120,7 +121,7 @@ class TestCodeReviewScenario:
     @pytest.mark.anyio
     async def test_actor_types_in_results(self):
         engine = PipelineEngine()
-        result = run(_demo_code_review(engine))
+        result = await _demo_code_review(engine)
         run_id = result["run_id"]
         await resolve_run_fully_async(engine, run_id)
         r = engine.get_run(run_id)
@@ -134,9 +135,10 @@ class TestCodeReviewScenario:
 
 
 class TestAccountCreationScenario:
-    def test_starts_successfully(self):
+    @pytest.mark.anyio
+    async def test_starts_successfully(self):
         engine = PipelineEngine()
-        result = run(_demo_account_creation(engine))
+        result = await _demo_account_creation(engine)
         assert "run_id" in result
         assert result["scenario"] == "account-creation"
 
@@ -186,9 +188,10 @@ class TestAccountCreationScenario:
 
 
 class TestPaymentScenario:
-    def test_starts_successfully(self):
+    @pytest.mark.anyio
+    async def test_starts_successfully(self):
         engine = PipelineEngine()
-        result = run(_demo_payment(engine))
+        result = await _demo_payment(engine)
         assert "run_id" in result
         assert result["scenario"] == "payment"
 
@@ -214,7 +217,7 @@ class TestPaymentScenario:
     @pytest.mark.anyio
     async def test_payment_blocked_on_authorization(self):
         engine = PipelineEngine()
-        result = run(_demo_payment(engine))
+        result = await _demo_payment(engine)
         run_id = result["run_id"]
         await asyncio.sleep(0.15)
         r = engine.get_run(run_id)
@@ -227,9 +230,10 @@ class TestPaymentScenario:
 
 
 class TestDocGenerationScenario:
-    def test_starts_successfully(self):
+    @pytest.mark.anyio
+    async def test_starts_successfully(self):
         engine = PipelineEngine()
-        result = run(_demo_doc_generation(engine))
+        result = await _demo_doc_generation(engine)
         assert "run_id" in result
         assert result["scenario"] == "doc-generation"
 
@@ -298,9 +302,10 @@ class TestDocGenerationScenario:
 
 
 class TestIncidentResponseScenario:
-    def test_starts_successfully(self):
+    @pytest.mark.anyio
+    async def test_starts_successfully(self):
         engine = PipelineEngine()
-        result = run(_demo_incident_response(engine))
+        result = await _demo_incident_response(engine)
         assert "run_id" in result
         assert result["scenario"] == "incident-response"
 
@@ -351,9 +356,10 @@ class TestIncidentResponseScenario:
 
 
 class TestContentModerationScenario:
-    def test_starts_successfully(self):
+    @pytest.mark.anyio
+    async def test_starts_successfully(self):
         engine = PipelineEngine()
-        result = run(_demo_content_moderation(engine))
+        result = await _demo_content_moderation(engine)
         assert "run_id" in result
         assert result["scenario"] == "content-moderation"
 
@@ -423,9 +429,10 @@ class TestContentModerationScenario:
 
 
 class TestDataMigrationScenario:
-    def test_starts_successfully(self):
+    @pytest.mark.anyio
+    async def test_starts_successfully(self):
         engine = PipelineEngine()
-        result = run(_demo_data_migration(engine))
+        result = await _demo_data_migration(engine)
         assert "run_id" in result
         assert result["scenario"] == "data-migration"
 
@@ -460,7 +467,7 @@ class TestDataMigrationScenario:
     @pytest.mark.anyio
     async def test_migration_blocked_at_spot_check(self):
         engine = PipelineEngine()
-        result = run(_demo_data_migration(engine))
+        result = await _demo_data_migration(engine)
         run_id = result["run_id"]
         await asyncio.sleep(0.2)
         r = engine.get_run(run_id)
@@ -487,7 +494,8 @@ class TestDataMigrationScenario:
 
 
 class TestAllScenariosIntegration:
-    def test_all_seven_scenarios_start(self):
+    @pytest.mark.anyio
+    async def test_all_seven_scenarios_start(self):
         """Smoke test: every scenario starts without raising."""
         engine = PipelineEngine()
         scenarios = [
@@ -501,7 +509,7 @@ class TestAllScenariosIntegration:
         ]
         run_ids = []
         for fn in scenarios:
-            result = run(fn(engine))
+            result = await fn(engine)
             assert "run_id" in result, f"{fn.__name__} missing run_id"
             run_ids.append(result["run_id"])
         assert len(set(run_ids)) == 7, "All run_ids must be unique"
@@ -521,7 +529,7 @@ class TestAllScenariosIntegration:
         ]
         run_ids = {}
         for fn, name in scenarios:
-            result = run(fn(engine))
+            result = await fn(engine)
             run_ids[name] = result["run_id"]
 
         # Approve all tasks in rounds until nothing is left blocked
@@ -557,7 +565,7 @@ class TestAllScenariosIntegration:
         """doc-generation, incident-response, data-migration all use LLM+SCRIPT+HUMAN."""
         engine = PipelineEngine()
         for fn in [_demo_doc_generation, _demo_incident_response, _demo_data_migration]:
-            result = run(fn(engine))
+            result = await fn(engine)
             run_id = result["run_id"]
             await resolve_run_fully_async(engine, run_id)
             r = engine.get_run(run_id)

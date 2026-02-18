@@ -271,7 +271,8 @@ class TestHumanInTheLoop:
 # ── Mixed pipeline ────────────────────────────────────────────────────────
 
 class TestMixedPipeline:
-    def test_llm_human_script_flow(self):
+    @pytest.mark.anyio
+    async def test_llm_human_script_flow(self):
         """Full flow: LLM → Human → Script."""
         engine = PipelineEngine()
         engine.define("full", [
@@ -279,8 +280,8 @@ class TestMixedPipeline:
             Step("review", ActorType.HUMAN, config={"prompt": "Review?"}),
             Step("lint", ActorType.SCRIPT, config={"script": "lint"}),
         ])
-        run_id = run(engine.start("full", {"content": "x = 1", "block_id": "b1"}))
-        run(asyncio.sleep(0.1))
+        run_id = await engine.start("full", {"content": "x = 1", "block_id": "b1"})
+        await asyncio.sleep(0.1)
 
         # LLM completed, human blocked
         r = engine.get_run(run_id)
@@ -291,7 +292,7 @@ class TestMixedPipeline:
         # Approve
         task_id = engine.get_pending_tasks()[0].id
         engine.resolve_task(task_id, "approve")
-        run(asyncio.sleep(0.1))
+        await asyncio.sleep(0.1)
 
         # All completed
         r = engine.get_run(run_id)
@@ -300,7 +301,8 @@ class TestMixedPipeline:
         assert r.results[1].actor == ActorType.HUMAN
         assert r.results[2].actor == ActorType.SCRIPT
 
-    def test_multiple_human_steps(self):
+    @pytest.mark.anyio
+    async def test_multiple_human_steps(self):
         """Pipeline with 2 human checkpoints."""
         engine = PipelineEngine()
         engine.define("double-check", [
@@ -308,13 +310,13 @@ class TestMixedPipeline:
             Step("process", ActorType.SCRIPT, config={"script": "validate"}),
             Step("h2", ActorType.HUMAN, config={"prompt": "Step 2?"}),
         ])
-        run_id = run(engine.start("double-check", {"block_id": "x", "content": "y"}))
-        run(asyncio.sleep(0.1))
+        run_id = await engine.start("double-check", {"block_id": "x", "content": "y"})
+        await asyncio.sleep(0.1)
 
         # First human
         t1 = engine.get_pending_tasks()[0].id
         engine.resolve_task(t1, "approve")
-        run(asyncio.sleep(0.1))
+        await asyncio.sleep(0.1)
 
         # Should be blocked at second human
         r = engine.get_run(run_id)
@@ -323,7 +325,7 @@ class TestMixedPipeline:
         # Second human
         t2 = engine.get_pending_tasks()[0].id
         engine.resolve_task(t2, "approve")
-        run(asyncio.sleep(0.1))
+        await asyncio.sleep(0.1)
 
         r = engine.get_run(run_id)
         assert r.status == "completed"

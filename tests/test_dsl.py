@@ -138,104 +138,95 @@ class TestDSLExecutor:
     def setup_method(self):
         self.executor = DSLExecutor()
 
-    def test_agent_create(self):
-        result = asyncio.get_event_loop().run_until_complete(
-            self.executor.execute("AGENT coder editor")
-        )
+    @pytest.mark.anyio
+    async def test_agent_create(self):
+        result = await self.executor.execute("AGENT coder editor")
         assert result["ok"] is True
         assert result["agent"]["name"] == "coder"
         assert result["agent"]["role"] == "editor"
         assert "coder" in self.executor.agents
 
-    def test_agent_duplicate(self):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.executor.execute("AGENT coder editor"))
-        result = loop.run_until_complete(self.executor.execute("AGENT coder editor"))
+    @pytest.mark.anyio
+    async def test_agent_duplicate(self):
+        await self.executor.execute("AGENT coder editor")
+        result = await self.executor.execute("AGENT coder editor")
         assert result["ok"] is False
         assert "already exists" in result["error"]
 
-    def test_kill_agent(self):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.executor.execute("AGENT coder editor"))
-        result = loop.run_until_complete(self.executor.execute("KILL coder"))
+    @pytest.mark.anyio
+    async def test_kill_agent(self):
+        await self.executor.execute("AGENT coder editor")
+        result = await self.executor.execute("KILL coder")
         assert result["ok"] is True
         assert "coder" not in self.executor.agents
 
-    def test_kill_nonexistent(self):
-        result = asyncio.get_event_loop().run_until_complete(
-            self.executor.execute("KILL nonexistent")
-        )
+    @pytest.mark.anyio
+    async def test_kill_nonexistent(self):
+        result = await self.executor.execute("KILL nonexistent")
         assert result["ok"] is False
 
-    def test_list_agents(self):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.executor.execute("AGENT a1 editor"))
-        loop.run_until_complete(self.executor.execute("AGENT a2 monitor"))
-        result = loop.run_until_complete(self.executor.execute("LIST agents"))
+    @pytest.mark.anyio
+    async def test_list_agents(self):
+        await self.executor.execute("AGENT a1 editor")
+        await self.executor.execute("AGENT a2 monitor")
+        result = await self.executor.execute("LIST agents")
         assert result["ok"] is True
         assert len(result["agents"]) == 2
 
-    def test_set_config(self):
-        result = asyncio.get_event_loop().run_until_complete(
-            self.executor.execute("SET ollama_model llama3:8b")
-        )
+    @pytest.mark.anyio
+    async def test_set_config(self):
+        result = await self.executor.execute("SET ollama_model llama3:8b")
         assert result["ok"] is True
         assert self.executor.config["ollama_model"] == "llama3:8b"
 
-    def test_status(self):
-        result = asyncio.get_event_loop().run_until_complete(
-            self.executor.execute("STATUS")
-        )
+    @pytest.mark.anyio
+    async def test_status(self):
+        result = await self.executor.execute("STATUS")
         assert result["ok"] is True
         assert "agents" in result
 
-    def test_pipe_create(self):
-        result = asyncio.get_event_loop().run_until_complete(
-            self.executor.execute("PIPE review coder -> reviewer -> deployer")
-        )
+    @pytest.mark.anyio
+    async def test_pipe_create(self):
+        result = await self.executor.execute("PIPE review coder -> reviewer -> deployer")
         assert result["ok"] is True
         assert "review" in self.executor.pipelines
         assert self.executor.pipelines["review"].stages == ["coder", "reviewer", "deployer"]
 
-    def test_route_create(self):
-        result = asyncio.get_event_loop().run_until_complete(
-            self.executor.execute("ROUTE markpact:run -> deployer")
-        )
+    @pytest.mark.anyio
+    async def test_route_create(self):
+        result = await self.executor.execute("ROUTE markpact:run -> deployer")
         assert result["ok"] is True
         assert len(self.executor.routes) == 1
         assert self.executor.routes[0].pattern == "markpact:run"
 
-    def test_help(self):
-        result = asyncio.get_event_loop().run_until_complete(
-            self.executor.execute("HELP")
-        )
+    @pytest.mark.anyio
+    async def test_help(self):
+        result = await self.executor.execute("HELP")
         assert result["ok"] is True
         assert "help" in result
 
-    def test_execute_script(self):
+    @pytest.mark.anyio
+    async def test_execute_script(self):
         script = "SET server_uri ws://test:1234\nAGENT a1 editor\nAGENT a2 monitor"
-        results = asyncio.get_event_loop().run_until_complete(
-            self.executor.execute_script(script)
-        )
+        results = await self.executor.execute_script(script)
         assert len(results) == 3
         assert all(r["ok"] for r in results)
 
-    def test_snapshot(self):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.executor.execute("AGENT coder editor"))
+    @pytest.mark.anyio
+    async def test_snapshot(self):
+        await self.executor.execute("AGENT coder editor")
         snap = self.executor.snapshot()
         assert "agents" in snap
         assert "coder" in snap["agents"]
         assert "config" in snap
 
-    def test_history_tracking(self):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.executor.execute("STATUS"))
-        loop.run_until_complete(self.executor.execute("HELP"))
+    @pytest.mark.anyio
+    async def test_history_tracking(self):
+        await self.executor.execute("STATUS")
+        await self.executor.execute("HELP")
         assert len(self.executor.history) == 2
 
-    def test_unknown_command(self):
-        result = asyncio.get_event_loop().run_until_complete(
-            self.executor.execute("FOOBAR xyz")
-        )
+    @pytest.mark.anyio
+    async def test_unknown_command(self):
+        result = await self.executor.execute("FOOBAR xyz")
         assert result["ok"] is False

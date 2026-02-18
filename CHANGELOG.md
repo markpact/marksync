@@ -1,3 +1,24 @@
+## [0.2.22] - 2026-02-18
+
+### Summary
+
+feat(tests): configuration management system
+
+### Docs
+
+- docs: update TODO.md
+
+### Test
+
+- update tests/test_dsl.py
+- update tests/test_pipeline.py
+- update tests/test_pipeline_scenarios.py
+
+### Other
+
+- scripts: update demo_scenario.sh
+
+
 ## [0.2.21] - 2026-02-18
 
 ### Summary
