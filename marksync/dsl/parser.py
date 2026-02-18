@@ -94,6 +94,7 @@ class CommandType(str, Enum):
     DASHBOARD = "dashboard"
     LEARN = "learn"
     PATTERNS = "patterns"
+    MACRO = "macro"       # MACRO <name> = <command template>
     UNKNOWN = "unknown"
 
 

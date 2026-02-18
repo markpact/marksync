@@ -96,13 +96,46 @@ class DSLExecutor:
         self.history: list[dict] = []
         self._agent_factory = agent_factory
         self._event_handlers: dict[str, list[Callable]] = {}
+        self.macros: dict[str, str] = {}  # name -> command template
 
     # ── Public API ─────────────────────────────────────────────────────────
 
     async def execute(self, line: str) -> dict[str, Any]:
-        """Parse and execute a DSL command. Returns result dict."""
-        cmd = self.parser.parse(line)
-        return await self.execute_command(cmd)
+        """
+        Parse and execute a DSL command with brace expansion.
+        If the line contains brace expressions (e.g. coder-{1..5}) the command
+        is expanded and all variants are executed; last result is returned.
+        """
+        from marksync.dsl.parser import expand_command_line
+        # Expand macros first
+        stripped = line.strip()
+        stripped = self._expand_macros(stripped)
+        lines = expand_command_line(stripped)
+        if len(lines) == 1:
+            cmd = self.parser.parse(lines[0])
+            return await self.execute_command(cmd)
+        results = []
+        for expanded in lines:
+            cmd = self.parser.parse(expanded)
+            results.append(await self.execute_command(cmd))
+        ok = all(r.get("ok") for r in results)
+        return {"ok": ok, "expanded": len(results), "results": results}
+
+    def _expand_macros(self, line: str) -> str:
+        """Replace macro calls with their template, substituting $1/$2/... args."""
+        tokens = line.split(None, 1)
+        if not tokens:
+            return line
+        name = tokens[0].upper()
+        if name in self.macros:
+            template = self.macros[name]
+            rest = tokens[1] if len(tokens) > 1 else ""
+            args = rest.split() if rest else []
+            result = template
+            for i, arg in enumerate(args, 1):
+                result = result.replace(f"${i}", arg)
+            return result
+        return line
 
     async def execute_command(self, cmd: DSLCommand) -> dict[str, Any]:
         """Execute a parsed DSLCommand."""
@@ -133,6 +166,7 @@ class DSLExecutor:
             CommandType.DASHBOARD: self._cmd_dashboard,
             CommandType.LEARN: self._cmd_learn,
             CommandType.PATTERNS: self._cmd_patterns,
+            CommandType.MACRO: self._cmd_macro,
         }
 
         handler = handlers.get(cmd.type)
@@ -391,10 +425,15 @@ class DSLExecutor:
         return {"ok": True, "action": "disconnect"}
 
     async def _cmd_load(self, cmd: DSLCommand) -> dict:
-        """LOAD <file.msdsl> — load and execute script."""
+        """LOAD <file.msdsl|file.json> [--state] — load script or restore persisted state."""
         path = cmd.target
         if not path:
-            return {"ok": False, "error": "Usage: LOAD <file.msdsl>"}
+            return {"ok": False, "error": "Usage: LOAD <file.msdsl> or LOAD --state [file.json]"}
+
+        if cmd.options.get("state") or path.endswith(".json"):
+            from pathlib import Path as _P
+            n = self.restore_state(_P(path) if path != "--state" else None)
+            return {"ok": True, "restored": n, "source": path}
 
         from pathlib import Path
         p = Path(path)
@@ -506,6 +545,49 @@ class DSLExecutor:
         library = PatternLibrary()
         pattern = library.save_from_contract(p, _FakeIntent(), success=bool(success))
         return {"ok": True, "pattern_id": pattern.id, "success_rate": pattern.success_rate}
+
+    async def _cmd_macro(self, cmd: DSLCommand) -> dict:
+        """
+        MACRO <name> = <command template>  — define a reusable command alias.
+        MACRO <name>                       — show definition.
+        MACRO                              — list all macros.
+
+        Template supports $1, $2, ... placeholders.
+
+        Examples::
+
+            MACRO SPAWN = AGENT $1 editor --model qwen2.5-coder:7b
+            SPAWN alice
+            # → expands to: AGENT alice editor --model qwen2.5-coder:7b
+        """
+        args = cmd.args
+        raw = cmd.raw.strip()
+
+        # List all macros
+        if not args:
+            return {"ok": True, "macros": dict(self.macros)}
+
+        # Show single macro definition
+        if len(args) == 1 and "=" not in raw:
+            name = args[0].upper()
+            template = self.macros.get(name)
+            if template is None:
+                return {"ok": False, "error": f"Macro not defined: {name}"}
+            return {"ok": True, "name": name, "template": template}
+
+        # Define: MACRO NAME = template ...
+        # raw = "MACRO NAME = rest..."
+        after_macro = raw[len("MACRO"):].strip()
+        if "=" in after_macro:
+            name_part, _, template = after_macro.partition("=")
+            name = name_part.strip().upper()
+            template = template.strip()
+            if not name or not template:
+                return {"ok": False, "error": "Usage: MACRO <name> = <template>"}
+            self.macros[name] = template
+            return {"ok": True, "defined": name, "template": template}
+
+        return {"ok": False, "error": "Usage: MACRO <name> = <template>"}
 
     async def _cmd_patterns(self, cmd: DSLCommand) -> dict:
         """PATTERNS — list all saved patterns."""

@@ -1,3 +1,23 @@
+## [0.2.19] - 2026-02-18
+
+### Summary
+
+refactor(docs): configuration management system
+
+### Docs
+
+- docs: update TODO.md
+
+### Other
+
+- update marksync/agents/__init__.py
+- update marksync/dashboard/app.py
+- update marksync/dsl/executor.py
+- update marksync/dsl/parser.py
+- update marksync/sync/crdt.py
+- update marksync/sync/engine.py
+
+
 ## [0.2.18] - 2026-02-18
 
 ### Summary

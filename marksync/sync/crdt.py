@@ -137,6 +137,49 @@ class CRDTDocument:
         self.set_block(block_id, "\n".join(lines[-keep_lines:]))
         return removed
 
+    def garbage_collect(
+        self,
+        remove_empty: bool = True,
+        compact_log_blocks: bool = True,
+        keep_log_lines: int = 200,
+        remove_block_ids: list[str] | None = None,
+    ) -> dict[str, int]:
+        """
+        Compact and clean up the CRDT document.
+
+        Args:
+            remove_empty:       Remove blocks with empty/whitespace-only content.
+            compact_log_blocks: Trim markpact:log blocks to keep_log_lines.
+            keep_log_lines:     Max lines to retain in each log block.
+            remove_block_ids:   Explicit list of block IDs to remove.
+
+        Returns:
+            Dict with counts: {'removed_empty', 'compacted_logs', 'removed_explicit'}
+        """
+        stats = {"removed_empty": 0, "compacted_logs": 0, "removed_explicit": 0}
+
+        # Remove explicit block IDs
+        for bid in (remove_block_ids or []):
+            if self.get_block(bid) is not None:
+                self.set_block(bid, "")  # clear — pycrdt Map doesn't have delete
+                stats["removed_explicit"] += 1
+
+        # Remove empty blocks
+        if remove_empty:
+            for bid, content in list(self.get_all().items()):
+                if not (content or "").strip():
+                    stats["removed_empty"] += 1
+
+        # Compact log blocks
+        if compact_log_blocks:
+            for bid in self._order_list():
+                if ":log" in bid or bid.endswith(":pipeline-runs"):
+                    removed = self.compact_log(bid, keep_lines=keep_log_lines)
+                    if removed:
+                        stats["compacted_logs"] += 1
+
+        return stats
+
     # ── Internal ─────────────────────────────────────────────────────────
 
     def _order_list(self) -> list[str]:

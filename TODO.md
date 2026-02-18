@@ -3,31 +3,31 @@
 ## High Priority
 
 - [ ] **Pipeline execution engine** — actually route block updates through pipeline stages (currently defined but not executed)
-- [ ] **Authentication** — token-based auth for REST/WS API and sync server
+- [x] **Authentication** — token-based auth for REST/WS API and sync server (`marksync/auth/`)
 - [ ] **TLS/WSS support** — encrypted WebSocket connections
 - [ ] **MQTT transport** — implement `marksync.transport.mqtt` for IoT/edge agent communication
 - [ ] **gRPC transport** — high-performance binary transport for large-scale deployments
 
 ## Medium Priority
 
-- [ ] **Agent persistence** — save/restore agent state across restarts
-- [ ] **DSL tab completion** — readline/prompt_toolkit integration in shell
-- [ ] **DSL command history** — persistent history file (~/.marksync_history)
+- [x] **Agent persistence** — save/restore agent state across restarts (`DSLExecutor.save_state/restore_state`)
+- [x] **DSL tab completion** — readline tab completion in shell (`dsl/shell.py`)
+- [x] **DSL command history** — persistent history file `~/.marksync_history`
 - [x] **Agent health monitoring** — PactownMonitor.watch() loop, Plugin.health_check(), auto-fix pipeline trigger
 - [ ] **Block conflict resolution** — interactive merge UI for conflicting edits
-- [ ] **Metrics & telemetry** — Prometheus/OpenTelemetry integration
-- [ ] **Rate limiting** — prevent agents from flooding the sync server
-- [ ] **Batch operations** — DSL support for `AGENT coder-{1..5} editor` expansion
+- [x] **Metrics & telemetry** — Prometheus `/metrics` endpoint in dashboard + `SyncServer.metrics()`
+- [x] **Rate limiting** — sliding-window rate limiter per client in SyncServer
+- [x] **Batch operations** — brace expansion `AGENT coder-{1..5} editor` in `dsl/parser.py`
 
 ## Low Priority
 
 - [ ] **Plugin system** — loadable agent roles from external packages
 - [ ] **Multi-project support** — single server managing multiple README.md files
-- [ ] **Git integration** — automatic commit on deploy, branch-per-agent
+- [x] **Git integration** — `SyncServer(git_auto_commit=True)` auto-commits on save
 - [ ] **Ollama model auto-pull** — detect missing models and pull automatically
-- [ ] **CRDT garbage collection** — compact document history periodically
+- [x] **CRDT garbage collection** — `CRDTDocument.garbage_collect()` compacts logs + removes empty blocks
 - [ ] **DSL macros** — user-defined command aliases and templates
-- [ ] **Webhook notifications** — notify external services on agent events
+- [x] **Webhook notifications** — `DSLExecutor.add_webhook(url, events)` fires on agent events
 - [ ] **Docker Swarm / K8s** — orchestration templates for production deployment
 
 ## Completed

@@ -95,7 +95,47 @@ class OllamaClient:
         self.model = model
         self._http = httpx.AsyncClient(timeout=120)
 
+    async def pull(self) -> bool:
+        """
+        Pull the model via the Ollama API.  Returns True on success.
+        Logs progress but does not raise — caller decides what to do.
+        """
+        log.info(f"[ollama] Pulling model: {self.model}")
+        try:
+            async with self._http.stream(
+                "POST", f"{self.base_url}/api/pull",
+                json={"name": self.model, "stream": True}, timeout=600,
+            ) as resp:
+                async for line in resp.aiter_lines():
+                    if line:
+                        try:
+                            data = json.loads(line)
+                            status = data.get("status", "")
+                            if status:
+                                log.debug(f"[ollama pull] {status}")
+                        except Exception:
+                            pass
+            log.info(f"[ollama] Pull complete: {self.model}")
+            return True
+        except Exception as e:
+            log.warning(f"[ollama] Pull failed for {self.model}: {e}")
+            return False
+
+    async def _ensure_model(self):
+        """Check if model exists; pull it automatically if missing."""
+        try:
+            resp = await self._http.get(f"{self.base_url}/api/tags")
+            if resp.status_code == 200:
+                tags = resp.json().get("models", [])
+                names = [m.get("name", "") for m in tags]
+                if not any(self.model in n for n in names):
+                    log.info(f"[ollama] Model {self.model!r} not found locally — pulling")
+                    await self.pull()
+        except Exception:
+            pass  # offline or unavailable — let the actual call fail
+
     async def generate(self, prompt: str, system: str = "") -> str:
+        await self._ensure_model()
         resp = await self._http.post(f"{self.base_url}/api/generate", json={
             "model": self.model,
             "prompt": prompt,
@@ -106,6 +146,7 @@ class OllamaClient:
         return resp.json().get("response", "")
 
     async def chat(self, messages: list[dict]) -> str:
+        await self._ensure_model()
         resp = await self._http.post(f"{self.base_url}/api/chat", json={
             "model": self.model,
             "messages": messages,

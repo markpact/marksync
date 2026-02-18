@@ -26,7 +26,7 @@ from typing import Any, AsyncGenerator
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
 
 from marksync.settings import settings
@@ -108,6 +108,17 @@ def create_dashboard_app(contract_path: str = "README.md") -> FastAPI:
             "version": "0.2.0",
             "sse_subscribers": len(_sse_queues),
         }
+
+    @app.get("/metrics")
+    def prometheus_metrics():
+        """Prometheus text format metrics for the dashboard service."""
+        lines = [
+            "# HELP marksync_dashboard_sse_subscribers Active SSE subscribers",
+            "# TYPE marksync_dashboard_sse_subscribers gauge",
+            f"marksync_dashboard_sse_subscribers {len(_sse_queues)}",
+        ]
+        return PlainTextResponse("\n".join(lines) + "\n",
+                                 media_type="text/plain; version=0.0.4")
 
     # ── UI ─────────────────────────────────────────────────────────────
 
