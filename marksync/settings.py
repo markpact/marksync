@@ -104,6 +104,13 @@ class Settings:
     # Markpact
     MARKPACT_PORT: int = 8088
 
+    # Dashboard
+    DASHBOARD_PORT: int = 8888
+    DASHBOARD_HOST: str = "0.0.0.0"
+
+    # Pactown
+    PACTOWN_BIN: str = "pactown"
+
     # Project
     PROJECT_README: str = "README.md"
     LOG_LEVEL: str = "INFO"
@@ -188,6 +195,9 @@ def load_settings() -> Settings:
         LLM_TEMPERATURE=float(_env("LLM_TEMPERATURE", _env("LITELLM_TEMPERATURE", "0.3", dotenv), dotenv)),
         LLM_MAX_TOKENS=_env_int("LLM_MAX_TOKENS", _env_int("LITELLM_MAX_TOKENS", 8192, dotenv), dotenv),
         MARKPACT_PORT=_env_int("MARKPACT_PORT", 8088, dotenv),
+        DASHBOARD_PORT=_env_int("DASHBOARD_PORT", 8888, dotenv),
+        DASHBOARD_HOST=_env("DASHBOARD_HOST", "0.0.0.0", dotenv),
+        PACTOWN_BIN=_env("PACTOWN_BIN", "pactown", dotenv),
         PROJECT_README=_env("PROJECT_README", "README.md", dotenv),
         LOG_LEVEL=_env("LOG_LEVEL", "INFO", dotenv),
         GENERATE_OUTPUT_DIR=_env("GENERATE_OUTPUT_DIR", "./generated", dotenv),

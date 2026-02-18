@@ -798,5 +798,226 @@ def generate(prompt, output, model, dry_run, build, up):
     console.print(f"  docker compose logs -f")
 
 
+@main.command()
+@click.argument("prompt")
+@click.option("--output", "-o", default=None, help="Output directory (default: ./<project-name>)")
+@click.option("--no-llm", is_flag=True, help="Skip LLM analysis — use heuristic parsing only")
+@click.option("--deploy", is_flag=True, help="Deploy via Pactown after contract creation")
+@click.option("--dashboard", "open_dashboard", is_flag=True, help="Open dashboard after creation")
+def create(prompt, output, no_llm, deploy, open_dashboard):
+    """Create a complete Markpact contract from a natural language prompt.
+
+    \b
+    Examples:
+        marksync create "REST API for order management with AI validation"
+        marksync create "REST API for orders" --deploy
+        marksync create "REST API for orders" --no-llm --output ./my-project
+    """
+    from marksync.intent.parser import IntentParser, slugify
+    from marksync.intent.yaml_generator import YAMLGenerator
+    from marksync.contract.generator import ContractGenerator
+    from marksync.sync.crdt import CRDTDocument
+    from marksync.conversation.engine import ConversationEngine
+    import json as _json
+    import time as _time
+
+    console.print(f"\n[bold cyan]marksync create[/] — Building contract from prompt\n")
+    console.print(f"  Prompt: [italic]{prompt}[/]\n")
+
+    # ── 1. Resolve output directory ──────────────────────────────────
+    llm_client = None
+    if not no_llm:
+        try:
+            from marksync.pipeline.llm_client import LLMClient
+            llm_client = LLMClient(settings.llm_config())
+        except Exception as e:
+            console.print(f"  [yellow]LLM not available:[/] {e} — using heuristic parsing")
+
+    # ── Step 1: Parse intent ─────────────────────────────────────────
+    console.print("[bold]Step 1/8:[/] ✍️  Parsing intent...")
+    crdt = CRDTDocument(project="contract")
+    intent_parser = IntentParser(crdt_doc=crdt, llm_client=llm_client)
+    intent = intent_parser.parse(prompt)
+
+    project_name = intent.name or slugify(prompt)
+    output_dir = Path(output) if output else Path(f"./{project_name}")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    readme_path = output_dir / "README.md"
+
+    console.print(f"  → service_type: [cyan]{intent.service_type}[/], actors: {intent.actors}")
+    console.print(f"  → [dim]markpact:intent block created[/]")
+
+    # ── Step 2: Generate pipeline YAML ───────────────────────────────
+    console.print("[bold]Step 2/8:[/] 🔧 Generating pipeline YAML...")
+    yaml_gen = YAMLGenerator(crdt_doc=crdt)
+    yaml_blocks = yaml_gen.generate(intent)
+    console.print(f"  → Pipeline: {project_name} ({len(yaml_blocks)} YAML blocks)")
+    console.print(f"  → [dim]markpact:pipeline + markpact:orchestration blocks created[/]")
+
+    # ── Step 3: Generate code ─────────────────────────────────────────
+    console.print("[bold]Step 3/8:[/] 🤖 Generating application code...")
+    contract_gen = ContractGenerator(crdt_doc=crdt, llm_client=llm_client if not no_llm else None)
+    contract = contract_gen.generate(intent)
+
+    if contract.ok:
+        console.print(f"  → deps: {contract.deps[:60] if contract.deps else 'none'}")
+        for path in contract.files:
+            lines = contract.files[path].count("\n") + 1
+            console.print(f"  → [cyan]{path}[/] ({lines} lines)")
+        console.print(f"  → [dim]markpact:deps + markpact:file + markpact:run blocks created[/]")
+    else:
+        console.print(f"  [yellow]Warnings:[/] {contract.errors}")
+
+    # ── Step 4: Generate deploy config ────────────────────────────────
+    console.print("[bold]Step 4/8:[/] 🚀 Generating Pactown ecosystem config...")
+    deploy_block = contract_gen.generate_deploy_block(intent)
+    crdt.set_block("markpact:deploy", deploy_block)
+    console.print(f"  → [dim]markpact:deploy block created (target: docker)[/]")
+
+    # ── Step 5: Write initial state + log ─────────────────────────────
+    console.print("[bold]Step 5/8:[/] 📋 Writing initial state and history...")
+    ts = _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime())
+    crdt.set_block("markpact:state", contract_gen.generate_state_block("init"))
+    crdt.set_block("markpact:log", f"[{ts}] CONTRACT_CREATED: name={project_name}")
+    crdt.set_block("markpact:history", _json.dumps([
+        {"ts": ts, "actor": "human", "action": "prompt", "data": prompt},
+    ], ensure_ascii=False))
+
+    # ── Step 6: Write README.md ───────────────────────────────────────
+    console.print("[bold]Step 6/8:[/] 📄 Writing README.md contract...")
+    readme_content = _build_readme(intent, contract, crdt)
+    readme_path.write_text(readme_content, encoding="utf-8")
+    block_ids = list(crdt.get_all().keys())
+    console.print(f"  → [green]{readme_path}[/] ({len(readme_content)} bytes, {len(block_ids)} blocks)")
+
+    # ── Step 7: Optional Pactown deploy ───────────────────────────────
+    if deploy:
+        console.print("[bold]Step 7/8:[/] 📦 Deploying via Pactown...")
+        try:
+            from marksync.plugins.integrations.pactown import Plugin as PactownPlugin
+            from marksync.plugins.base import PipelineSpec, StepSpec
+            plugin = PactownPlugin()
+            pipeline_spec = PipelineSpec(
+                name=project_name,
+                steps=[StepSpec(name=s, actor="script") for s in ["validate", "deploy"]],
+            )
+            result_deploy = plugin.deploy(pipeline_spec, crdt_doc=crdt)
+            if result_deploy.get("status") == "deployed":
+                console.print(f"  → [green]Deployed![/] config: {result_deploy.get('config')}")
+            else:
+                console.print(f"  → [yellow]{result_deploy.get('status')}:[/] {result_deploy.get('error', '')}")
+        except Exception as e:
+            console.print(f"  → [yellow]Deploy skipped:[/] {e}")
+    else:
+        console.print("[bold]Step 7/8:[/] 📦 Deploy [dim](skipped — use --deploy to deploy)[/]")
+
+    # ── Step 8: Summary ───────────────────────────────────────────────
+    console.print("[bold]Step 8/8:[/] ✅ Done\n")
+
+    table = Table(title=f"Contract: {readme_path}", show_header=False)
+    table.add_column("Key", style="dim")
+    table.add_column("Value", style="cyan")
+    table.add_row("Name", project_name)
+    table.add_row("Service type", intent.service_type)
+    table.add_row("Actors", ", ".join(intent.actors))
+    table.add_row("Stack", ", ".join(intent.suggested_stack) or "—")
+    table.add_row("Blocks", ", ".join(b.split("markpact:")[1] if "markpact:" in b else b for b in block_ids))
+    table.add_row("README.md", str(readme_path))
+    console.print(table)
+
+    console.print(f"\n  [bold]Next steps:[/]")
+    console.print(f"    marksync dashboard --contract {readme_path}")
+    console.print(f"    marksync server {readme_path}")
+    if not deploy:
+        console.print(f"    marksync create \"{prompt}\" --deploy")
+
+    if open_dashboard:
+        console.print(f"\n[bold green]Starting Dashboard...[/]")
+        from marksync.dashboard.app import create_dashboard_app
+        import uvicorn
+        app = create_dashboard_app()
+        port = settings.DASHBOARD_PORT
+        console.print(f"  → [bold cyan]http://localhost:{port}[/]")
+        uvicorn.run(app, host=settings.DASHBOARD_HOST, port=port, log_level="info")
+
+
+def _build_readme(intent, contract, crdt) -> str:
+    """Assemble the full README.md content from CRDT blocks."""
+    import time as _time
+    blocks = crdt.get_all()
+    lines: list[str] = [
+        f"# {intent.name}\n",
+        f"> {intent.prompt}\n",
+        "",
+    ]
+    _kind_lang = {
+        "intent": "yaml", "pipeline": "yaml", "orchestration": "yaml",
+        "deploy": "yaml", "config": "yaml",
+        "state": "json", "history": "json", "pattern": "json",
+        "deps": "text", "run": "bash", "log": "text",
+    }
+    _order = [
+        "markpact:intent", "markpact:pipeline", "markpact:orchestration",
+        "markpact:deps", "markpact:run", "markpact:deploy",
+        "markpact:state", "markpact:log", "markpact:history",
+    ]
+    written: set[str] = set()
+    for bid in _order:
+        content = blocks.get(bid, "")
+        if not content:
+            continue
+        kind = bid.split(":", 1)[1] if ":" in bid else bid
+        lang = _kind_lang.get(kind, "text")
+        lines += [f"```{lang} {bid}", content, "```", ""]
+        written.add(bid)
+
+    for bid in crdt._order_list():
+        if bid in written or bid not in blocks:
+            continue
+        kind = bid.split(":", 1)[1].split("=")[0] if ":" in bid else bid
+        lang = "python" if kind == "file" else _kind_lang.get(kind, "text")
+        lines += [f"```{lang} {bid}", blocks[bid], "```", ""]
+
+    return "\n".join(lines)
+
+
+@main.command("dashboard")
+@click.option("--host", default=None, help="Host to bind (default: 0.0.0.0)")
+@click.option("--port", default=None, type=int, help="Port to listen on (default: 8888)")
+@click.option("--contract", default=None, help="Contract README.md to open on start")
+@click.option("--sync-server", default=None, envvar="MARKSYNC_SERVER", help="SyncServer URI")
+def dashboard_cmd(host, port, contract, sync_server):
+    """Start the graphical Dashboard for contract lifecycle management.
+
+    \b
+    Panels:
+        📄 Contract   — Live block view with inline editing
+        💬 Conversation — Chat + voice input → markpact:history
+        📊 Pipeline   — Step timeline with human approve/reject
+        🚀 Deploy     — Pactown ecosystem status
+        ✨ Create     — Create new contracts from natural language
+
+    \b
+    Examples:
+        marksync dashboard
+        marksync dashboard --port 8888 --contract ./my-project/README.md
+    """
+    from marksync.dashboard.app import create_dashboard_app
+    import uvicorn
+
+    _host = host or settings.DASHBOARD_HOST
+    _port = port or settings.DASHBOARD_PORT
+
+    app = create_dashboard_app()
+
+    console.print(f"\n[bold green]Starting Dashboard[/] on http://{_host}:{_port}")
+    console.print(f"  Contract:    {contract or settings.PROJECT_README}")
+    console.print(f"  Sync server: {sync_server or settings.MARKSYNC_SERVER}")
+    console.print(f"  API docs:    http://localhost:{_port}/docs")
+    console.print(f"\n  Open in browser: [bold cyan]http://localhost:{_port}[/]\n")
+
+    uvicorn.run(app, host=_host, port=_port, log_level="info")
+
+
 if __name__ == "__main__":
     main()

@@ -9,4 +9,5 @@ Bridges marksync pipelines to CI/CD, orchestration, and infrastructure tools:
     Ansible         — Export pipelines as Ansible Playbooks
     Apache Airflow  — Export pipelines as Airflow DAGs (Python)
     n8n             — Export pipelines as n8n workflow JSON
+    Pactown         — Deploy pipelines as Pactown decentralized service ecosystems
 """

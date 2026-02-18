@@ -67,6 +67,7 @@ _BUILTIN_INTEGRATIONS = {
     "ansible": "marksync.plugins.integrations.ansible",
     "airflow": "marksync.plugins.integrations.airflow",
     "n8n": "marksync.plugins.integrations.n8n",
+    "pactown": "marksync.plugins.integrations.pactown",
 }
 
 

@@ -1,6 +1,6 @@
 project: marksync
-generated: "2026-02-18T22:31:31.028886"
-modules[71]{path,lang,items}:
+generated: "2026-02-18T22:47:15.017465"
+modules[88]{path,lang,items}:
   examples/bpmn_multiagent.py,python,6
   tests/test_settings.py,python,13
   tests/test_orchestrator.py,python,24
@@ -10,18 +10,34 @@ modules[71]{path,lang,items}:
   tests/test_marksync.py,python,2
   tests/test_examples.py,python,24
   tests/test_pipeline.py,python,24
-  marksync/cli.py,python,21
+  marksync/cli.py,python,24
   marksync/__init__.py,python,1
   marksync/orchestrator.py,python,12
   marksync/hardware_detect.py,python,9
   marksync/settings.py,python,10
+  marksync/dashboard/app.py,python,6
+  marksync/dashboard/__init__.py,python,0
+  marksync/dashboard/html.py,python,0
   marksync/sync/engine.py,python,16
   marksync/sync/crdt.py,python,10
   marksync/sync/__init__.py,python,5
   marksync/transport/__init__.py,python,0
+  marksync/intent/__init__.py,python,0
+  marksync/intent/parser.py,python,11
+  marksync/intent/yaml_generator.py,python,4
   marksync/plugins/base.py,python,32
   marksync/plugins/registry.py,python,10
   marksync/plugins/__init__.py,python,0
+  marksync/conversation/engine.py,python,9
+  marksync/conversation/__init__.py,python,0
+  marksync/learning/__init__.py,python,0
+  marksync/learning/feedback.py,python,5
+  marksync/learning/prompt_refiner.py,python,7
+  marksync/learning/patterns.py,python,13
+  marksync/contract/block_types.py,python,2
+  marksync/contract/generator.py,python,7
+  marksync/contract/__init__.py,python,0
+  marksync/contract/templates.py,python,7
   marksync/sandbox/app.py,python,2
   marksync/sandbox/__init__.py,python,0
   marksync/sandbox/html.py,python,0
@@ -60,6 +76,7 @@ modules[71]{path,lang,items}:
   marksync/plugins/integrations/__init__.py,python,0
   marksync/plugins/integrations/kubernetes.py,python,3
   marksync/plugins/integrations/gitlab.py,python,3
+  marksync/plugins/integrations/pactown.py,python,8
   marksync/plugins/integrations/n8n.py,python,3
   marksync/plugins/integrations/ansible.py,python,3
   marksync/plugins/integrations/github.py,python,3
@@ -286,7 +303,7 @@ function_details:
       TestEvents.test_event_emitted_on_start,method,(),346-353,false,8,1,checks event emitted on start
       TestEvents.test_event_emitted_on_human_task,method,(),355-363,false,9,1,checks event emitted on human task
   marksync/cli.py:
-    functions[21]{name,kind,sig,loc,async,lines,cc,does}:
+    functions[24]{name,kind,sig,loc,async,lines,cc,does}:
       _setup_logging,function,"(verbose:bool=False)",27-32,false,6,2,initializes logging
       main,function,(verbose),37-39,false,3,1,marksync — Multi-agent collaborative editing for Markpact projects.
       server,function,"(readme, host, port)",46-53,false,8,1,Start the sync server.
@@ -308,6 +325,9 @@ function_details:
       _test_connection,function,"(provider:str, model:str, api_key:str='', api_base:str='') -> bool",464-482,false,19,4,Send a ping message to the configured LLM.
       init,function,(),486-557,false,72,15,"First-run wizard: choose LLM provider, configure API key, test connection."
       generate,function,"(prompt, output, model, dry_run, build, up)",567-798,false,232,53,Generate a Docker service from a YAML prompt via LLM (LiteLLM/OpenRouter).
+      create,function,"(prompt, output, no_llm, deploy, open_dashboard)",807-941,false,135,18,Create a complete Markpact contract from a natural language prompt.
+      _build_readme,function,"(intent, contract, crdt) -> str",944-981,false,38,9,Assemble the full README.md content from CRDT blocks.
+      dashboard_cmd,function,"(host, port, contract, sync_server)",989-1019,false,31,5,Start the graphical Dashboard for contract lifecycle management.
   marksync/__init__.py:
     functions[1]{name,kind,sig,loc,async,lines,cc,does}:
       __getattr__,function,"(name:str)",22-36,false,15,7,Lazy imports — heavy deps only loaded when actually accessed.
@@ -342,12 +362,20 @@ function_details:
       _load_dotenv,function,"(path:Path) -> dict[str, str]",36-52,false,17,8,Minimal .env parser — no external dependency required.
       _env,function,"(key:str, default:str, dotenv:dict[str,str]) -> str",55-57,false,3,1,"Read from os.environ first, then dotenv, then default."
       _env_int,function,"(key:str, default:int, dotenv:dict[str,str]) -> int",60-65,false,6,2,env int
-      load_settings,function,() -> Settings,157-194,false,38,4,Load settings from environment + .env file.
-      Settings.server_uri,method,() -> str,115-116,false,2,1,server uri
-      Settings.ollama_url,method,() -> str,119-120,false,2,1,ollama url
-      Settings.api_host,method,() -> str,123-124,false,2,1,api host
-      Settings.api_port,method,() -> int,127-128,false,2,1,api port
-      Settings.llm_config,method,(),130-154,false,25,4,Build LLMConfig for the active provider.
+      load_settings,function,() -> Settings,164-204,false,41,4,Load settings from environment + .env file.
+      Settings.server_uri,method,() -> str,122-123,false,2,1,server uri
+      Settings.ollama_url,method,() -> str,126-127,false,2,1,ollama url
+      Settings.api_host,method,() -> str,130-131,false,2,1,api host
+      Settings.api_port,method,() -> int,134-135,false,2,1,api port
+      Settings.llm_config,method,(),137-161,false,25,4,Build LLMConfig for the active provider.
+  marksync/dashboard/app.py:
+    functions[6]{name,kind,sig,loc,async,lines,cc,does}:
+      create_dashboard_app,function,() -> FastAPI,73-396,false,324,1,creates dashboard app
+      _render_html,function,() -> str,401-403,false,3,1,formats html
+      _broadcast_sse,function,"(event:dict[str,Any])",408-414,true,7,3,Push an event to all active SSE subscribers.
+      _slugify,function,"(text:str) -> str",417-419,false,3,2,slugify
+      _render_contract_markdown,function,"(intent, contract, crdt) -> str",422-454,false,33,8,Build a complete README.md from all CRDT blocks.
+      _kind_to_lang,function,"(kind:str) -> str",457-465,false,9,1,kind to lang
   marksync/sync/engine.py:
     functions[16]{name,kind,sig,loc,async,lines,cc,does}:
       _signal,function,"(type:str) -> str",38-39,false,2,1,signal
@@ -385,6 +413,25 @@ function_details:
       BlockParser._make_id,method,"(kind:str, meta:str) -> str",82-88,false,7,3,creates id
       BlockParser.rebuild_markdown,method,"(original:str, blocks:dict[str,str]) -> str",91-106,false,16,6,Replace block contents in original markdown with updated versions.
       BlockParser.manifest,method,"(blocks:list[MarkpactBlock]) -> dict[str, str]",109-111,false,3,2,block_id -> sha256 map for delta detection.
+  marksync/intent/parser.py:
+    functions[11]{name,kind,sig,loc,async,lines,cc,does}:
+      slugify,function,"(text:str) -> str",67-69,false,3,2,Convert arbitrary text to a safe slug.
+      _now,function,() -> str,72-73,false,2,1,now
+      _infer_service_type,function,"(prompt:str) -> str",76-86,false,11,9,infer service type
+      _infer_actors,function,"(prompt:str) -> list[str]",89-96,false,8,5,infer actors
+      _needs_approval,function,"(prompt:str) -> bool",99-101,false,3,2,needs approval
+      _infer_stack,function,"(prompt:str) -> list[str]",104-130,false,27,10,infer stack
+      ProcessIntent.to_yaml,method,() -> str,34-51,false,18,6,"Serialize to YAML for the markpact:intent block."
+      ProcessIntent.from_prompt,method,"(prompt:str) -> \"ProcessIntent\"",54-64,false,11,1,Create a basic intent from prompt without LLM (heuristic).
+      IntentParser.__init__,method,"(crdt_doc=None, llm_client=None)",155-157,false,3,1,creates
+      IntentParser.parse,method,"(prompt:str) -> ProcessIntent",159-169,false,11,3,Parse prompt → ProcessIntent.
+      IntentParser._parse_with_llm,method,"(prompt:str) -> ProcessIntent",171-199,false,29,6,parses with llm
+  marksync/intent/yaml_generator.py:
+    functions[4]{name,kind,sig,loc,async,lines,cc,does}:
+      YAMLGenerator.__init__,method,(crdt_doc=None),22-23,false,2,1,creates
+      YAMLGenerator.generate,method,"(intent:ProcessIntent) -> dict[str, str]",25-45,false,21,2,Generate pipeline and orchestration YAML from intent.
+      YAMLGenerator._build_pipeline,method,"(intent:ProcessIntent) -> dict[str, Any]",49-92,false,44,4,creates pipeline
+      YAMLGenerator._build_orchestration,method,"(intent:ProcessIntent) -> dict[str, Any]",96-137,false,42,5,creates orchestration
   marksync/plugins/base.py:
     functions[32]{name,kind,sig,loc,async,lines,cc,does}:
       PluginMeta.to_dict,method,() -> dict,72-83,false,12,1,converts dict
@@ -421,16 +468,80 @@ function_details:
       Channel.request,method,"(message:ChannelMessage, timeout:float=30.0) -> ChannelMessage",530-534,true,5,1,Send a request and wait for reply (request/reply pattern).
   marksync/plugins/registry.py:
     functions[10]{name,kind,sig,loc,async,lines,cc,does}:
-      PluginRegistry.__init__,method,(),84-86,false,3,1,creates
-      PluginRegistry.register,method,"(plugin:Any)",90-94,false,5,1,Register a plugin instance.
-      PluginRegistry.discover,method,"(include_builtins:bool=True)",96-109,false,14,5,Discover and register available plugins.
-      PluginRegistry._load_lazy,method,"(format_id:str) -> FormatPlugin | APIAdapter | Integration | None",111-132,false,22,4,Load a lazily-registered plugin module.
-      PluginRegistry.get,method,"(format_id:str) -> FormatPlugin | APIAdapter | Integration | None",136-141,false,6,2,Get a plugin by format ID.
-      PluginRegistry.list_plugins,method,"(plugin_type:Any=None) -> list[dict]",143-181,false,39,11,List all registered + available plugins.
-      PluginRegistry.available_formats,method,"() -> list[str]",183-185,false,3,1,List all available format IDs (loaded + lazy).
-      PluginRegistry.export,method,"(format_id:str, pipeline:PipelineSpec) -> ConversionResult",189-206,false,18,4,Export a pipeline to the specified format.
-      PluginRegistry.import_from,method,"(format_id:str, source:Any) -> PipelineSpec | None",208-219,false,12,4,Import a pipeline from the specified format.
-      PluginRegistry.pipeline_from_marksync,method,"(name:str, steps:list[dict], description:str='') -> PipelineSpec",224-245,false,22,2,Create a PipelineSpec from marksync internal format.
+      PluginRegistry.__init__,method,(),85-87,false,3,1,creates
+      PluginRegistry.register,method,"(plugin:Any)",91-95,false,5,1,Register a plugin instance.
+      PluginRegistry.discover,method,"(include_builtins:bool=True)",97-110,false,14,5,Discover and register available plugins.
+      PluginRegistry._load_lazy,method,"(format_id:str) -> FormatPlugin | APIAdapter | Integration | None",112-133,false,22,4,Load a lazily-registered plugin module.
+      PluginRegistry.get,method,"(format_id:str) -> FormatPlugin | APIAdapter | Integration | None",137-142,false,6,2,Get a plugin by format ID.
+      PluginRegistry.list_plugins,method,"(plugin_type:Any=None) -> list[dict]",144-182,false,39,11,List all registered + available plugins.
+      PluginRegistry.available_formats,method,"() -> list[str]",184-186,false,3,1,List all available format IDs (loaded + lazy).
+      PluginRegistry.export,method,"(format_id:str, pipeline:PipelineSpec) -> ConversionResult",190-207,false,18,4,Export a pipeline to the specified format.
+      PluginRegistry.import_from,method,"(format_id:str, source:Any) -> PipelineSpec | None",209-220,false,12,4,Import a pipeline from the specified format.
+      PluginRegistry.pipeline_from_marksync,method,"(name:str, steps:list[dict], description:str='') -> PipelineSpec",225-246,false,22,2,Create a PipelineSpec from marksync internal format.
+  marksync/conversation/engine.py:
+    functions[9]{name,kind,sig,loc,async,lines,cc,does}:
+      ConversationMessage.__post_init__,method,(),28-30,false,3,2,creates init
+      ConversationMessage.to_dict,method,() -> dict,32-38,false,7,1,converts dict
+      ConversationEngine.__init__,method,"(crdt_doc=None, llm_client=None)",53-56,false,4,1,creates
+      ConversationEngine.append,method,"(actor:str, action:str, data:Any=None) -> ConversationMessage",60-70,false,11,1,"Record a message and persist it to markpact:history."
+      ConversationEngine.get_history,method,"() -> list[dict]",72-81,false,10,4,"Return history — from CRDT if available, else in-memory."
+      ConversationEngine.load_from_crdt,method,(),83-92,false,10,4,Sync in-memory history from the current CRDT state.
+      ConversationEngine.clear,method,(),94-96,false,3,1,deletes
+      ConversationEngine.process_message,method,"(prompt:str, sender:str='human') -> str",100-138,true,39,7,"Process an incoming human message:"
+      ConversationEngine._persist,method,(),142-147,false,6,2,caches
+  marksync/learning/feedback.py:
+    functions[5]{name,kind,sig,loc,async,lines,cc,does}:
+      FeedbackCollector.__init__,method,"(conversation:ConversationEngine, pattern_library=None, crdt_doc=None)",22-30,false,9,1,creates
+      FeedbackCollector.approve,method,"(step_name:str, by:str='human', data:Any=None)",32-38,false,7,1,Record an approval event.
+      FeedbackCollector.reject,method,"(step_name:str, reason:str='', by:str='human', data:Any=None)",40-46,false,7,1,Record a rejection event.
+      FeedbackCollector.comment,method,"(text:str, by:str='human')",48-50,false,3,1,Record a free-form comment.
+      FeedbackCollector.complete_run,method,"(contract_path:Any=None, intent=None, success:bool=True)",52-93,false,42,8,Called when a pipeline run finishes.
+  marksync/learning/prompt_refiner.py:
+    functions[7]{name,kind,sig,loc,async,lines,cc,does}:
+      PromptRefiner.__init__,method,"(llm_client=None, crdt_doc=None)",25-27,false,3,1,creates
+      PromptRefiner.refine,method,"(step_name:str, contract_path:Any=None) -> str | None",29-44,false,16,3,Analyze history for a given step and return a refined prompt.
+      PromptRefiner._load_history,method,"(contract_path:Any) -> list[dict]",46-66,false,21,8,retrieves history
+      PromptRefiner._extract_rejections,method,"(history:list[dict], step_name:str) -> list[dict]",68-73,false,6,5,parses rejections
+      PromptRefiner._heuristic_refine,method,"(rejections:list[dict], step_name:str) -> str",75-81,false,7,2,heuristic refine
+      PromptRefiner._llm_refine,method,"(rejections:list[dict], step_name:str) -> str | None",83-108,false,26,6,llm refine
+      PromptRefiner._patch_pipeline,method,"(pipeline_yaml:str, step_name:str, new_prompt:str) -> str",110-119,false,10,4,updates pipeline
+  marksync/learning/patterns.py:
+    functions[13]{name,kind,sig,loc,async,lines,cc,does}:
+      _now,function,() -> str,168-169,false,2,1,now
+      _keywords_from_intent,function,"(intent:ProcessIntent) -> list[str]",172-179,false,8,5,keywords from intent
+      Pattern.to_json,method,() -> str,32-42,false,11,2,converts json
+      Pattern.from_block,method,"(body:str) -> \"Pattern\"",45-56,false,12,1,from block
+      Pattern.from_intent,method,"(intent:ProcessIntent, pattern_id:str='') -> \"Pattern\"",59-66,false,8,2,from intent
+      Pattern.record_success,method,(),68-72,false,5,1,record success
+      Pattern.record_failure,method,(),74-78,false,5,1,record failure
+      PatternLibrary.__init__,method,"(patterns_dir:Any='~/.marksync/patterns/')",88-90,false,3,1,creates
+      PatternLibrary.find_pattern,method,"(intent:ProcessIntent) -> Pattern | None",92-111,false,20,7,Find the best matching pattern for this intent.
+      PatternLibrary.list_patterns,method,"() -> list[Pattern]",113-125,false,13,5,Return all stored patterns.
+      PatternLibrary.save_pattern,method,"(contract_path:Any, pattern:Pattern)",127-132,false,6,1,Copy contract README to patterns dir and write pattern metadata.
+      PatternLibrary.save_from_contract,method,"(contract_path:Any, intent:ProcessIntent, success:bool=True) -> Pattern",134-153,false,20,3,Create or update a pattern from a completed contract.
+      PatternLibrary._score,method,"(intent:ProcessIntent, pattern:Pattern) -> int",157-165,false,9,4,score
+  marksync/contract/block_types.py:
+    functions[2]{name,kind,sig,loc,async,lines,cc,does}:
+      block_id,function,"(kind:str, meta:str='') -> str",51-55,false,5,2,"Build a canonical markpact block ID, matching BlockParser._make_id()."
+      GeneratedContract.ok,method,() -> bool,71-72,false,2,1,ok
+  marksync/contract/generator.py:
+    functions[7]{name,kind,sig,loc,async,lines,cc,does}:
+      ContractGenerator.__init__,method,"(crdt_doc=None, llm_client=None)",28-30,false,3,1,creates
+      ContractGenerator.generate,method,"(intent:ProcessIntent) -> GeneratedContract",32-43,false,12,3,Generate all contract blocks from intent.
+      ContractGenerator._enrich_with_llm,method,"(intent, contract:GeneratedContract) -> GeneratedContract",45-73,false,29,6,Optionally call LLM to improve generated code.
+      ContractGenerator._write_to_crdt,method,"(contract:GeneratedContract)",75-89,false,15,7,logs to crdt
+      ContractGenerator.generate_deploy_block,method,"(intent, target:str='docker') -> str",91-108,false,18,1,Generate a pactown deploy config for the contract.
+      ContractGenerator.generate_state_block,method,"(phase:str='init') -> str",110-120,false,11,1,"Generate initial markpact:state JSON block."
+      ContractGenerator.generate_log_entry,method,"(event:str) -> str",122-128,false,7,2,"Return a single log line in the append-only markpact:log format."
+  marksync/contract/templates.py:
+    functions[7]{name,kind,sig,loc,async,lines,cc,does}:
+      get_template,function,"(service_type:str) -> ServiceTemplate",198-200,false,3,1,Return the best matching template for the given service type.
+      ServiceTemplate.render,method,"(intent:ProcessIntent) -> GeneratedContract",16-17,false,2,1,formats
+      RestAPITemplate.render,method,"(intent:ProcessIntent) -> GeneratedContract",22-53,false,32,3,formats
+      WebAppTemplate.render,method,"(intent:ProcessIntent) -> GeneratedContract",58-87,false,30,3,formats
+      CLITemplate.render,method,"(intent:ProcessIntent) -> GeneratedContract",92-120,false,29,3,formats
+      WorkerTemplate.render,method,"(intent:ProcessIntent) -> GeneratedContract",125-154,false,30,3,formats
+      GenericTemplate.render,method,"(intent:ProcessIntent) -> GeneratedContract",159-184,false,26,4,formats
   marksync/sandbox/app.py:
     functions[2]{name,kind,sig,loc,async,lines,cc,does}:
       create_sandbox_app,function,() -> FastAPI,68-304,false,237,1,creates sandbox app
@@ -744,6 +855,16 @@ function_details:
       Plugin.meta,method,() -> PluginMeta,30-42,false,13,1,meta
       Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",44-106,false,63,6,export pipeline
       Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",108-129,false,22,7,import pipeline
+  marksync/plugins/integrations/pactown.py:
+    functions[8]{name,kind,sig,loc,async,lines,cc,does}:
+      Plugin.__init__,method,(),35-36,false,2,1,creates
+      Plugin.meta,method,() -> PluginMeta,38-50,false,13,1,meta
+      Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",54-61,false,8,2,Convert a PipelineSpec to a pactown.yaml string.
+      Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",63-78,false,16,4,Parse a pactown.yaml back into a PipelineSpec (best-effort).
+      Plugin.deploy,method,"(pipeline:PipelineSpec, crdt_doc=None) -> dict",82-133,false,52,11,Write pactown.yaml to a temp file and run `pactown up <config>`.
+      Plugin.status,method,() -> dict,135-154,false,20,5,Run `pactown status <config>` and return parsed result.
+      Plugin._build_config,method,"(pipeline:PipelineSpec) -> dict",158-183,false,26,6,creates config
+      Plugin._write_config,method,"(name:str, content:str) -> str",185-189,false,5,1,logs config
   marksync/plugins/integrations/n8n.py:
     functions[3]{name,kind,sig,loc,async,lines,cc,does}:
       Plugin.meta,method,() -> PluginMeta,31-43,false,13,1,meta

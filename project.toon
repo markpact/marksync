@@ -1,6 +1,6 @@
-# marksync | 71f 14974L | python:71
+# marksync | 88f 17586L | python:88
 # Keys: M=modules, D=details, i=imports, c=classes, f=functions, m=methods
-M[71]:
+M[88]:
   examples/bpmn_multiagent.py,361
   tests/test_settings.py,66
   tests/test_orchestrator.py,161
@@ -10,18 +10,34 @@ M[71]:
   tests/test_marksync.py,7
   tests/test_examples.py,110
   tests/test_pipeline.py,278
-  marksync/cli.py,643
+  marksync/cli.py,824
   marksync/__init__.py,29
   marksync/orchestrator.py,247
   marksync/hardware_detect.py,146
-  marksync/settings.py,153
+  marksync/settings.py,159
+  marksync/dashboard/app.py,362
+  marksync/dashboard/__init__.py,3
+  marksync/dashboard/html.py,375
   marksync/sync/engine.py,228
   marksync/sync/crdt.py,68
   marksync/sync/__init__.py,92
   marksync/transport/__init__.py,0
+  marksync/intent/__init__.py,4
+  marksync/intent/parser.py,166
+  marksync/intent/yaml_generator.py,107
   marksync/plugins/base.py,429
-  marksync/plugins/registry.py,194
+  marksync/plugins/registry.py,195
   marksync/plugins/__init__.py,71
+  marksync/conversation/engine.py,118
+  marksync/conversation/__init__.py,3
+  marksync/learning/__init__.py,5
+  marksync/learning/feedback.py,78
+  marksync/learning/prompt_refiner.py,101
+  marksync/learning/patterns.py,150
+  marksync/contract/block_types.py,53
+  marksync/contract/generator.py,103
+  marksync/contract/__init__.py,14
+  marksync/contract/templates.py,138
   marksync/sandbox/app.py,245
   marksync/sandbox/__init__.py,1
   marksync/sandbox/html.py,619
@@ -57,9 +73,10 @@ M[71]:
   marksync/plugins/formats/cmmn.py,113
   marksync/plugins/formats/bpmn.py,528
   marksync/plugins/formats/xpdl.py,130
-  marksync/plugins/integrations/__init__.py,11
+  marksync/plugins/integrations/__init__.py,12
   marksync/plugins/integrations/kubernetes.py,186
   marksync/plugins/integrations/gitlab.py,104
+  marksync/plugins/integrations/pactown.py,154
   marksync/plugins/integrations/n8n.py,160
   marksync/plugins/integrations/ansible.py,135
   marksync/plugins/integrations/github.py,141
@@ -185,6 +202,19 @@ D:
     _env(key:str;default:str;dotenv:dict[str;str])->str
     _env_int(key:str;default:int;dotenv:dict[str;str])->int
     load_settings()->Settings
+  marksync/dashboard/app.py:
+    i: asyncio,json,logging,time,fastapi.{FastAPI,HTTPException,Request},pathlib.Path,typing.{Any,AsyncGenerator}
+    e: EXAMPLES_DIR,MessageRequest,ApprovalRequest,BlockUpdateRequest,CreateContractRequest,create_dashboard_app
+    MessageRequest: 
+    ApprovalRequest: 
+    BlockUpdateRequest: 
+    CreateContractRequest: 
+    create_dashboard_app()->FastAPI
+    _render_html()->str
+    _broadcast_sse(event:dict[str;Any])
+    _slugify(text:str)->str
+    _render_contract_markdown(intent;contract;crdt)->str
+    _kind_to_lang(kind:str)->str
   marksync/sync/engine.py:
     i: asyncio,hashlib,json,logging,time,websockets,diff_match_patch,marksync.sync.BlockParser,pathlib.Path,websockets.asyncio.server.serve
     e: SyncServer,SyncClient
@@ -201,6 +231,21 @@ D:
     e: MarkpactBlock,_PATTERNS,BlockParser
     MarkpactBlock: __post_init__(0)  # Single executable code block from a M...
     BlockParser: parse(1),_make_id(2),rebuild_markdown(2),manifest(1)  # Extracts all markpact:* blocks from a...
+  marksync/intent/parser.py:
+    i: json,re,time,yaml,dataclasses.{dataclass,field},typing.Any
+    e: ProcessIntent,slugify,IntentParser
+    ProcessIntent: to_yaml(0),from_prompt(1)  # Structured representation of what the...
+    IntentParser: __init__(2),parse(1),_parse_with_llm(1)  # Parses natural language prompts into...
+    slugify(text:str)->str
+    _now()->str
+    _infer_service_type(prompt:str)->str
+    _infer_actors(prompt:str)->list[str]
+    _needs_approval(prompt:str)->bool
+    _infer_stack(prompt:str)->list[str]
+  marksync/intent/yaml_generator.py:
+    i: yaml,marksync.intent.parser.ProcessIntent,typing.Any
+    e: YAMLGenerator
+    YAMLGenerator: __init__(1),generate(1),_build_pipeline(1),_build_orchestration(1)  # Generates orchestration YAML from a P...
   marksync/plugins/base.py:
     i: abc,time,dataclasses.{dataclass,field},enum.Enum,typing.Any
     e: CommMode,GatewayType,MultiInstanceType,PluginType,PluginMeta,ConversionResult,Pool,Lane
@@ -213,6 +258,44 @@ D:
     i: importlib,logging,marksync.plugins.base,typing.Any
     e: _BUILTIN_FORMATS,_BUILTIN_API,_BUILTIN_INTEGRATIONS,PluginRegistry
     PluginRegistry: __init__(0),register(1),discover(1),_load_lazy(1),get(1)  # Central registry for all marksync plu...
+  marksync/conversation/engine.py:
+    i: json,time,dataclasses.{dataclass,field},typing.Any
+    e: ConversationMessage,ConversationEngine
+    ConversationMessage: __post_init__(0),to_dict(0)  # A single message in the conversation...
+    ConversationEngine: __init__(2),append(3),get_history(0),load_from_crdt(0),clear(0)  # Manages the conversation state for a...
+  marksync/learning/feedback.py:
+    i: marksync.conversation.engine.ConversationEngine,typing.Any
+    e: FeedbackCollector
+    FeedbackCollector: __init__(3),approve(3),reject(4),comment(2),complete_run(3)  # Records human feedback (approve / rej...
+  marksync/learning/prompt_refiner.py:
+    i: json,typing.Any
+    e: PromptRefiner
+    PromptRefiner: __init__(2),refine(2),_load_history(1),_extract_rejections(2),_heuristic_refine(2)  # Reads markpact:history from a contrac...
+  marksync/learning/patterns.py:
+    i: json,shutil,time,dataclasses.{dataclass,field},pathlib.Path,typing.Any
+    e: Pattern,PatternLibrary
+    Pattern: to_json(0),from_block(1),from_intent(2),record_success(0),record_failure(0)  # A reusable project pattern extracted...
+    PatternLibrary: __init__(1),find_pattern(1),list_patterns(0),save_pattern(2),save_from_contract(3)  # Manages patterns stored as README.md...
+    _now()->str
+    _keywords_from_intent(intent:ProcessIntent)->list[str]
+  marksync/contract/block_types.py:
+    i: dataclasses.{dataclass,field}
+    e: BLOCK_DEPS,BLOCK_FILE,BLOCK_RUN,BLOCK_BOOTSTRAP,BLOCK_TARGET,BLOCK_BUILD,BLOCK_INTENT,BLOCK_PIPELINE
+    GeneratedContract: ok(0)  # Result of ContractGenerator.generate().
+    block_id(kind:str;meta:str='')->str
+  marksync/contract/generator.py:
+    i: json,time,marksync.contract.block_types
+    e: ContractGenerator
+    ContractGenerator: __init__(2),generate(1),_enrich_with_llm(2),_write_to_crdt(1),generate_deploy_block(2)  # Generates complete markpact contract...
+  marksync/contract/templates.py:
+    i: marksync.contract.block_types.GeneratedContract
+    e: ServiceTemplate,RestAPITemplate,WebAppTemplate,CLITemplate,WorkerTemplate,GenericTemplate,_TEMPLATES,get_template
+    ServiceTemplate: render(1)  # Base class for service code templates.
+    RestAPITemplate: render(1)
+    WebAppTemplate: render(1)
+    CLITemplate: render(1)
+    WorkerTemplate: render(1)
+    get_template(service_type:str)->ServiceTemplate
   marksync/sandbox/app.py:
     i: asyncio,json,logging,time,fastapi.{FastAPI,HTTPException,WebSocket,WebSocketDisconnect},pathlib.Path,typing.Any
     e: EXAMPLES_DIR,_STATUS_TTL,BlockUpdate,OrchestrationRequest,create_sandbox_app
@@ -381,6 +464,10 @@ D:
     i: yaml,marksync.plugins.base
     e: Plugin
     Plugin: meta(0),export_pipeline(1),import_pipeline(1)
+  marksync/plugins/integrations/pactown.py:
+    i: subprocess,tempfile,yaml,marksync.plugins.base.{ConversionResult,Integration,PipelineSpec,PluginMeta,PluginType},pathlib.Path
+    e: Plugin
+    Plugin: __init__(0),meta(0),export_pipeline(1),import_pipeline(1),deploy(2)
   marksync/plugins/integrations/n8n.py:
     i: json,marksync.plugins.base
     e: Plugin

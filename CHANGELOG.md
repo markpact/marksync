@@ -1,3 +1,30 @@
+## [0.2.13] - 2026-02-18
+
+### Summary
+
+refactor(docs): CLI interface improvements
+
+### Docs
+
+- docs: update generate.md
+- docs: update pipelines.md
+- docs: update plugins.md
+
+### Other
+
+- update marksync/cli.py
+- update marksync/contract/__init__.py
+- update marksync/contract/block_types.py
+- update marksync/contract/generator.py
+- update marksync/contract/templates.py
+- update marksync/conversation/__init__.py
+- update marksync/conversation/engine.py
+- update marksync/dashboard/__init__.py
+- update marksync/dashboard/app.py
+- update marksync/dashboard/html.py
+- ... and 13 more
+
+
 ## [0.2.12] - 2026-02-18
 
 ### Summary
