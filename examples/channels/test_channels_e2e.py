@@ -28,6 +28,8 @@ import time
 import types
 import uuid
 
+import pytest
+
 # Stub marksync to avoid heavy deps
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, _ROOT)
@@ -84,6 +86,7 @@ results = Results()
 
 # ── Test: MQTT ───────────────────────────────────────────────────────────
 
+@pytest.mark.anyio
 async def test_mqtt():
     name = "MQTT pub/sub"
     try:
@@ -116,6 +119,7 @@ async def test_mqtt():
 
 # ── Test: Redis ──────────────────────────────────────────────────────────
 
+@pytest.mark.anyio
 async def test_redis():
     name = "Redis pub/sub"
     try:
@@ -149,6 +153,7 @@ async def test_redis():
 
 # ── Test: AMQP (RabbitMQ) ───────────────────────────────────────────────
 
+@pytest.mark.anyio
 async def test_amqp():
     name = "AMQP (RabbitMQ)"
     try:
@@ -184,6 +189,7 @@ async def test_amqp():
 
 # ── Test: NATS ───────────────────────────────────────────────────────────
 
+@pytest.mark.anyio
 async def test_nats():
     name = "NATS pub/sub"
     try:
@@ -216,6 +222,7 @@ async def test_nats():
 
 # ── Test: SSE ────────────────────────────────────────────────────────────
 
+@pytest.mark.anyio
 async def test_sse():
     name = "SSE broadcast"
     try:
@@ -248,6 +255,7 @@ async def test_sse():
 
 # ── Test: CLI stdio ──────────────────────────────────────────────────────
 
+@pytest.mark.anyio
 async def test_cli():
     name = "CLI stdio"
     try:
@@ -267,6 +275,7 @@ async def test_cli():
 
 # ── Test: HTTP Webhook ───────────────────────────────────────────────────
 
+@pytest.mark.anyio
 async def test_http_webhook():
     name = "HTTP Webhook"
     try:

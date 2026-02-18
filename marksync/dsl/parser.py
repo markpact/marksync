@@ -14,6 +14,64 @@ from enum import Enum
 from typing import Any
 
 
+# ── Brace expansion ───────────────────────────────────────────────────────
+
+_BRACE_RE = re.compile(r"\{(\d+)\.\.(\d+)\}|\{([^}]+)\}")
+
+
+def expand_braces(text: str) -> list[str]:
+    """
+    Expand brace expressions in a token.
+
+    Examples::
+
+        expand_braces('coder-{1..3}')  -> ['coder-1', 'coder-2', 'coder-3']
+        expand_braces('{a,b,c}')       -> ['a', 'b', 'c']
+        expand_braces('plain')         -> ['plain']
+    """
+    m = _BRACE_RE.search(text)
+    if not m:
+        return [text]
+
+    pre = text[:m.start()]
+    post = text[m.end():]
+
+    if m.group(1) is not None:  # numeric range {1..5}
+        lo, hi = int(m.group(1)), int(m.group(2))
+        step = 1 if lo <= hi else -1
+        variants: list[str] = [str(i) for i in range(lo, hi + step, step)]
+    else:  # comma set {a,b,c}
+        variants = [v.strip() for v in m.group(3).split(",")]
+
+    results = []
+    for v in variants:
+        for suffix in expand_braces(post):
+            results.append(pre + v + suffix)
+    return results
+
+
+def expand_command_line(line: str) -> list[str]:
+    """
+    Expand brace expressions in a full DSL command line.
+    Returns one line per combination.
+
+    Example::
+
+        expand_command_line('AGENT coder-{1..3} editor')
+        # -> ['AGENT coder-1 editor', 'AGENT coder-2 editor', 'AGENT coder-3 editor']
+    """
+    if not _BRACE_RE.search(line):
+        return [line]
+    try:
+        tokens = shlex.split(line)
+    except ValueError:
+        tokens = line.split()
+    expanded: list[list[str]] = [expand_braces(t) for t in tokens]
+    # Cartesian product
+    from itertools import product
+    return [" ".join(combo) for combo in product(*expanded)]
+
+
 class CommandType(str, Enum):
     AGENT = "agent"
     KILL = "kill"
@@ -192,13 +250,23 @@ class DSLParser:
         return options
 
     def parse_script(self, text: str) -> list[DSLCommand]:
-        """Parse multiple lines (script file)."""
+        """Parse multiple lines (script file) with brace expansion."""
         commands = []
         for line in text.splitlines():
             line = line.strip()
-            if line and not line.startswith("#"):
-                commands.append(self.parse(line))
-        return [c for c in commands if c.type != CommandType.UNKNOWN]
+            if not line or line.startswith("#"):
+                continue
+            for expanded in expand_command_line(line):
+                cmd = self.parse(expanded)
+                if cmd.type != CommandType.UNKNOWN:
+                    commands.append(cmd)
+        return commands
+
+    def parse_with_expansion(self, line: str) -> list[DSLCommand]:
+        """Parse a single line, returning multiple commands if brace expansion applies."""
+        lines = expand_command_line(line.strip())
+        return [c for c in (self.parse(l) for l in lines)
+                if c.type != CommandType.UNKNOWN]
 
 
 def _coerce(value: str) -> Any:
