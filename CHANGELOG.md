@@ -1,3 +1,14 @@
+## [0.2.5] - 2026-02-18
+
+### Summary
+
+chore(config): code relationship mapping with 2 supporting modules
+
+### Build
+
+- update pyproject.toml
+
+
 ## [0.2.4] - 2026-02-18
 
 ### Summary
