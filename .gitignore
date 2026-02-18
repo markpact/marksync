@@ -1,3 +1,16 @@
+.idea
+screenshots/
+/logs
+logs/
+.zip
+backups/
+frontend/playwright-report/
+frontend/test-results/
+venv
+frontend/.lint-backup
+node_modules
+package-lock.json
+# package-lock.json is committed for reproducible Docker builds (npm ci)
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -151,8 +164,8 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
-/site
+# mkdocs documentation (disabled — site/ is our docs project)
+# /site
 
 # mypy
 .mypy_cache/
@@ -205,3 +218,45 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Generated test artifacts and local data
+# (avoid adding rapidly changing files created by test/e2e scripts)
+frontend/tests/all-pages-documentation.md
+frontend/tests/all-pages-list.json
+frontend/tests/test-all-pages-curl.sh
+frontend/tests/e2e-uniqueness-report.json
+frontend/tmp/
+syntax-report.json
+tmp/
+
+# K8s secrets (never commit actual keys)
+**/secret.env
+!**/secret.env.example
+
+# Local databases
+backend/*.db
+*.db
+backend/*.sqlite
+
+# Pendrive / storage data (keep folder structure via .gitkeep, ignore actual data)
+pendrive/logs/system/*.log
+pendrive/logs/app/*.log
+pendrive/stats/daily/stats-*.json
+pendrive/stats/aggregated/stats-*.json
+pendrive/templates/scenarios-*.json
+pendrive/templates/xml-templates/
+pendrive/templates/dsl/
+pendrive/reports/pdf/*.pdf
+pendrive/reports/xml/*.xml
+pendrive/.device_info
+pendrive/.sync_manifest
+pendrive/README.txt
+# Local stats/restart cache (~/.identification-kiosk/stats/)
+
+# Docs site generated files
+site/public/docs/
+site/public/docs-manifest.json
+site/public/artifacts/*.deb
+site/public/artifacts/*.AppImage
+site/public/artifacts/*.msi
+site/public/artifacts/*.exe

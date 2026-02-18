@@ -120,5 +120,49 @@ def blocks(readme):
                   f"{sum(len(b.content) for b in parsed)} chars")
 
 
+@main.command()
+@click.option("--server-uri", default="ws://localhost:8765", envvar="MARKSYNC_SERVER")
+@click.option("--ollama-url", default="http://localhost:11434", envvar="OLLAMA_URL")
+@click.option("--script", default=None, help="Execute a .msdsl script file")
+def shell(server_uri, ollama_url, script):
+    """Interactive DSL shell for agent orchestration."""
+    from marksync.dsl.shell import DSLShell
+    from marksync.dsl.executor import DSLExecutor
+
+    executor = DSLExecutor(server_uri=server_uri, ollama_url=ollama_url)
+
+    if script:
+        from pathlib import Path
+        text = Path(script).read_text("utf-8")
+        results = asyncio.run(executor.execute_script(text))
+        for r in results:
+            ok = "[green]OK[/]" if r.get("ok") else "[red]FAIL[/]"
+            console.print(f"  {ok}  {r}")
+    else:
+        sh = DSLShell(executor=executor)
+        asyncio.run(sh.run())
+
+
+@main.command()
+@click.option("--host", default="0.0.0.0")
+@click.option("--port", default=8080, type=int)
+@click.option("--server-uri", default="ws://localhost:8765", envvar="MARKSYNC_SERVER")
+@click.option("--ollama-url", default="http://localhost:11434", envvar="OLLAMA_URL")
+def api(host, port, server_uri, ollama_url):
+    """Start the REST/WS API server for DSL remote control."""
+    from marksync.dsl.executor import DSLExecutor
+    from marksync.dsl.api import create_api_app
+    import uvicorn
+
+    executor = DSLExecutor(server_uri=server_uri, ollama_url=ollama_url)
+    app = create_api_app(executor)
+
+    console.print(f"[bold green]Starting DSL API[/] on http://{host}:{port}")
+    console.print(f"  REST:      http://{host}:{port}/api/v1/")
+    console.print(f"  WebSocket: ws://{host}:{port}/ws/dsl")
+    console.print(f"  Docs:      http://{host}:{port}/docs")
+    uvicorn.run(app, host=host, port=port, log_level="info")
+
+
 if __name__ == "__main__":
     main()

@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install marksync from local source
 COPY pyproject.toml README.md VERSION ./
 COPY marksync/ marksync/
+COPY examples/ examples/
 RUN pip install --no-cache-dir ".[all]"
 
 # Install markpact separately (for deployment agent)
