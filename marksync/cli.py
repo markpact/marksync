@@ -18,6 +18,8 @@ from rich.console import Console
 from rich.table import Table
 from rich.logging import RichHandler
 
+from marksync.settings import settings
+
 console = Console()
 
 
@@ -37,9 +39,9 @@ def main(verbose):
 
 
 @main.command()
-@click.argument("readme", default="README.md")
-@click.option("--host", default="0.0.0.0")
-@click.option("--port", default=8765, type=int)
+@click.argument("readme", default=settings.PROJECT_README)
+@click.option("--host", default=settings.MARKSYNC_HOST)
+@click.option("--port", default=settings.MARKSYNC_PORT, type=int)
 def server(readme, host, port):
     """Start the sync server."""
     from marksync.sync.engine import SyncServer
@@ -54,9 +56,9 @@ def server(readme, host, port):
 @click.option("--role", type=click.Choice(["editor", "reviewer", "deployer", "monitor"]),
               default="monitor")
 @click.option("--name", default=None)
-@click.option("--server-uri", default="ws://sync-server:8765", envvar="MARKSYNC_SERVER")
-@click.option("--ollama-url", default="http://ollama:11434", envvar="OLLAMA_URL")
-@click.option("--model", default="qwen2.5-coder:7b", envvar="OLLAMA_MODEL")
+@click.option("--server-uri", default=settings.MARKSYNC_SERVER, envvar="MARKSYNC_SERVER")
+@click.option("--ollama-url", default=settings.OLLAMA_URL, envvar="OLLAMA_URL")
+@click.option("--model", default=settings.OLLAMA_MODEL, envvar="OLLAMA_MODEL")
 @click.option("--auto-edit", is_flag=True, help="Auto-apply LLM edits (editor role)")
 def agent(role, name, server_uri, ollama_url, model, auto_edit):
     """Start an AI agent that collaborates on the project."""
@@ -77,8 +79,8 @@ def agent(role, name, server_uri, ollama_url, model, auto_edit):
 
 
 @main.command()
-@click.argument("readme", default="README.md")
-@click.option("--server-uri", default="ws://localhost:8765", envvar="MARKSYNC_SERVER")
+@click.argument("readme", default=settings.PROJECT_README)
+@click.option("--server-uri", default=settings.MARKSYNC_SERVER, envvar="MARKSYNC_SERVER")
 @click.option("--name", default="cli-push")
 def push(readme, server_uri, name):
     """Push local README changes to sync server (one-shot)."""
@@ -92,7 +94,7 @@ def push(readme, server_uri, name):
 
 
 @main.command()
-@click.argument("readme", default="README.md")
+@click.argument("readme", default=settings.PROJECT_README)
 def blocks(readme):
     """Show all markpact:* blocks in a README."""
     from marksync.sync import BlockParser
@@ -121,8 +123,8 @@ def blocks(readme):
 
 
 @main.command()
-@click.option("--server-uri", default="ws://localhost:8765", envvar="MARKSYNC_SERVER")
-@click.option("--ollama-url", default="http://localhost:11434", envvar="OLLAMA_URL")
+@click.option("--server-uri", default=settings.MARKSYNC_SERVER, envvar="MARKSYNC_SERVER")
+@click.option("--ollama-url", default=settings.OLLAMA_URL, envvar="OLLAMA_URL")
 @click.option("--script", default=None, help="Execute a .msdsl script file")
 def shell(server_uri, ollama_url, script):
     """Interactive DSL shell for agent orchestration."""
@@ -144,10 +146,10 @@ def shell(server_uri, ollama_url, script):
 
 
 @main.command()
-@click.option("--host", default="0.0.0.0")
-@click.option("--port", default=8080, type=int)
-@click.option("--server-uri", default="ws://localhost:8765", envvar="MARKSYNC_SERVER")
-@click.option("--ollama-url", default="http://localhost:11434", envvar="OLLAMA_URL")
+@click.option("--host", default=settings.MARKSYNC_API_HOST)
+@click.option("--port", default=settings.MARKSYNC_API_PORT, type=int)
+@click.option("--server-uri", default=settings.MARKSYNC_SERVER, envvar="MARKSYNC_SERVER")
+@click.option("--ollama-url", default=settings.OLLAMA_URL, envvar="OLLAMA_URL")
 def api(host, port, server_uri, ollama_url):
     """Start the REST/WS API server for DSL remote control."""
     from marksync.dsl.executor import DSLExecutor

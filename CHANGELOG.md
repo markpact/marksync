@@ -1,3 +1,27 @@
+## [0.2.2] - 2026-02-18
+
+### Summary
+
+feat(docs): CLI interface improvements
+
+### Docs
+
+- docs: update README
+- docs: update README
+- docs: update README
+
+### Test
+
+- update tests/test_examples.py
+- update tests/test_settings.py
+
+### Other
+
+- update marksync/cli.py
+- update marksync/dsl/executor.py
+- update marksync/settings.py
+
+
 ## [0.2.1] - 2026-02-18
 
 ### Summary

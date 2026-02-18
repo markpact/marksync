@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from marksync.dsl.parser import DSLParser, DSLCommand, CommandType
+from marksync.settings import settings
 
 log = logging.getLogger("marksync.dsl")
 
@@ -74,21 +75,21 @@ class DSLExecutor:
         history:   list of executed commands
     """
 
-    def __init__(self, server_uri: str = "ws://localhost:8765",
-                 ollama_url: str = "http://localhost:11434",
+    def __init__(self, server_uri: str | None = None,
+                 ollama_url: str | None = None,
                  agent_factory: Callable | None = None):
-        self.server_uri = server_uri
-        self.ollama_url = ollama_url
+        self.server_uri = server_uri or settings.MARKSYNC_SERVER
+        self.ollama_url = ollama_url or settings.OLLAMA_URL
         self.parser = DSLParser()
         self.agents: dict[str, AgentHandle] = {}
         self.pipelines: dict[str, Pipeline] = {}
         self.routes: list[Route] = []
         self.config: dict[str, Any] = {
-            "server_uri": server_uri,
-            "ollama_url": ollama_url,
-            "ollama_model": "qwen2.5-coder:7b",
+            "server_uri": self.server_uri,
+            "ollama_url": self.ollama_url,
+            "ollama_model": settings.OLLAMA_MODEL,
             "auto_edit": False,
-            "log_level": "INFO",
+            "log_level": settings.LOG_LEVEL,
         }
         self.history: list[dict] = []
         self._agent_factory = agent_factory

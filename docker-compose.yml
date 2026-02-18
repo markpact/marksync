@@ -34,20 +34,43 @@ services:
   sync-server:
     build: .
     container_name: marksync-server
-    command: ["server", "README.md", "--port", "8765"]
+    command: ["server", "${PROJECT_README:-README.md}", "--port", "${MARKSYNC_PORT:-8765}"]
     ports:
-      - "8765:8765"
+      - "${MARKSYNC_PORT:-8765}:${MARKSYNC_PORT:-8765}"
     volumes:
       - project-data:/project
+    env_file: .env
     environment:
       - PYTHONUNBUFFERED=1
     healthcheck:
       test: ["CMD", "python", "-c",
-        "import asyncio,websockets; asyncio.run(websockets.connect('ws://localhost:8765').__aenter__())"]
+        "import asyncio,websockets; asyncio.run(websockets.connect('ws://localhost:${MARKSYNC_PORT:-8765}').__aenter__())"]
       interval: 5s
       timeout: 3s
       retries: 10
       start_period: 5s
+    restart: unless-stopped
+
+  # ─── DSL API SERVER ─────────────────────────────────────────────────────
+  api-server:
+    build: .
+    container_name: marksync-api
+    command: >
+      api --host 0.0.0.0 --port ${MARKSYNC_API_PORT:-8080}
+      --server-uri ${MARKSYNC_SERVER_DOCKER:-ws://sync-server:8765}
+      --ollama-url ${OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
+    ports:
+      - "${MARKSYNC_API_PORT:-8080}:${MARKSYNC_API_PORT:-8080}"
+    depends_on:
+      sync-server:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MARKSYNC_SERVER=${MARKSYNC_SERVER_DOCKER:-ws://sync-server:8765}
+      - OLLAMA_URL=${OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
   # ─── AGENT: EDITOR (LLM-powered code improvements) ───────────────────────
@@ -56,17 +79,18 @@ services:
     container_name: marksync-agent-editor
     command: >
       agent --role editor --name "editor-1"
-      --server-uri ws://sync-server:8765
-      --ollama-url http://host.docker.internal:11434
-      --model qwen2.5-coder:7b
+      --server-uri ${MARKSYNC_SERVER_DOCKER:-ws://sync-server:8765}
+      --ollama-url ${OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
+      --model ${OLLAMA_MODEL:-qwen2.5-coder:7b}
     depends_on:
       sync-server:
         condition: service_healthy
+    env_file: .env
     environment:
       - PYTHONUNBUFFERED=1
-      - MARKSYNC_SERVER=ws://sync-server:8765
-      - OLLAMA_URL=http://host.docker.internal:11434
-      - OLLAMA_MODEL=qwen2.5-coder:7b
+      - MARKSYNC_SERVER=${MARKSYNC_SERVER_DOCKER:-ws://sync-server:8765}
+      - OLLAMA_URL=${OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5-coder:7b}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
@@ -77,12 +101,13 @@ services:
     container_name: marksync-agent-reviewer
     command: >
       agent --role reviewer --name "reviewer-1"
-      --server-uri ws://sync-server:8765
-      --ollama-url http://host.docker.internal:11434
-      --model qwen2.5-coder:7b
+      --server-uri ${MARKSYNC_SERVER_DOCKER:-ws://sync-server:8765}
+      --ollama-url ${OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
+      --model ${OLLAMA_MODEL:-qwen2.5-coder:7b}
     depends_on:
       sync-server:
         condition: service_healthy
+    env_file: .env
     environment:
       - PYTHONUNBUFFERED=1
     extra_hosts:
@@ -95,13 +120,14 @@ services:
     container_name: marksync-agent-deployer
     command: >
       agent --role deployer --name "deployer-1"
-      --server-uri ws://sync-server:8765
-      --ollama-url http://host.docker.internal:11434
+      --server-uri ${MARKSYNC_SERVER_DOCKER:-ws://sync-server:8765}
+      --ollama-url ${OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
     depends_on:
       sync-server:
         condition: service_healthy
     volumes:
       - project-data:/project
+    env_file: .env
     environment:
       - PYTHONUNBUFFERED=1
     extra_hosts:
@@ -114,11 +140,12 @@ services:
     container_name: marksync-agent-monitor
     command: >
       agent --role monitor --name "monitor-1"
-      --server-uri ws://sync-server:8765
-      --ollama-url http://host.docker.internal:11434
+      --server-uri ${MARKSYNC_SERVER_DOCKER:-ws://sync-server:8765}
+      --ollama-url ${OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
     depends_on:
       sync-server:
         condition: service_healthy
+    env_file: .env
     environment:
       - PYTHONUNBUFFERED=1
     extra_hosts:
