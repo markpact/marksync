@@ -1,0 +1,188 @@
+project: marksync
+generated: "2026-02-18T19:15:26.358683"
+modules[15]{path,lang,items}:
+  tests/test_dsl.py,python,38
+  tests/test_marksync.py,python,2
+  marksync/cli.py,python,8
+  marksync/__init__.py,python,0
+  marksync/sync/engine.py,python,16
+  marksync/sync/crdt.py,python,10
+  marksync/sync/__init__.py,python,5
+  marksync/transport/__init__.py,python,0
+  marksync/agents/base.py,python,0
+  marksync/agents/__init__.py,python,18
+  marksync/dsl/__init__.py,python,0
+  marksync/dsl/parser.py,python,8
+  marksync/dsl/api.py,python,2
+  marksync/dsl/executor.py,python,27
+  marksync/dsl/shell.py,python,12
+
+function_details:
+  tests/test_dsl.py:
+    functions[38]{name,kind,sig,loc,async,lines,cc,does}:
+      TestDSLParser.setup_method,method,(),14-15,false,2,1,initializes method
+      TestDSLParser.test_parse_agent,method,(),17-21,false,5,1,checks parse agent
+      TestDSLParser.test_parse_agent_auto_edit,method,(),23-26,false,4,1,checks parse agent auto edit
+      TestDSLParser.test_parse_kill,method,(),28-31,false,4,1,checks parse kill
+      TestDSLParser.test_parse_list,method,(),33-36,false,4,1,checks parse list
+      TestDSLParser.test_parse_list_default,method,(),38-41,false,4,1,checks parse list default
+      TestDSLParser.test_parse_set,method,(),43-47,false,5,1,checks parse set
+      TestDSLParser.test_parse_status,method,(),49-52,false,4,1,checks parse status
+      TestDSLParser.test_parse_status_no_args,method,(),54-57,false,4,1,checks parse status no args
+      TestDSLParser.test_parse_deploy,method,(),59-62,false,4,1,checks parse deploy
+      TestDSLParser.test_parse_sync,method,(),64-67,false,4,1,checks parse sync
+      TestDSLParser.test_parse_route,method,(),69-73,false,5,1,checks parse route
+      TestDSLParser.test_parse_help,method,(),75-78,false,4,1,checks parse help
+      TestDSLParser.test_parse_connect,method,(),80-83,false,4,1,checks parse connect
+      TestDSLParser.test_parse_comment,method,(),85-87,false,3,1,checks parse comment
+      TestDSLParser.test_parse_empty,method,(),89-91,false,3,1,checks parse empty
+      TestDSLParser.test_parse_case_insensitive,method,(),93-95,false,3,1,checks parse case insensitive
+      TestDSLParser.test_parse_pipe,method,(),97-102,false,6,1,checks parse pipe
+      TestDSLParser.test_parse_script,method,(),104-115,false,12,1,checks parse script
+      TestDSLParser.test_coerce_boolean_true,method,(),117-119,false,3,1,checks coerce boolean true
+      TestDSLParser.test_coerce_boolean_false,method,(),121-123,false,3,1,checks coerce boolean false
+      TestDSLParser.test_coerce_integer,method,(),125-127,false,3,1,checks coerce integer
+      TestDSLParser.test_coerce_float,method,(),129-131,false,3,1,checks coerce float
+      TestDSLExecutor.setup_method,method,(),138-139,false,2,1,initializes method
+      TestDSLExecutor.test_agent_create,method,(),141-148,false,8,1,checks agent create
+      TestDSLExecutor.test_agent_duplicate,method,(),150-155,false,6,1,checks agent duplicate
+      TestDSLExecutor.test_kill_agent,method,(),157-162,false,6,1,checks kill agent
+      TestDSLExecutor.test_kill_nonexistent,method,(),164-168,false,5,1,checks kill nonexistent
+      TestDSLExecutor.test_list_agents,method,(),170-176,false,7,1,checks list agents
+      TestDSLExecutor.test_set_config,method,(),178-183,false,6,1,checks set config
+      TestDSLExecutor.test_status,method,(),185-190,false,6,1,checks status
+      TestDSLExecutor.test_pipe_create,method,(),192-198,false,7,1,checks pipe create
+      TestDSLExecutor.test_route_create,method,(),200-206,false,7,1,checks route create
+      TestDSLExecutor.test_help,method,(),208-213,false,6,1,checks help
+      TestDSLExecutor.test_execute_script,method,(),215-221,false,7,2,checks execute script
+      TestDSLExecutor.test_snapshot,method,(),223-229,false,7,1,checks snapshot
+      TestDSLExecutor.test_history_tracking,method,(),231-235,false,5,1,checks history tracking
+      TestDSLExecutor.test_unknown_command,method,(),237-241,false,5,1,checks unknown command
+  tests/test_marksync.py:
+    functions[2]{name,kind,sig,loc,async,lines,cc,does}:
+      test_placeholder,function,(),4-6,false,3,1,Placeholder test to verify the test setup works.
+      test_import,function,(),9-11,false,3,1,Verify the main package can be imported.
+  marksync/cli.py:
+    functions[8]{name,kind,sig,loc,async,lines,cc,does}:
+      _setup_logging,function,"(verbose:bool=False)",24-29,false,6,2,initializes logging
+      main,function,(verbose),34-36,false,3,1,marksync — Multi-agent collaborative editing for Markpact projects.
+      server,function,"(readme, host, port)",43-50,false,8,1,Start the sync server.
+      agent,function,"(role, name, server_uri, ollama_url, model, auto_edit)",61-76,false,16,2,Start an AI agent that collaborates on the project.
+      push,function,"(readme, server_uri, name)",83-91,false,9,1,Push local README changes to sync server (one-shot).
+      blocks,function,(readme),96-120,false,25,3,"Show all markpact:* blocks in a README."
+      shell,function,"(server_uri, ollama_url, script)",127-143,false,17,4,Interactive DSL shell for agent orchestration.
+      api,function,"(host, port, server_uri, ollama_url)",151-164,false,14,1,Start the REST/WS API server for DSL remote control.
+  marksync/sync/engine.py:
+    functions[16]{name,kind,sig,loc,async,lines,cc,does}:
+      _signal,function,"(type:str) -> str",38-39,false,2,1,signal
+      _parse,function,"(raw:str) -> dict",42-43,false,2,1,parses
+      SyncServer.__init__,method,"(readme:str='README.md', host='0.0.0.0', port=8765)",63-72,false,10,1,creates
+      SyncServer.on_deploy,method,(callback),74-76,false,3,1,"Register callback when blocks change: callback(changed_block_ids)."
+      SyncServer.load,method,(),78-85,false,8,3,retrieves
+      SyncServer.save,method,(),87-92,false,6,2,Persist current block state back to README.md.
+      SyncServer._manifest,method,"() -> dict[str, str]",94-98,false,5,2,manifest
+      SyncServer._handler,method,(ws),102-119,true,18,3,handler
+      SyncServer._dispatch,method,"(msg:dict, sender)",121-177,true,57,10,sends
+      SyncServer._broadcast,method,"(message:str, exclude=None)",179-185,true,7,5,broadcast
+      SyncServer.run,method,(),189-194,true,6,1,starts
+      SyncClient.__init__,method,"(readme:str='README.md', uri='ws://localhost:8765', name:str='client')",206-213,false,8,1,creates
+      SyncClient.on_update,method,(callback),215-217,false,3,1,"Register callback(block_id, new_content) for remote changes."
+      SyncClient.load,method,(),219-223,false,5,3,retrieves
+      SyncClient.push_changes,method,"(old_blocks:Any=None)",225-272,true,48,9,"One-shot: connect, push changed blocks, disconnect."
+      SyncClient.watch,method,(),274-303,true,30,7,"Long-running: connect, listen for remote changes,"
+  marksync/sync/crdt.py:
+    functions[10]{name,kind,sig,loc,async,lines,cc,does}:
+      CRDTDocument.__init__,method,"(project:str='default')",25-34,false,10,1,creates
+      CRDTDocument.load_markdown,method,"(markdown:str)",36-42,false,7,2,Parse markdown and populate CRDT types.
+      CRDTDocument.set_block,method,"(block_id:str, content:str)",44-48,false,5,2,Set block content.
+      CRDTDocument.get_block,method,"(block_id:str) -> str | None",50-54,false,5,2,retrieves block
+      CRDTDocument.get_all,method,"() -> dict[str, str]",56-63,false,8,3,retrieves all
+      CRDTDocument.manifest,method,"() -> dict[str, str]",65-69,false,5,2,manifest
+      CRDTDocument.get_state,method,() -> bytes,73-74,false,2,1,retrieves state
+      CRDTDocument.get_update,method,"(state_vector:Any=None) -> bytes",76-79,false,4,2,retrieves update
+      CRDTDocument.apply_update,method,"(update:bytes)",81-82,false,2,1,apply update
+      CRDTDocument._order_list,method,"() -> list[str]",86-87,false,2,2,sorts list
+  marksync/sync/__init__.py:
+    functions[5]{name,kind,sig,loc,async,lines,cc,does}:
+      MarkpactBlock.__post_init__,method,(),26-31,false,6,3,creates init
+      BlockParser.parse,method,"(markdown:str) -> list[MarkpactBlock]",53-79,false,27,8,parses
+      BlockParser._make_id,method,"(kind:str, meta:str) -> str",82-88,false,7,3,creates id
+      BlockParser.rebuild_markdown,method,"(original:str, blocks:dict[str,str]) -> str",91-106,false,16,6,Replace block contents in original markdown with updated versions.
+      BlockParser.manifest,method,"(blocks:list[MarkpactBlock]) -> dict[str, str]",109-111,false,3,2,block_id -> sha256 map for delta detection.
+  marksync/agents/__init__.py:
+    functions[18]{name,kind,sig,loc,async,lines,cc,does}:
+      _signal,function,"(type:str) -> str",26-27,false,2,1,signal
+      _parse,function,"(raw:str) -> dict",29-30,false,2,1,parses
+      OllamaClient.__init__,method,"(base_url:str='http://localhost:11434', model:str='qwen2.5-coder:7b')",40-44,false,5,1,creates
+      OllamaClient.generate,method,"(prompt:str, system:str='') -> str",46-54,true,9,2,creates
+      OllamaClient.chat,method,"(messages:list[dict]) -> str",56-63,true,8,1,chat
+      OllamaClient.health,method,() -> bool,65-70,true,6,2,health
+      AgentWorker.__init__,method,"(config:AgentConfig)",96-103,false,8,1,creates
+      AgentWorker.run,method,(),107-123,true,17,4,"Main agent loop: connect → sync → process → repeat."
+      AgentWorker._connect_and_run,method,(),125-149,true,25,5,registers and run
+      AgentWorker._on_message,method,"(msg:dict)",151-167,true,17,4,handles message
+      AgentWorker._process_update,method,"(block_id:str, content:str)",169-189,true,21,7,Dispatch to role-specific handler.
+      AgentWorker._edit_block,method,"(block_id:str, content:str)",193-213,true,21,5,"Editor agent: improve code using LLM."
+      AgentWorker._review_block,method,"(block_id:str, content:str)",217-235,true,19,2,"Reviewer agent: analyze code quality, log findings."
+      AgentWorker._deploy_block,method,"(block_id:str, content:str)",239-249,true,11,3,"Deployer agent: trigger markpact build on changes."
+      AgentWorker._monitor_block,method,"(block_id:str, content:str)",253-257,true,5,1,"Monitor agent: log all changes with stats."
+      AgentWorker._push_block,method,"(block_id:str, new_content:str)",261-281,true,21,4,Send updated block to sync server.
+      AgentWorker.status,method,() -> dict,285-292,false,8,1,status
+      AgentWorker.stop,method,(),294-295,false,2,1,stops
+  marksync/dsl/parser.py:
+    functions[8]{name,kind,sig,loc,async,lines,cc,does}:
+      _coerce,function,"(value:str) -> Any",199-213,false,15,5,Coerce string values to appropriate Python types.
+      DSLCommand.target,method,() -> str,47-48,false,2,2,target
+      DSLCommand.value,method,() -> str,51-52,false,2,2,value
+      DSLParser.parse,method,"(line:str) -> DSLCommand",75-122,false,48,13,Parse a single DSL command line.
+      DSLParser._parse_pipe,method,"(tokens:list[str], raw:str) -> DSLCommand",124-160,false,37,8,"Parse: PIPE <name> <src> -> <dst1> -> <dst2> [--option value]"
+      DSLParser._parse_route,method,"(tokens:list[str], raw:str) -> DSLCommand",162-172,false,11,4,"Parse: ROUTE <pattern> -> <agent>"
+      DSLParser._parse_options,method,"(tokens:list[str]) -> dict[str, Any]",174-187,false,14,5,parses options
+      DSLParser.parse_script,method,"(text:str) -> list[DSLCommand]",189-196,false,8,6,Parse multiple lines (script file).
+  marksync/dsl/api.py:
+    functions[2]{name,kind,sig,loc,async,lines,cc,does}:
+      create_api_app,function,"(executor:Any=None) -> FastAPI",67-220,false,154,2,Create a FastAPI app wired to the given DSLExecutor.
+      APIResponse.__init__,method,(),59-62,false,4,3,creates
+  marksync/dsl/executor.py:
+    functions[27]{name,kind,sig,loc,async,lines,cc,does}:
+      AgentHandle.to_dict,method,() -> dict,32-40,false,9,1,converts dict
+      Pipeline.to_dict,method,() -> dict,50-51,false,2,1,converts dict
+      Route.to_dict,method,() -> dict,61-62,false,2,1,converts dict
+      DSLExecutor.__init__,method,"(server_uri:str='ws://localhost:8765', ollama_url:str='http://localhost:11434', agent_factory:Any=None)",77-95,false,19,1,creates
+      DSLExecutor.execute,method,"(line:str) -> dict[str, Any]",99-102,true,4,1,Parse and execute a DSL command.
+      DSLExecutor.execute_command,method,"(cmd:DSLCommand) -> dict[str, Any]",104-139,true,36,4,Execute a parsed DSLCommand.
+      DSLExecutor.execute_script,method,"(text:str) -> list[dict[str, Any]]",141-148,true,8,2,Execute a multi-line DSL script.
+      DSLExecutor._cmd_agent,method,"(cmd:DSLCommand) -> dict",152-184,true,33,6,"AGENT <name> <role> [--model M] [--auto-edit] [--watch block1,block2]"
+      DSLExecutor._spawn_agent,method,"(handle:AgentHandle)",186-206,true,21,3,Spawn an actual AgentWorker via the factory.
+      DSLExecutor._cmd_kill,method,"(cmd:DSLCommand) -> dict",208-229,true,22,6,KILL <name> — stop an agent.
+      DSLExecutor._cmd_list,method,"(cmd:DSLCommand) -> dict",231-244,true,14,10,"LIST [agents|pipelines|routes|config]"
+      DSLExecutor._cmd_pipe,method,"(cmd:DSLCommand) -> dict",246-258,true,13,4,PIPE <name> <src> -> <dst1> -> <dst2>
+      DSLExecutor._cmd_send,method,"(cmd:DSLCommand) -> dict",260-274,true,15,5,SEND <agent> <message>
+      DSLExecutor._cmd_set,method,"(cmd:DSLCommand) -> dict",276-287,true,12,2,SET <key> <value>
+      DSLExecutor._cmd_status,method,"(cmd:DSLCommand) -> dict",289-306,true,18,5,"STATUS [<agent>]"
+      DSLExecutor._cmd_deploy,method,"(cmd:DSLCommand) -> dict",308-313,true,6,1,"DEPLOY [--force]"
+      DSLExecutor._cmd_sync,method,"(cmd:DSLCommand) -> dict",315-320,true,6,2,"SYNC [push|pull|status]"
+      DSLExecutor._cmd_route,method,"(cmd:DSLCommand) -> dict",322-334,true,13,3,ROUTE <pattern> -> <agent>
+      DSLExecutor._cmd_log,method,"(cmd:DSLCommand) -> dict",336-340,true,5,1,"LOG [<agent>] [--tail N]"
+      DSLExecutor._cmd_help,method,"(cmd:DSLCommand) -> dict",342-368,true,27,3,"HELP [<command>]"
+      DSLExecutor._cmd_connect,method,"(cmd:DSLCommand) -> dict",370-375,true,6,2,"CONNECT [<uri>]"
+      DSLExecutor._cmd_disconnect,method,"(cmd:DSLCommand) -> dict",377-380,true,4,1,DISCONNECT
+      DSLExecutor._cmd_load,method,"(cmd:DSLCommand) -> dict",382-395,true,14,3,LOAD <file.msdsl> — load and execute script.
+      DSLExecutor._cmd_save,method,"(cmd:DSLCommand) -> dict",397-427,true,31,7,SAVE <file.msdsl> — export current state as DSL script.
+      DSLExecutor.on,method,"(event:str, handler:Callable)",431-433,false,3,1,Register event handler.
+      DSLExecutor._emit,method,"(event:str, data:Any=None)",435-441,false,7,3,Emit event to all registered handlers.
+      DSLExecutor.snapshot,method,() -> dict,445-453,false,9,4,Full runtime state snapshot.
+  marksync/dsl/shell.py:
+    functions[12]{name,kind,sig,loc,async,lines,cc,does}:
+      _fmt_time,function,"(ts:float) -> str",192-196,false,5,2,fmt time
+      DSLShell.__init__,method,"(executor:Any=None)",41-43,false,3,2,creates
+      DSLShell.run,method,(),45-65,true,21,6,Start the interactive REPL.
+      DSLShell._render,method,"(result:dict)",67-104,false,38,21,Render a command result with rich formatting.
+      DSLShell._render_help,method,"(help_dict:dict)",106-112,false,7,2,formats help
+      DSLShell._render_agents,method,"(agents:list[dict])",114-136,false,23,3,formats agents
+      DSLShell._render_agent_detail,method,"(a:dict)",138-146,false,9,1,formats agent detail
+      DSLShell._render_pipelines,method,"(pipelines:list[dict])",148-155,false,8,4,formats pipelines
+      DSLShell._render_routes,method,"(routes:list[dict])",157-163,false,7,4,formats routes
+      DSLShell._render_config,method,"(config:dict)",165-171,false,7,2,formats config
+      DSLShell._render_log,method,"(entries:list[dict])",173-180,false,8,3,formats log
+      DSLShell._render_status,method,"(result:dict)",182-189,false,8,2,formats status

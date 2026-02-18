@@ -10,18 +10,31 @@ pip install marksync[all]
 
 Multiple AI agents work simultaneously on a single Markpact `README.md` — editing code, reviewing quality, deploying changes — all synchronized in real-time through delta patches (only changed code blocks are transmitted, not the entire file).
 
+A built-in **DSL** (Domain-Specific Language) lets you orchestrate agents, define pipelines, and control the entire architecture from an interactive shell or via REST/WebSocket API.
+
 ```
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│ sync-server  │◄───►│ agent-editor │     │ agent-deploy │
-│ (WebSocket)  │◄───►│ (LLM edits)  │     │ (markpact)   │
-│ port 8765    │◄───►│              │     │              │
-└──────┬───────┘     └──────────────┘     └──────────────┘
-       │              ┌───────────────┐     ┌──────────────┐
-       ├─────────────►│agent-reviewer │     │ agent-monitor│
-       │              │ (code review) │     │ (log changes)│
-       │              └───────────────┘     └──────────────┘
-       │
-  /project/README.md  ← single source of truth
+┌─────────────────────────────────────────────────────────────┐
+│                    marksync Runtime                         │
+│                                                             │
+│  ┌────────────┐   ┌──────────────────────────────────────┐  │
+│  │ DSL Shell  │──►│         DSL Executor                 │  │
+│  │ (CLI REPL) │   │  agents · pipelines · routes · config│  │
+│  └────────────┘   └──────────┬───────────────────────────┘  │
+│  ┌────────────┐              │ spawns / controls            │
+│  │ REST API   │──►           ▼                              │
+│  │ port 8080  │   ┌──────────────────────────────────────┐  │
+│  └────────────┘   │         Agent Workers                │  │
+│  ┌────────────┐   │  editor · reviewer · deployer · mon  │  │
+│  │  WS API    │──►└──────────┬───────────────────────────┘  │
+│  │  /ws/dsl   │              │                              │
+│  └────────────┘              ▼                              │
+│                   ┌──────────────────────────────────────┐  │
+│                   │     SyncServer (WebSocket:8765)      │  │
+│                   │  CRDT doc · delta patches · persist  │  │
+│                   └──────────────┬───────────────────────┘  │
+│                                  ▼                          │
+│                           README.md (disk)                  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## Prerequisites
@@ -62,7 +75,7 @@ pip install -e .
 marksync push README.md --server-uri ws://localhost:8765
 
 # See what blocks are in a README
-marksync blocks examples/demo-project.md
+marksync blocks demo-project.md
 ```
 
 ## Quick Start — Without Docker
@@ -82,6 +95,64 @@ marksync agent --role monitor --name watcher-1 \
 marksync push README.md --server-uri ws://localhost:8765
 ```
 
+## DSL — Agent Orchestration
+
+The marksync DSL lets you control agents, pipelines, and architecture from a shell or API.
+
+### Interactive Shell
+
+```bash
+marksync shell
+```
+
+```
+marksync> AGENT coder editor --model qwen2.5-coder:7b --auto-edit
+marksync> AGENT reviewer-1 reviewer
+marksync> AGENT watcher monitor
+marksync> PIPE review-flow coder -> reviewer-1 -> deployer-1
+marksync> ROUTE markpact:run -> deployer-1
+marksync> LIST agents
+marksync> STATUS
+```
+
+### DSL Script Files (.msdsl)
+
+```bash
+marksync shell --script setup.msdsl
+```
+
+```bash
+# setup.msdsl
+SET server_uri ws://localhost:8765
+SET ollama_model qwen2.5-coder:7b
+AGENT coder editor --auto-edit
+AGENT reviewer-1 reviewer
+PIPE review-flow coder -> reviewer-1
+ROUTE markpact:run -> deployer-1
+```
+
+### REST / WebSocket API
+
+```bash
+# Start the API server
+marksync api --port 8080
+```
+
+```bash
+# Execute DSL commands via REST
+curl -X POST http://localhost:8080/api/v1/execute \
+  -H "Content-Type: application/json" \
+  -d '{"command": "AGENT coder editor --auto-edit"}'
+
+# List agents
+curl http://localhost:8080/api/v1/agents
+
+# WebSocket: ws://localhost:8080/ws/dsl
+# Swagger docs: http://localhost:8080/docs
+```
+
+See [docs/dsl-reference.md](docs/dsl-reference.md) and [docs/api.md](docs/api.md) for full reference.
+
 ## CLI Reference
 
 ```
@@ -91,6 +162,8 @@ marksync agent --role {editor|reviewer|deployer|monitor} --name NAME
                [--model MODEL] [--auto-edit]
 marksync push README.md [--server-uri ws://...]
 marksync blocks README.md
+marksync shell [--script FILE] [--server-uri ws://...] [--ollama-url http://...]
+marksync api [--host 0.0.0.0] [--port 8080] [--server-uri ws://...] [--ollama-url http://...]
 ```
 
 ## Agent Roles
@@ -134,6 +207,13 @@ config = AgentConfig(
 )
 agent = AgentWorker(config)
 await agent.run()
+
+# DSL — programmatic orchestration
+from marksync.dsl import DSLExecutor
+executor = DSLExecutor(server_uri="ws://localhost:8765")
+await executor.execute("AGENT coder editor --auto-edit")
+await executor.execute("PIPE review coder -> reviewer")
+print(executor.snapshot())
 ```
 
 ## Sync Protocol
@@ -160,9 +240,21 @@ marksync/
 ├── pyproject.toml           # Package config (pip install .)
 ├── Dockerfile               # Single image for server + agents
 ├── docker-compose.yml       # Full ecosystem (5 containers)
-├── src/marksync/
+├── TODO.md                  # Project roadmap
+├── CHANGELOG.md             # Version history
+├── docs/
+│   ├── architecture.md      # System design & data flow
+│   ├── dsl-reference.md     # DSL command reference
+│   └── api.md               # REST & WebSocket API docs
+├── marksync/
 │   ├── __init__.py          # Package exports
-│   ├── cli.py               # Click CLI (marksync command)
+│   ├── cli.py               # Click CLI (server, agent, push, blocks, shell, api)
+│   ├── dsl/
+│   │   ├── __init__.py      # DSL public API
+│   │   ├── parser.py        # DSLParser, DSLCommand, CommandType
+│   │   ├── executor.py      # DSLExecutor, AgentHandle, Pipeline, Route
+│   │   ├── shell.py         # Interactive REPL (DSLShell)
+│   │   └── api.py           # FastAPI REST + WebSocket endpoints
 │   ├── sync/
 │   │   ├── __init__.py      # BlockParser, MarkpactBlock
 │   │   ├── crdt.py          # CRDTDocument (pycrdt/Yjs)
@@ -171,9 +263,11 @@ marksync/
 │   │   ├── __init__.py      # AgentWorker, AgentConfig, OllamaClient
 │   │   └── base.py          # Re-exports
 │   └── transport/
-│       └── __init__.py      # MQTT extension point
-└── examples/
-    └── demo-project.md      # Example Markpact README
+│       └── __init__.py      # MQTT/gRPC extension point
+├── tests/
+│   ├── test_marksync.py     # Import & smoke tests
+│   └── test_dsl.py          # DSL parser & executor tests
+└── demo-project.md          # Example Markpact README
 ```
 
 ## Environment Variables
@@ -200,6 +294,14 @@ markpact README.md --run
 ```
 
 The deployer agent can automatically trigger `markpact` rebuilds when code blocks change.
+
+## Documentation
+
+- [Architecture](docs/architecture.md) — system design, layers, data flow
+- [DSL Reference](docs/dsl-reference.md) — full command reference for the orchestration DSL
+- [API Reference](docs/api.md) — REST & WebSocket API documentation
+- [Changelog](CHANGELOG.md) — version history
+- [TODO](TODO.md) — roadmap and planned features
 
 ## License
 

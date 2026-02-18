@@ -134,10 +134,20 @@ class DSLParser:
             pipe_parts.append(part)
 
         pipe_str = " ".join(pipe_parts)
-        stages = [s.strip() for s in pipe_str.replace("->", "|").split("|") if s.strip()]
+        # Split by -> to get segments
+        segments = [s.strip() for s in pipe_str.replace("->", "|").split("|") if s.strip()]
 
-        name = stages[0] if stages else ""
-        pipeline = stages[1:] if len(stages) > 1 else []
+        # First segment may contain "name src" — split it
+        name = ""
+        pipeline: list[str] = []
+        if segments:
+            first_words = segments[0].split()
+            if len(first_words) >= 2:
+                name = first_words[0]
+                pipeline.append(first_words[1])
+            else:
+                name = first_words[0] if first_words else ""
+            pipeline.extend(segments[1:])
 
         options = self._parse_options(opt_parts)
 

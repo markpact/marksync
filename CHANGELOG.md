@@ -1,3 +1,30 @@
+## [0.2.1] - 2026-02-18
+
+### Summary
+
+feat(docs): configuration management system
+
+### Docs
+
+- docs: update README
+
+### Test
+
+- update tests/test_dsl.py
+
+### Build
+
+- update pyproject.toml
+
+### Other
+
+- update marksync/__init__.py
+- update marksync/dsl/parser.py
+- update project.functions.toon
+- scripts: update project.sh
+- update project.toon-schema.json
+
+
 ## [0.1.3] - 2026-02-18
 
 ### Summary
