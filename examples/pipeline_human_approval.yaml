@@ -1,0 +1,78 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  marksync pipeline prompt — MAN-IN-THE-LOOP EXAMPLE                        ║
+# ╠══════════════════════════════════════════════════════════════════════════════╣
+# ║                                                                            ║
+# ║  Ten przykład pokazuje jak wymusić HUMAN APPROVAL w pipeline.              ║
+# ║  LLM wygeneruje steps z actor: human dla zatwierdzenia.                    ║
+# ║                                                                            ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+name: payment-service
+
+description: >
+  Krytyczna usługa płatności z wymaganą ludzką walidacją przed deploymentem.
+
+# ── Main prompt — KLUCZ: wymuś human approval ──────────────────────────────────
+prompt: |
+  Build a FastAPI payment processing service with the following endpoints:
+
+  1. POST /payments/charge
+     - Charge a credit card
+     - Validate card number (Luhn algorithm)
+     - Return transaction ID
+
+  2. GET /payments/{transaction_id}
+     - Get transaction status
+
+  3. POST /payments/refund/{transaction_id}
+     - Process refund
+
+  4. GET /health
+     - Health check endpoint
+
+  CRITICAL REQUIREMENTS:
+  - Generate a pipeline with HUMAN APPROVAL steps
+  - Before deployment, a human must review and approve:
+    * Security audit of payment code
+    * Compliance check (PCI-DSS)
+    * Final deployment approval
+  - Use actor: human for approval steps
+  - Use actor: llm for code generation steps
+
+  Pipeline should have these steps:
+  1. generate_code (actor: llm) - generate initial code
+  2. security_review (actor: llm) - automated security scan
+  3. human_security_approval (actor: human) - CRITICAL: human must approve
+  4. compliance_check (actor: llm) - automated compliance scan
+  5. human_compliance_approval (actor: human) - CRITICAL: human must approve
+  6. deploy_staging (actor: llm) - deploy to staging
+  7. human_deployment_approval (actor: human) - CRITICAL: final approval
+  8. deploy_production (actor: llm) - deploy to production
+
+  Requirements:
+  - Use stripe-mock for testing (no real Stripe keys)
+  - Include input validation with Pydantic
+  - Log all transactions
+  - Docker container must be minimal
+
+# ── Agents involved ────────────────────────────────────────────────────────────
+agents:
+  - role: editor
+    model: openrouter/qwen/qwen2.5-coder-32b-instruct
+    description: Generates payment code
+
+  - role: reviewer
+    description: Security and compliance reviewer
+
+  - role: human
+    description: Human approver for critical decisions
+
+# ── Service definitions ────────────────────────────────────────────────────────
+services:
+  - name: payment-api
+    port: 8000
+    framework: fastapi
+    healthcheck: /health
+
+# ── Output ──────────────────────────────────────────────────────────────────────
+output_dir: ./generated/payment-service

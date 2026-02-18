@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrator
+  namespace: marksync
+  labels:
+    app: orchestrator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orchestrator
+  template:
+    metadata:
+      labels:
+        app: orchestrator
+    spec:
+      initContainers:
+        - name: wait-for-sync
+          image: busybox:1.36
+          command: ["sh", "-c",
+            "until nc -z sync-server 8765; do echo waiting for sync-server; sleep 3; done"]
+      containers:
+        - name: orchestrator
+          image: ghcr.io/wronai/marksync:latest
+          command: ["marksync", "orchestrate", "--config", "/project/agents.yml"]
+          envFrom:
+            - configMapRef:
+                name: marksync-config
+          volumeMounts:
+            - name: project-data
+              mountPath: /project
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+      volumes:
+        - name: project-data
+          persistentVolumeClaim:
+            claimName: project-pvc

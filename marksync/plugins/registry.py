@@ -94,10 +94,23 @@ class PluginRegistry:
         self._plugins[meta.format_id] = plugin
         log.info(f"Plugin registered: {meta.format_id} ({meta.name} v{meta.version})")
 
-    def discover(self, include_builtins: bool = True):
+    def discover(self, include_builtins: bool = True,
+                 discover_external: bool = True):
         """
         Discover and register available plugins.
+
         Built-in plugins are registered lazily (loaded on first use).
+
+        External plugins are loaded from Python package entry_points under
+        the group ``marksync.plugins``.  Any installed package that declares::
+
+            [project.entry-points."marksync.plugins"]
+            my-role = "mypkg.marksync_plugin:Plugin"
+
+        will be automatically discovered and registered.  The entry_point
+        value must be importable and expose a ``Plugin`` class (or any class
+        that implements the :class:`FormatPlugin` / :class:`APIAdapter` /
+        :class:`Integration` interface with a ``meta()`` method).
         """
         if include_builtins:
             for format_id, module_path in _BUILTIN_FORMATS.items():
@@ -108,6 +121,44 @@ class PluginRegistry:
                 self._lazy[format_id] = module_path
 
             log.info(f"Discovered {len(self._lazy)} built-in plugins")
+
+        if discover_external:
+            self._discover_entry_points()
+
+    def _discover_entry_points(self):
+        """
+        Load external plugins registered via Python package entry_points.
+
+        Entry_point group: ``marksync.plugins``
+
+        Example in a third-party ``pyproject.toml``::
+
+            [project.entry-points."marksync.plugins"]
+            my-agent-role = "mypackage.plugin:AgentPlugin"
+        """
+        try:
+            from importlib.metadata import entry_points
+        except ImportError:
+            return  # Python < 3.9 — skip silently
+
+        eps = entry_points(group="marksync.plugins")
+        loaded = 0
+        for ep in eps:
+            try:
+                plugin_cls = ep.load()
+                if callable(plugin_cls) and not isinstance(plugin_cls, type):
+                    plugin_cls = plugin_cls  # already an instance factory
+                plugin = plugin_cls() if isinstance(plugin_cls, type) else plugin_cls
+                if hasattr(plugin, "meta"):
+                    self.register(plugin)
+                    loaded += 1
+                else:
+                    log.warning(f"External plugin {ep.name!r} has no meta() — skipping")
+            except Exception as e:
+                log.warning(f"Failed to load external plugin {ep.name!r}: {e}")
+
+        if loaded:
+            log.info(f"Loaded {loaded} external plugin(s) via entry_points")
 
     def _load_lazy(self, format_id: str) -> FormatPlugin | APIAdapter | Integration | None:
         """Load a lazily-registered plugin module."""

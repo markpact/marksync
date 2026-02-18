@@ -4,7 +4,7 @@
 
 - [ ] **Pipeline execution engine** — actually route block updates through pipeline stages (currently defined but not executed)
 - [x] **Authentication** — token-based auth for REST/WS API and sync server (`marksync/auth/`)
-- [ ] **TLS/WSS support** — encrypted WebSocket connections
+- [x] **TLS/WSS support** — `SyncServer(ssl_certfile, ssl_keyfile)`, `SyncClient(ssl_verify, ssl_ca_cert)`, `marksync server --ssl-cert --ssl-key`
 - [ ] **MQTT transport** — implement `marksync.transport.mqtt` for IoT/edge agent communication
 - [ ] **gRPC transport** — high-performance binary transport for large-scale deployments
 
@@ -14,7 +14,7 @@
 - [x] **DSL tab completion** — readline tab completion in shell (`dsl/shell.py`)
 - [x] **DSL command history** — persistent history file `~/.marksync_history`
 - [x] **Agent health monitoring** — PactownMonitor.watch() loop, Plugin.health_check(), auto-fix pipeline trigger
-- [ ] **Block conflict resolution** — interactive merge UI for conflicting edits
+- [x] **Block conflict resolution** — `_three_way_merge()` + `conflict`/`merge` WebSocket message types in `SyncServer`
 - [x] **Metrics & telemetry** — Prometheus `/metrics` endpoint in dashboard + `SyncServer.metrics()`
 - [x] **Rate limiting** — sliding-window rate limiter per client in SyncServer
 - [x] **Batch operations** — brace expansion `AGENT coder-{1..5} editor` in `dsl/parser.py`
@@ -28,7 +28,7 @@
 - [x] **CRDT garbage collection** — `CRDTDocument.garbage_collect()` compacts logs + removes empty blocks
 - [x] **DSL macros** — `MACRO NAME = template $1 $2` with argument substitution
 - [x] **Webhook notifications** — `DSLExecutor.add_webhook(url, events)` fires on agent events
-- [ ] **Docker Swarm / K8s** — orchestration templates for production deployment
+- [x] **Docker Swarm / K8s** — `deploy/docker-compose.swarm.yml` + `deploy/k8s/` (kustomize: namespace, configmap, PVC, sync-server, dashboard, orchestrator, ingress)
 
 ## Completed
 

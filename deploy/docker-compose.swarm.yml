@@ -1,0 +1,104 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  marksync — Docker Swarm Stack                                             ║
+# ║                                                                            ║
+# ║  Deploy:                                                                   ║
+# ║    docker swarm init                                                       ║
+# ║    docker stack deploy -c deploy/docker-compose.swarm.yml marksync        ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+version: "3.8"
+
+services:
+
+  sync-server:
+    image: ${MARKSYNC_IMAGE:-ghcr.io/wronai/marksync:latest}
+    command: ["server", "README.md", "--port", "8765", "--rate-limit", "120"]
+    ports:
+      - "8765:8765"
+    volumes:
+      - project-data:/project
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MARKSYNC_HOST=0.0.0.0
+      - MARKSYNC_PORT=8765
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+        "import socket; s=socket.create_connection(('localhost',8765),2); s.close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  dashboard:
+    image: ${MARKSYNC_IMAGE:-ghcr.io/wronai/marksync:latest}
+    command: ["dashboard", "--host", "0.0.0.0", "--port", "8888"]
+    ports:
+      - "8888:8888"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MARKSYNC_SERVER=ws://sync-server:8765
+      - DASHBOARD_HOST=0.0.0.0
+      - DASHBOARD_PORT=8888
+    depends_on:
+      - sync-server
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  orchestrator:
+    image: ${MARKSYNC_IMAGE:-ghcr.io/wronai/marksync:latest}
+    command: >
+      orchestrate --config agents.yml
+      --server-uri ws://sync-server:8765
+      --ollama-url ${OLLAMA_URL:-http://ollama:11434}
+      --model ${OLLAMA_MODEL:-qwen2.5-coder:7b}
+    volumes:
+      - project-data:/project
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MARKSYNC_SERVER=ws://sync-server:8765
+      - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5-coder:7b}
+    depends_on:
+      - sync-server
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 8G
+
+volumes:
+  project-data:
+    driver: local
+  ollama-models:
+    driver: local

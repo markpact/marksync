@@ -175,8 +175,10 @@ class TestLLMExecution:
 
 # ── Human-in-the-loop ────────────────────────────────────────────────────
 
+
 class TestHumanInTheLoop:
-    def test_human_step_creates_task(self):
+    @pytest.mark.anyio
+    async def test_human_step_creates_task(self):
         engine = PipelineEngine()
         engine.define("with-human", [
             Step("validate", ActorType.SCRIPT, config={"script": "validate"}),
@@ -184,10 +186,10 @@ class TestHumanInTheLoop:
                 "prompt": "Approve?", "task_type": "approval",
             }),
         ])
-        run_id = run(engine.start("with-human", {
+        run_id = await engine.start("with-human", {
             "block_id": "test", "content": "code",
-        }))
-        run(asyncio.sleep(0.1))
+        })
+        await asyncio.sleep(0.1)
 
         # Pipeline should be blocked
         r = engine.get_run(run_id)
@@ -199,7 +201,8 @@ class TestHumanInTheLoop:
         assert tasks[0].prompt == "Approve?"
         assert tasks[0].task_type == "approval"
 
-    def test_approve_unblocks_pipeline(self):
+    @pytest.mark.anyio
+    async def test_approve_unblocks_pipeline(self):
         engine = PipelineEngine()
         engine.define("approve-flow", [
             Step("human-approve", ActorType.HUMAN, config={
@@ -207,8 +210,8 @@ class TestHumanInTheLoop:
             }),
             Step("deploy", ActorType.SCRIPT, config={"script": "deploy"}),
         ])
-        run_id = run(engine.start("approve-flow", {"block_id": "x", "content": "y"}))
-        run(asyncio.sleep(0.1))
+        run_id = await engine.start("approve-flow", {"block_id": "x", "content": "y"})
+        await asyncio.sleep(0.1)
 
         tasks = engine.get_pending_tasks()
         assert len(tasks) == 1
@@ -216,13 +219,14 @@ class TestHumanInTheLoop:
 
         # Resolve the task
         engine.resolve_task(task_id, "approve", {"comment": "LGTM"}, "tester")
-        run(asyncio.sleep(0.1))
+        await asyncio.sleep(0.1)
 
         r = engine.get_run(run_id)
         assert r.status == "completed"
         assert len(r.results) == 2
 
-    def test_reject_stops_pipeline(self):
+    @pytest.mark.anyio
+    async def test_reject_stops_pipeline(self):
         engine = PipelineEngine()
         engine.define("reject-flow", [
             Step("human-approve", ActorType.HUMAN, config={
@@ -230,12 +234,12 @@ class TestHumanInTheLoop:
             }),
             Step("deploy", ActorType.SCRIPT, config={"script": "deploy"}),
         ])
-        run_id = run(engine.start("reject-flow", {"block_id": "x", "content": "y"}))
-        run(asyncio.sleep(0.1))
+        run_id = await engine.start("reject-flow", {"block_id": "x", "content": "y"})
+        await asyncio.sleep(0.1)
 
         task_id = engine.get_pending_tasks()[0].id
         engine.resolve_task(task_id, "reject", {"reason": "Bad code"}, "tester")
-        run(asyncio.sleep(0.1))
+        await asyncio.sleep(0.1)
 
         r = engine.get_run(run_id)
         assert r.status == "failed"
@@ -247,17 +251,18 @@ class TestHumanInTheLoop:
         with pytest.raises(ValueError, match="not found"):
             engine.resolve_task("nonexistent", "approve")
 
-    def test_resolve_already_resolved(self):
+    @pytest.mark.anyio
+    async def test_resolve_already_resolved(self):
         engine = PipelineEngine()
         engine.define("flow", [
             Step("h", ActorType.HUMAN, config={"prompt": "X"}),
         ])
-        run(engine.start("flow", {"block_id": "x", "content": "y"}))
-        run(asyncio.sleep(0.1))
+        await engine.start("flow", {"block_id": "x", "content": "y"})
+        await asyncio.sleep(0.1)
 
         task_id = engine.get_pending_tasks()[0].id
         engine.resolve_task(task_id, "approve")
-        run(asyncio.sleep(0.1))
+        await asyncio.sleep(0.1)
 
         with pytest.raises(ValueError, match="not found"):
             engine.resolve_task(task_id, "approve")

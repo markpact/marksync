@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sync-server
+  namespace: marksync
+  labels:
+    app: sync-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sync-server
+  template:
+    metadata:
+      labels:
+        app: sync-server
+    spec:
+      containers:
+        - name: sync-server
+          image: ghcr.io/wronai/marksync:latest
+          command: ["marksync", "server", "/project/README.md",
+                    "--rate-limit", "120"]
+          ports:
+            - containerPort: 8765
+          envFrom:
+            - configMapRef:
+                name: marksync-config
+          volumeMounts:
+            - name: project-data
+              mountPath: /project
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          livenessProbe:
+            tcpSocket:
+              port: 8765
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: 8765
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: project-data
+          persistentVolumeClaim:
+            claimName: project-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sync-server
+  namespace: marksync
+spec:
+  selector:
+    app: sync-server
+  ports:
+    - name: ws
+      port: 8765
+      targetPort: 8765
+  type: ClusterIP

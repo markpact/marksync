@@ -35,25 +35,26 @@ from marksync.pipeline.api import (
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
+
 def run(coro):
     """Helper to run async coroutines in tests."""
     return asyncio.run(coro)
 
 
-def approve_all_tasks(engine: PipelineEngine, wait: float = 0.15) -> int:
+async def approve_all_tasks_async(engine: PipelineEngine, wait: float = 0.15) -> int:
     """Approve every pending human task. Returns count approved."""
-    run(asyncio.sleep(wait))
+    await asyncio.sleep(wait)
     tasks = engine.get_pending_tasks()
     for t in tasks:
         engine.resolve_task(t.id, "approve", {"comment": "auto-approved"}, "test")
     return len(tasks)
 
 
-def resolve_run_fully(engine: PipelineEngine, run_id: str,
-                      max_rounds: int = 10, wait: float = 0.15) -> str:
+async def resolve_run_fully_async(engine: PipelineEngine, run_id: str,
+                                 max_rounds: int = 10, wait: float = 0.15) -> str:
     """Keep approving tasks until the run is no longer blocked. Returns final status."""
     for _ in range(max_rounds):
-        run(asyncio.sleep(wait))
+        await asyncio.sleep(wait)
         r = engine.get_run(run_id)
         if r.status not in ("blocked", "running"):
             break
@@ -65,6 +66,7 @@ def resolve_run_fully(engine: PipelineEngine, run_id: str,
 
 # ── Scenario: code-review ─────────────────────────────────────────────────
 
+
 class TestCodeReviewScenario:
     def test_starts_successfully(self):
         engine = PipelineEngine()
@@ -72,7 +74,8 @@ class TestCodeReviewScenario:
         assert "run_id" in result
         assert result["scenario"] == "code-review"
 
-    def test_step_sequence(self):
+    @pytest.mark.anyio
+    async def test_step_sequence(self):
         engine = PipelineEngine()
         engine.define("code-review-seq", [
             Step("llm-edit", ActorType.LLM, config={"role": "editor"}),
@@ -82,10 +85,10 @@ class TestCodeReviewScenario:
             Step("lint", ActorType.SCRIPT, config={"script": "lint"}),
             Step("deploy", ActorType.SCRIPT, config={"script": "deploy"}),
         ])
-        run_id = run(engine.start("code-review-seq", {
+        run_id = await engine.start("code-review-seq", {
             "block_id": "test-block", "content": "x = 1\n",
-        }))
-        final = resolve_run_fully(engine, run_id)
+        })
+        final = await resolve_run_fully_async(engine, run_id)
         assert final == "completed"
         r = engine.get_run(run_id)
         assert len(r.results) == 4
@@ -94,7 +97,8 @@ class TestCodeReviewScenario:
         assert r.results[2].actor == ActorType.SCRIPT
         assert r.results[3].actor == ActorType.SCRIPT
 
-    def test_rejected_by_human_stops_pipeline(self):
+    @pytest.mark.anyio
+    async def test_rejected_by_human_stops_pipeline(self):
         engine = PipelineEngine()
         engine.define("code-review-reject", [
             Step("llm-edit", ActorType.LLM, config={"role": "editor"}),
@@ -103,21 +107,22 @@ class TestCodeReviewScenario:
             }),
             Step("deploy", ActorType.SCRIPT, config={"script": "deploy"}),
         ])
-        run_id = run(engine.start("code-review-reject", {"block_id": "x", "content": "bad code"}))
-        run(asyncio.sleep(0.15))
+        run_id = await engine.start("code-review-reject", {"block_id": "x", "content": "bad code"})
+        await asyncio.sleep(0.15)
         tasks = engine.get_pending_tasks()
         assert len(tasks) >= 1
         engine.resolve_task(tasks[0].id, "reject", {"reason": "Code quality too low"}, "reviewer")
-        run(asyncio.sleep(0.1))
+        await asyncio.sleep(0.1)
         r = engine.get_run(run_id)
         assert r.status == "failed"
         assert len(r.results) == 2   # llm-edit + human-review, deploy never ran
 
-    def test_actor_types_in_results(self):
+    @pytest.mark.anyio
+    async def test_actor_types_in_results(self):
         engine = PipelineEngine()
         result = run(_demo_code_review(engine))
         run_id = result["run_id"]
-        resolve_run_fully(engine, run_id)
+        await resolve_run_fully_async(engine, run_id)
         r = engine.get_run(run_id)
         actor_types = [res.actor for res in r.results]
         assert ActorType.LLM in actor_types
@@ -127,6 +132,7 @@ class TestCodeReviewScenario:
 
 # ── Scenario: account-creation ────────────────────────────────────────────
 
+
 class TestAccountCreationScenario:
     def test_starts_successfully(self):
         engine = PipelineEngine()
@@ -134,7 +140,8 @@ class TestAccountCreationScenario:
         assert "run_id" in result
         assert result["scenario"] == "account-creation"
 
-    def test_two_human_steps(self):
+    @pytest.mark.anyio
+    async def test_two_human_steps(self):
         engine = PipelineEngine()
         engine.define("acc-creation-test", [
             Step("validate-request", ActorType.SCRIPT, config={"script": "validate"}),
@@ -146,35 +153,37 @@ class TestAccountCreationScenario:
                 "prompt": "Confirm account works", "task_type": "approval", "channel": "email",
             }),
         ])
-        run_id = run(engine.start("acc-creation-test", {
+        run_id = await engine.start("acc-creation-test", {
             "block_id": "account-req", "content": "New account",
-        }))
-        final = resolve_run_fully(engine, run_id, max_rounds=10)
+        })
+        final = await resolve_run_fully_async(engine, run_id, max_rounds=10)
         assert final == "completed"
         r = engine.get_run(run_id)
         assert len(r.results) == 4
         human_steps = [res for res in r.results if res.actor == ActorType.HUMAN]
         assert len(human_steps) == 2
 
-    def test_human_input_task_type(self):
+    @pytest.mark.anyio
+    async def test_human_input_task_type(self):
         engine = PipelineEngine()
         engine.define("input-type-test", [
             Step("ask-details", ActorType.HUMAN, config={
                 "prompt": "Enter your name", "task_type": "input", "channel": "web",
             }),
         ])
-        run_id = run(engine.start("input-type-test", {"block_id": "x", "content": "y"}))
-        run(asyncio.sleep(0.1))
+        run_id = await engine.start("input-type-test", {"block_id": "x", "content": "y"})
+        await asyncio.sleep(0.1)
         tasks = engine.get_pending_tasks()
         assert tasks[0].task_type == "input"
         engine.resolve_task(tasks[0].id, "provide_input",
                             {"name": "Alice", "email": "alice@example.com"}, "user")
-        run(asyncio.sleep(0.1))
+        await asyncio.sleep(0.1)
         r = engine.get_run(run_id)
         assert r.status == "completed"
 
 
 # ── Scenario: payment ─────────────────────────────────────────────────────
+
 
 class TestPaymentScenario:
     def test_starts_successfully(self):
@@ -183,7 +192,8 @@ class TestPaymentScenario:
         assert "run_id" in result
         assert result["scenario"] == "payment"
 
-    def test_full_approval_flow(self):
+    @pytest.mark.anyio
+    async def test_full_approval_flow(self):
         engine = PipelineEngine()
         engine.define("payment-full", [
             Step("fraud-check", ActorType.SCRIPT, config={"script": "validate"}),
@@ -195,17 +205,18 @@ class TestPaymentScenario:
                 "prompt": "Confirm receipt", "task_type": "approval", "channel": "email",
             }),
         ])
-        run_id = run(engine.start("payment-full", {
+        run_id = await engine.start("payment-full", {
             "block_id": "pay-001", "content": "Payment", "amount": 1250.0,
-        }))
-        final = resolve_run_fully(engine, run_id)
+        })
+        final = await resolve_run_fully_async(engine, run_id)
         assert final == "completed"
 
-    def test_payment_blocked_on_authorization(self):
+    @pytest.mark.anyio
+    async def test_payment_blocked_on_authorization(self):
         engine = PipelineEngine()
         result = run(_demo_payment(engine))
         run_id = result["run_id"]
-        run(asyncio.sleep(0.15))
+        await asyncio.sleep(0.15)
         r = engine.get_run(run_id)
         assert r.status == "blocked"
         tasks = engine.get_pending_tasks()
@@ -214,6 +225,7 @@ class TestPaymentScenario:
 
 # ── Scenario: doc-generation ──────────────────────────────────────────────
 
+
 class TestDocGenerationScenario:
     def test_starts_successfully(self):
         engine = PipelineEngine()
@@ -221,7 +233,8 @@ class TestDocGenerationScenario:
         assert "run_id" in result
         assert result["scenario"] == "doc-generation"
 
-    def test_five_steps_in_sequence(self):
+    @pytest.mark.anyio
+    async def test_five_steps_in_sequence(self):
         engine = PipelineEngine()
         engine.define("doc-gen-test", [
             Step("scrape-api",       ActorType.SCRIPT, config={"script": "validate"}),
@@ -232,16 +245,17 @@ class TestDocGenerationScenario:
             Step("refine-docs",      ActorType.LLM,    config={"role": "doc-refiner"}),
             Step("publish-docs",     ActorType.SCRIPT, config={"script": "deploy"}),
         ])
-        run_id = run(engine.start("doc-gen-test", {
+        run_id = await engine.start("doc-gen-test", {
             "block_id": "engine.py", "content": "class PipelineEngine: ...",
             "module": "marksync.pipeline",
-        }))
-        final = resolve_run_fully(engine, run_id)
+        })
+        final = await resolve_run_fully_async(engine, run_id)
         assert final == "completed"
         r = engine.get_run(run_id)
         assert len(r.results) == 5
 
-    def test_actor_order_script_llm_human_llm_script(self):
+    @pytest.mark.anyio
+    async def test_actor_order_script_llm_human_llm_script(self):
         engine = PipelineEngine()
         engine.define("doc-gen-order", [
             Step("scrape",   ActorType.SCRIPT, config={"script": "validate"}),
@@ -252,8 +266,8 @@ class TestDocGenerationScenario:
             Step("refine",   ActorType.LLM,    config={"role": "doc-refiner"}),
             Step("publish",  ActorType.SCRIPT, config={"script": "deploy"}),
         ])
-        run_id = run(engine.start("doc-gen-order", {"block_id": "x", "content": "y"}))
-        resolve_run_fully(engine, run_id)
+        run_id = await engine.start("doc-gen-order", {"block_id": "x", "content": "y"})
+        await resolve_run_fully_async(engine, run_id)
         r = engine.get_run(run_id)
         actors = [res.actor for res in r.results]
         assert actors == [
@@ -261,25 +275,27 @@ class TestDocGenerationScenario:
             ActorType.LLM, ActorType.SCRIPT,
         ]
 
-    def test_human_can_reject_docs(self):
+    @pytest.mark.anyio
+    async def test_human_can_reject_docs(self):
         engine = PipelineEngine()
         engine.define("doc-gen-reject", [
             Step("write",   ActorType.LLM,   config={"role": "doc-writer"}),
             Step("review",  ActorType.HUMAN, config={"prompt": "Reject?", "task_type": "approval"}),
             Step("publish", ActorType.SCRIPT, config={"script": "deploy"}),
         ])
-        run_id = run(engine.start("doc-gen-reject", {"block_id": "x", "content": "y"}))
-        run(asyncio.sleep(0.15))
+        run_id = await engine.start("doc-gen-reject", {"block_id": "x", "content": "y"})
+        await asyncio.sleep(0.15)
         tasks = [t for t in engine.get_pending_tasks() if t.run_id == run_id]
         assert len(tasks) == 1
         engine.resolve_task(tasks[0].id, "reject", {"reason": "Docs are incomplete"}, "reviewer")
-        run(asyncio.sleep(0.1))
+        await asyncio.sleep(0.1)
         r = engine.get_run(run_id)
         assert r.status == "failed"
         assert len(r.results) == 2  # publish never ran
 
 
 # ── Scenario: incident-response ───────────────────────────────────────────
+
 
 class TestIncidentResponseScenario:
     def test_starts_successfully(self):
@@ -288,7 +304,8 @@ class TestIncidentResponseScenario:
         assert "run_id" in result
         assert result["scenario"] == "incident-response"
 
-    def test_full_resolution_flow(self):
+    @pytest.mark.anyio
+    async def test_full_resolution_flow(self):
         engine = PipelineEngine()
         engine.define("incident-full", [
             Step("detect-anomaly",   ActorType.SCRIPT, config={"script": "validate"}),
@@ -301,17 +318,18 @@ class TestIncidentResponseScenario:
             }),
             Step("close-ticket",     ActorType.SCRIPT, config={"script": "deploy"}),
         ])
-        run_id = run(engine.start("incident-full", {
+        run_id = await engine.start("incident-full", {
             "block_id": "incident-001",
             "content": "CPU 97% on prod-api-3",
             "severity": "P1",
-        }))
-        final = resolve_run_fully(engine, run_id)
+        })
+        final = await resolve_run_fully_async(engine, run_id)
         assert final == "completed"
         r = engine.get_run(run_id)
         assert len(r.results) == 5
 
-    def test_acknowledges_before_llm_analysis(self):
+    @pytest.mark.anyio
+    async def test_acknowledges_before_llm_analysis(self):
         """Human must acknowledge before LLM can analyse — strict ordering."""
         engine = PipelineEngine()
         engine.define("incident-order", [
@@ -321,8 +339,8 @@ class TestIncidentResponseScenario:
             Step("resolve",  ActorType.HUMAN,  config={"prompt": "Resolved?", "task_type": "approval"}),
             Step("close",    ActorType.SCRIPT, config={"script": "deploy"}),
         ])
-        run_id = run(engine.start("incident-order", {"block_id": "x", "content": "error"}))
-        run(asyncio.sleep(0.15))
+        run_id = await engine.start("incident-order", {"block_id": "x", "content": "error"})
+        await asyncio.sleep(0.15)
         r = engine.get_run(run_id)
         # Should be blocked at ack step (step index 1)
         assert r.status == "blocked"
@@ -331,6 +349,7 @@ class TestIncidentResponseScenario:
 
 # ── Scenario: content-moderation ─────────────────────────────────────────
 
+
 class TestContentModerationScenario:
     def test_starts_successfully(self):
         engine = PipelineEngine()
@@ -338,7 +357,8 @@ class TestContentModerationScenario:
         assert "run_id" in result
         assert result["scenario"] == "content-moderation"
 
-    def test_full_moderation_flow(self):
+    @pytest.mark.anyio
+    async def test_full_moderation_flow(self):
         engine = PipelineEngine()
         engine.define("moderation-full", [
             Step("llm-scan",        ActorType.LLM,    config={"role": "content-scanner"}),
@@ -348,15 +368,16 @@ class TestContentModerationScenario:
             }),
             Step("enforce-decision", ActorType.SCRIPT, config={"script": "deploy"}),
         ])
-        run_id = run(engine.start("moderation-full", {
+        run_id = await engine.start("moderation-full", {
             "block_id": "post-123",
             "content": "Borderline content text",
             "author": "user_456",
-        }))
-        final = resolve_run_fully(engine, run_id)
+        })
+        final = await resolve_run_fully_async(engine, run_id)
         assert final == "completed"
 
-    def test_llm_first_then_human(self):
+    @pytest.mark.anyio
+    async def test_llm_first_then_human(self):
         """LLM scans first (auto), human only decides on borderline."""
         engine = PipelineEngine()
         engine.define("mod-order", [
@@ -365,8 +386,8 @@ class TestContentModerationScenario:
             Step("decide",  ActorType.HUMAN,  config={"prompt": "Decide?", "task_type": "input"}),
             Step("enforce", ActorType.SCRIPT, config={"script": "deploy"}),
         ])
-        run_id = run(engine.start("mod-order", {"block_id": "x", "content": "borderline text"}))
-        run(asyncio.sleep(0.15))
+        run_id = await engine.start("mod-order", {"block_id": "x", "content": "borderline text"})
+        await asyncio.sleep(0.15)
         r = engine.get_run(run_id)
         # Blocked at step 2 (human-decide), steps 0 and 1 already done
         assert r.status == "blocked"
@@ -376,19 +397,20 @@ class TestContentModerationScenario:
         assert r.results[1].actor == ActorType.SCRIPT
         assert r.results[1].status == StepStatus.COMPLETED
 
-    def test_human_decision_carries_forward(self):
+    @pytest.mark.anyio
+    async def test_human_decision_carries_forward(self):
         """Human's input data should be available to enforce-decision step."""
         engine = PipelineEngine()
         engine.define("mod-carry", [
             Step("decide",  ActorType.HUMAN,  config={"prompt": "Decide?", "task_type": "input"}),
             Step("enforce", ActorType.SCRIPT, config={"script": "validate"}),
         ])
-        run_id = run(engine.start("mod-carry", {"block_id": "x", "content": "text"}))
-        run(asyncio.sleep(0.1))
+        run_id = await engine.start("mod-carry", {"block_id": "x", "content": "text"})
+        await asyncio.sleep(0.1)
         tasks = engine.get_pending_tasks()
         engine.resolve_task(tasks[0].id, "provide_input",
                             {"decision": "warn", "reason": "Misleading claim"}, "moderator")
-        run(asyncio.sleep(0.1))
+        await asyncio.sleep(0.1)
         r = engine.get_run(run_id)
         assert r.status == "completed"
         # Human response is forwarded under the 'human_response' key
@@ -399,6 +421,7 @@ class TestContentModerationScenario:
 
 # ── Scenario: data-migration ──────────────────────────────────────────────
 
+
 class TestDataMigrationScenario:
     def test_starts_successfully(self):
         engine = PipelineEngine()
@@ -406,7 +429,8 @@ class TestDataMigrationScenario:
         assert "run_id" in result
         assert result["scenario"] == "data-migration"
 
-    def test_five_steps_two_human_gates(self):
+    @pytest.mark.anyio
+    async def test_five_steps_two_human_gates(self):
         engine = PipelineEngine()
         engine.define("migration-full", [
             Step("validate-schema",  ActorType.SCRIPT, config={"script": "validate"}),
@@ -419,25 +443,26 @@ class TestDataMigrationScenario:
                 "prompt": "Sign off migration", "task_type": "approval", "channel": "web",
             }),
         ])
-        run_id = run(engine.start("migration-full", {
+        run_id = await engine.start("migration-full", {
             "block_id": "migration-users",
             "content": "SELECT id, name FROM users_legacy",
             "source_table": "users_legacy",
             "target_table": "users_v2",
             "record_count": 1000,
-        }))
-        final = resolve_run_fully(engine, run_id)
+        })
+        final = await resolve_run_fully_async(engine, run_id)
         assert final == "completed"
         r = engine.get_run(run_id)
         assert len(r.results) == 5
         human_steps = [res for res in r.results if res.actor == ActorType.HUMAN]
         assert len(human_steps) == 2
 
-    def test_migration_blocked_at_spot_check(self):
+    @pytest.mark.anyio
+    async def test_migration_blocked_at_spot_check(self):
         engine = PipelineEngine()
         result = run(_demo_data_migration(engine))
         run_id = result["run_id"]
-        run(asyncio.sleep(0.2))
+        await asyncio.sleep(0.2)
         r = engine.get_run(run_id)
         # validate + llm-transform run auto; spot-check blocks
         assert r.status == "blocked"
@@ -460,6 +485,7 @@ class TestDataMigrationScenario:
 
 # ── Cross-scenario tests ──────────────────────────────────────────────────
 
+
 class TestAllScenariosIntegration:
     def test_all_seven_scenarios_start(self):
         """Smoke test: every scenario starts without raising."""
@@ -480,7 +506,8 @@ class TestAllScenariosIntegration:
             run_ids.append(result["run_id"])
         assert len(set(run_ids)) == 7, "All run_ids must be unique"
 
-    def test_all_complete_after_approving_all_tasks(self):
+    @pytest.mark.anyio
+    async def test_all_complete_after_approving_all_tasks(self):
         """Each scenario completes when all human tasks are approved."""
         engine = PipelineEngine()
         scenarios = [
@@ -499,7 +526,7 @@ class TestAllScenariosIntegration:
 
         # Approve all tasks in rounds until nothing is left blocked
         for _ in range(15):
-            run(asyncio.sleep(0.15))
+            await asyncio.sleep(0.15)
             pending = engine.get_pending_tasks()
             if not pending:
                 break
@@ -525,13 +552,14 @@ class TestAllScenariosIntegration:
         }
         assert expected == set(names), f"Missing: {expected - set(names)}"
 
-    def test_mixed_actor_scenarios_contain_all_three_types(self):
+    @pytest.mark.anyio
+    async def test_mixed_actor_scenarios_contain_all_three_types(self):
         """doc-generation, incident-response, data-migration all use LLM+SCRIPT+HUMAN."""
         engine = PipelineEngine()
         for fn in [_demo_doc_generation, _demo_incident_response, _demo_data_migration]:
             result = run(fn(engine))
             run_id = result["run_id"]
-            resolve_run_fully(engine, run_id)
+            await resolve_run_fully_async(engine, run_id)
             r = engine.get_run(run_id)
             actors = {res.actor for res in r.results}
             assert ActorType.LLM in actors,    f"{fn.__name__}: missing LLM step"

@@ -235,6 +235,7 @@ class PipelineEngine:
         self._event_handlers: dict[str, list[Callable]] = {}
         self._crdt_doc = crdt_doc
         self._idempotency_keys: dict[str, str] = {}  # key -> run_id
+        self._block_routes: list[tuple[str, str, str]] = []  # (pattern, pipeline, input_key)
 
         # Register built-in scripts
         self._register_builtins()
@@ -242,6 +243,68 @@ class PipelineEngine:
         # Restore persisted runs from CRDT if available
         if crdt_doc:
             self._restore_from_crdt()
+
+    # ── Sync server integration ───────────────────────────────────────
+
+    def attach_to_sync_server(self, server) -> None:
+        """
+        Register this engine as the deploy callback for a SyncServer.
+
+        When any block changes, the engine checks ``_block_routes`` for a
+        matching pipeline name and auto-starts that pipeline.
+
+        Usage::
+
+            engine = PipelineEngine()
+            engine.define("on-pipeline-change", [...])
+            engine.add_block_route("markpact:pipeline", "on-pipeline-change")
+
+            srv = SyncServer()
+            engine.attach_to_sync_server(srv)
+            await srv.run()
+        """
+        server.on_deploy(self._on_block_change)
+        log.info("PipelineEngine attached to SyncServer")
+
+    def add_block_route(self, block_id_pattern: str, pipeline_name: str,
+                        input_key: str = "block_id") -> None:
+        """
+        Route updates to blocks matching ``block_id_pattern`` to a pipeline.
+
+        ``block_id_pattern`` is matched with ``fnmatch`` so wildcards work::
+
+            engine.add_block_route("markpact:pipeline*", "review-deploy")
+            engine.add_block_route("markpact:intent",    "intent-handler")
+        """
+        self._block_routes.append((block_id_pattern, pipeline_name, input_key))
+        log.info(f"Block route: {block_id_pattern!r} → pipeline {pipeline_name!r}")
+
+    def _on_block_change(self, changed_block_ids: list[str]) -> None:
+        """Callback invoked by SyncServer when blocks are updated."""
+        import asyncio
+        from fnmatch import fnmatch
+
+        for bid in changed_block_ids:
+            for pattern, pipe_name, input_key in self._block_routes:
+                if fnmatch(bid, pattern):
+                    if pipe_name not in self.definitions:
+                        log.warning(f"Block route {bid!r} → pipeline {pipe_name!r} "
+                                    f"not defined — skipping")
+                        continue
+                    log.info(f"Block change {bid!r} triggering pipeline {pipe_name!r}")
+                    try:
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            loop.create_task(
+                                self.start(pipe_name, {input_key: bid})
+                            )
+                        else:
+                            loop.run_until_complete(
+                                self.start(pipe_name, {input_key: bid})
+                            )
+                    except Exception as e:
+                        log.error(f"Failed to start pipeline {pipe_name!r} "
+                                  f"for block {bid!r}: {e}")
 
     # ── Definition ────────────────────────────────────────────────────
 

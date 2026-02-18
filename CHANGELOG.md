@@ -1,3 +1,35 @@
+## [0.2.21] - 2026-02-18
+
+### Summary
+
+feat(tests): configuration management system
+
+### Docs
+
+- docs: update TODO.md
+
+### Test
+
+- update tests/conftest.py
+- update tests/test_dsl.py
+- update tests/test_pipeline.py
+- update tests/test_pipeline_scenarios.py
+
+### Other
+
+- scripts: update demo_scenario.sh
+- config: update docker-compose.swarm.yml
+- config: update configmap.yaml
+- config: update dashboard.yaml
+- config: update kustomization.yaml
+- config: update namespace.yaml
+- config: update orchestrator.yaml
+- config: update storage.yaml
+- config: update sync-server.yaml
+- config: update pipeline_human_approval.yaml
+- ... and 2 more
+
+
 ## [0.2.20] - 2026-02-18
 
 ### Summary

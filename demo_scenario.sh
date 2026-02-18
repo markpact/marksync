@@ -102,6 +102,7 @@ echo -e "${BOLD}Komenda:${NC} marksync init"
 echo -e "${YELLOW}──────────────────────────────────────────────────────────────────────────────${NC}"
 echo "To uruchomi interaktywny wizard do konfiguracji LLM."
 echo ""
+sleep 1
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FASE 2: GENERATE — Prompt → LLM → Kod + Docker
@@ -163,6 +164,7 @@ echo "  app/requirements.txt — Zależności (fastapi, uvicorn, pydantic)"
 echo "  api/Dockerfile     — Kontener Docker"
 echo "  docker-compose.yml — Definicja serwisu"
 echo "  README.md          — Dokumentacja"
+sleep 1
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FASE 3: DSL SHELL — Zarządzanie Agentami
@@ -209,6 +211,7 @@ echo "  LIST agents                      — Lista aktywnych agentów"
 echo "  STATUS                           — Stan systemu"
 echo "  SEND <agent> <msg>               — Wysyła wiadomość do agenta"
 echo "  DEPLOY [--force]                 — Triggeruje deployment"
+sleep 1
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FASE 4: SYNC SERVER — CRDT Współpraca Agentów
@@ -246,17 +249,18 @@ cat << 'ARCH'
 │   │  │markpact:run │  │markpact:deps│  │markpact:log │  ...     │   │
 │   │  └─────────────┘  └─────────────┘  └─────────────┘          │   │
 │   └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
+│                              │                                      │
 │              ┌───────────────┼───────────────┐                      │
 │              ▼               ▼               ▼                      │
 │        ┌──────────┐    ┌──────────┐    ┌──────────┐                 │
 │        │  editor  │    │ reviewer │    │ deployer │                 │
 │        │  agent   │    │  agent   │    │  agent   │                 │
 │        └──────────┘    └──────────┘    └──────────┘                 │
-│                                                                      │
+│                                                                     │
 │   Protocol: manifest → patch/full → ack/nack → broadcast            │
 └─────────────────────────────────────────────────────────────────────┘
 ARCH
+sleep 1
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FASE 5: LEARNING — Pattern Library + Ewolucja
@@ -305,12 +309,140 @@ echo "  └── pipeline-etl/"
 echo "      └── README.md"
 
 echo ""
-echo -e "${YELLOW}Ewolucja w praktyce:${NC}"
-echo "  1. Pierwszy projekt: REST API → sukces → pattern z rate=1.0"
-echo "  2. Drugi projekt: podobny REST API → system używa pattern jako template"
-echo "  3. Trzeci projekt: próba WebSocket → porażka → rate spada"
-echo "  4. Czwarty projekt: system preferuje REST patterns nad WebSocket"
-echo "  5. Z czasem: patterns z wysokim rate dominują (naturalna selekcja)"
+echo -e "${YELLOW}Ewolucja w praktyce (10 ITERACJI):${NC}"
+cat << 'EVOLUTION'
+  ╔══════════════════════════════════════════════════════════════════════════╗
+  ║  ITER  │ PROJEKT           │ RESULT  │ RATE   │ ACTION                    ║
+  ╠══════════════════════════════════════════════════════════════════════════╣
+  ║  1     │ REST API basic    │ ✓ OK    │ 1.00   │ Nowy pattern              ║
+  ║  2     │ REST API + auth   │ ✓ OK    │ 1.00   │ Reuse pattern + extend    ║
+  ║  3     │ REST API + WS     │ ✗ FAIL  │ 0.67   │ WebSocket nie działa      ║
+  ║  4     │ REST API + CRUD   │ ✓ OK    │ 0.75   │ Powrót do sprawdzonego    ║
+  ║  5     │ GraphQL API       │ ✗ FAIL  │ 0.60   │ Nowy paradygmat - błąd    ║
+  ║  6     │ REST API + cache  │ ✓ OK    │ 0.67   │ Redis dodany do pattern   ║
+  ║  7     │ REST API + queue  │ ✓ OK    │ 0.71   │ Celery rozszerzenie       ║
+  ║  8     │ gRPC service      │ ✗ FAIL  │ 0.63   │ Protobuf issues           ║
+  ║  9     │ REST API + JWT    │ ✓ OK    │ 0.67   │ Auth pattern wygrywa      ║
+  ║  10    │ REST API full     │ ✓ OK    │ 0.70   │ Best pattern dominuje     ║
+  ╚══════════════════════════════════════════════════════════════════════════╝
+EVOLUTION
+
+echo ""
+echo -e "${YELLOW}Mechanizm ewolucji:${NC}"
+echo "  • Patterns z rate > 0.7 są preferowane przy generate"
+echo "  • Patterns z rate < 0.5 są automatycznie archiwizowane"
+echo "  • Nowe projekty używają best-matching pattern jako template"
+echo "  • Sukcesy wzmacniają pattern, porażki osłabiają"
+echo ""
+sleep 1
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FASE 5b: MAN-IN-THE-LOOP — Human Approval w Pipeline
+# ═══════════════════════════════════════════════════════════════════════════════
+
+echo -e "\n${BOLD}${CYAN}═══════════════════════════════════════════════════════════════════════════════${NC}"
+echo -e "${BOLD}[FASE 5b] MAN-IN-THE-LOOP — Human Approval w Pipeline${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════════════════════════${NC}\n"
+# Build a payment API that requires human approval before deployment
+echo -e "${YELLOW}Jak wymusić actor: human w wygenerowanym YAML?${NC}"
+echo ""
+echo -e "${BOLD}OPCJA 1: Jednozdaniowy prompt (NAJPROSTSZE):${NC}"
+echo ""
+echo -e "${GREEN}  'Build a payment API that requires human approval before deployment'${NC}"
+echo ""
+echo -e "${YELLOW}To wystarczy! LLM zrozumie i wygeneruje actor: human.${NC}"
+echo ""
+echo -e "${BOLD}OPCJA 2: Pełniejszy prompt z wymaganiami:${NC}"
+echo ""
+echo -e "${CYAN}──────────────────────────────────────────────────────────────────────────────${NC}"
+cat << 'HUMAN_PROMPT'
+prompt: |
+  Build a payment service with CRITICAL REQUIREMENTS:
+  
+  - Generate a pipeline with HUMAN APPROVAL steps
+  - Before deployment, a human must review and approve:
+    * Security audit
+    * Compliance check (PCI-DSS)
+    * Final deployment approval
+  - Use actor: human for approval steps
+  - Use actor: llm for code generation steps
+HUMAN_PROMPT
+echo -e "${CYAN}──────────────────────────────────────────────────────────────────────────────${NC}"
+
+echo ""
+echo -e "${BOLD}LLM wygeneruje pipeline z actor: human:${NC}"
+echo -e "${CYAN}──────────────────────────────────────────────────────────────────────────────${NC}"
+cat << 'PIPELINE_YAML'
+pipeline:
+  name: payment-service
+  steps:
+    - name: generate_code
+      actor: llm
+      config:
+        role: editor
+        description: "Generate payment code"
+    
+    - name: security_review
+      actor: llm
+      config:
+        role: reviewer
+        description: "Automated security scan"
+    
+    - name: human_security_approval    # ← HUMAN!
+      actor: human
+      config:
+        description: "CRITICAL: Human must approve security"
+        timeout: 3600  # 1 hour to respond
+    
+    - name: compliance_check
+      actor: llm
+      config:
+        role: reviewer
+        description: "PCI-DSS compliance scan"
+    
+    - name: human_compliance_approval  # ← HUMAN!
+      actor: human
+      config:
+        description: "CRITICAL: Human must approve compliance"
+        timeout: 3600
+    
+    - name: deploy_staging
+      actor: llm
+      config:
+        role: deployer
+        description: "Deploy to staging environment"
+    
+    - name: human_deployment_approval  # ← HUMAN!
+      actor: human
+      config:
+        description: "CRITICAL: Final approval before production"
+        timeout: 7200  # 2 hours
+    
+    - name: deploy_production
+      actor: llm
+      config:
+        role: deployer
+        description: "Deploy to production"
+PIPELINE_YAML
+echo -e "${CYAN}──────────────────────────────────────────────────────────────────────────────${NC}"
+
+echo ""
+echo -e "${YELLOW}Jak działa actor: human w praktyce:${NC}"
+echo "  1. Pipeline zatrzymuje się na kroku z actor: human"
+echo "  2. System wysyła powiadomienie (webhook/email/slack)"
+echo "  3. Czeka na response z approve/reject"
+echo "  4. Jeśli timeout → automatyczny reject"
+echo "  5. Jeśli approve → pipeline kontynuuje"
+echo "  6. Jeśli reject → pipeline zatrzymuje się z błędem"
+echo ""
+sleep 1
+
+echo -e "${BOLD}Przykładowy plik prompt:${NC}"
+echo -e "  ${CYAN}examples/pipeline_human_approval.yaml${NC}"
+echo ""
+echo -e "${BOLD}Uruchomienie:${NC}"
+echo -e "  ${CYAN}marksync generate --prompt examples/pipeline_human_approval.yaml${NC}"
+sleep 1
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FASE 6: PEŁNY WORKFLOW — Od Promptu do Deploymentu
@@ -371,20 +503,25 @@ echo "   → PatternLibrary.find_pattern() szuka podobnych"
 echo "   → Najlepsze patterns są używane jako template"
 echo "   → System 'uczy się' co działa najlepiej"
 echo ""
+sleep 1
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# FASE 7: INTERAKTYWNE DEMO
+# FASE 7: PODSUMOWANIE I NASTĘPNE KROKI
 # ═══════════════════════════════════════════════════════════════════════════════
 
 echo -e "\n${BOLD}${CYAN}═══════════════════════════════════════════════════════════════════════════════${NC}"
-echo -e "${BOLD}[FASE 7] INTERAKTYWNE DEMO — Uruchomienie${NC}"
+echo -e "${BOLD}[FASE 7] PODSUMOWANIE I NASTĘPNE KROKI${NC}"
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════════════════════${NC}\n"
 
-echo -e "${YELLOW}Tryb automatyczny: wszystkie fazy kaskadowo z 1s odstępem${NC}"
-echo -e "${YELLOW}(Naciśnij Ctrl+C aby przerwać)${NC}
-"
+echo -e "${YELLOW}Teraz możesz uruchomić poszczególne komendy:${NC}\n"
+echo "  marksync init           — konfiguracja LLM"
+echo "  marksync generate       — generowanie usługi"
+echo "  marksync shell          — DSL shell"
+echo "  marksync server         — sync server"
+echo "  marksync orchestrate    — uruchom agenty"
+echo ""
 sleep 1
 
-echo -e "\n${BOLD}${GREEN}═══════════════════════════════════════════════════════════════════════════════${NC}"
+echo -e "${BOLD}${GREEN}═══════════════════════════════════════════════════════════════════════════════${NC}"
 echo -e "${BOLD}${GREEN}Demo zakończone!${NC}"
 echo -e "${BOLD}${GREEN}═══════════════════════════════════════════════════════════════════════════════${NC}\n"
