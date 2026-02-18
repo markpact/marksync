@@ -1,0 +1,53 @@
+<?xml version="1.0" ?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:marksync="http://marksync.dev/bpmn" id="Definitions_async_notification" targetNamespace="http://marksync.dev/bpmn">
+  <message id="Message_edit_completed" name="edit-completed"/>
+  <collaboration id="Collaboration_async_notification">
+    <participant id="Participant_editor_pool" name="Editor Agent" processRef="Process_editor_pool"/>
+    <participant id="Participant_notifier_pool" name="Notifier Agent" processRef="Process_notifier_pool"/>
+    <messageFlow id="MsgFlow_mf_edit_done" sourceRef="Task_llm_edit" targetRef="Task_send_notification" name="Edit completed notification" messageRef="Message_edit_completed"/>
+  </collaboration>
+  <process id="Process_editor_pool" name="Editor Agent" isExecutable="true">
+    <laneSet id="LaneSet_editor_pool">
+      <lane id="Lane_editor_lane" name="Editor">
+        <flowNodeRef>Task_llm_edit</flowNodeRef>
+      </lane>
+    </laneSet>
+    <startEvent id="StartEvent_Process_editor_pool" name="Start"/>
+    <serviceTask id="Task_llm_edit" name="llm-edit">
+      <extensionElements>
+        <marksync:actorConfig actor="llm" commMode="async"/>
+        <marksync:property name="role" value="editor"/>
+        <marksync:property name="model" value="qwen2.5-coder:7b"/>
+      </extensionElements>
+    </serviceTask>
+    <intermediateThrowEvent id="ThrowEvent_llm_edit" name="Send: edit-completed">
+      <messageEventDefinition messageRef="Message_edit_completed"/>
+    </intermediateThrowEvent>
+    <sequenceFlow id="Flow_0" sourceRef="StartEvent_Process_editor_pool" targetRef="ThrowEvent_llm_edit"/>
+    <sequenceFlow id="Flow_1" sourceRef="StartEvent_Process_editor_pool" targetRef="Task_llm_edit"/>
+    <endEvent id="EndEvent_Process_editor_pool" name="End"/>
+    <sequenceFlow id="Flow_2" sourceRef="ThrowEvent_llm_edit" targetRef="EndEvent_Process_editor_pool"/>
+  </process>
+  <process id="Process_notifier_pool" name="Notifier Agent" isExecutable="true">
+    <laneSet id="LaneSet_notifier_pool">
+      <lane id="Lane_notifier_lane" name="Notifier">
+        <flowNodeRef>Task_send_notification</flowNodeRef>
+      </lane>
+    </laneSet>
+    <startEvent id="StartEvent_Process_notifier_pool" name="Start"/>
+    <scriptTask id="Task_send_notification" name="send-notification">
+      <extensionElements>
+        <marksync:actorConfig actor="script" commMode="async"/>
+        <marksync:property name="script" value="notify.py"/>
+        <marksync:property name="channels" value="slack,email"/>
+      </extensionElements>
+    </scriptTask>
+    <intermediateCatchEvent id="CatchEvent_send_notification" name="Receive: edit-completed">
+      <messageEventDefinition messageRef="Message_edit_completed"/>
+    </intermediateCatchEvent>
+    <sequenceFlow id="Flow_0" sourceRef="StartEvent_Process_notifier_pool" targetRef="CatchEvent_send_notification"/>
+    <sequenceFlow id="Flow_1" sourceRef="CatchEvent_send_notification" targetRef="Task_send_notification"/>
+    <endEvent id="EndEvent_Process_notifier_pool" name="End"/>
+    <sequenceFlow id="Flow_2" sourceRef="Task_send_notification" targetRef="EndEvent_Process_notifier_pool"/>
+  </process>
+</definitions>

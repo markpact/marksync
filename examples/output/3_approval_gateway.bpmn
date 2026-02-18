@@ -1,0 +1,42 @@
+<?xml version="1.0" ?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:marksync="http://marksync.dev/bpmn" id="Definitions_approval_gateway" targetNamespace="http://marksync.dev/bpmn">
+  <process id="Process_approval_gateway" name="approval-gateway" isExecutable="true">
+    <documentation>LLM edits code, human reviews, XOR gateway routes: approved → deploy, rejected → senior LLM re-edits.</documentation>
+    <startEvent id="StartEvent_Process_approval_gateway" name="Start"/>
+    <serviceTask id="Task_llm_edit" name="llm-edit">
+      <extensionElements>
+        <marksync:actorConfig actor="llm" commMode="sync"/>
+        <marksync:property name="role" value="editor"/>
+        <marksync:property name="model" value="qwen2.5-coder:7b"/>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="Flow_0" sourceRef="StartEvent_Process_approval_gateway" targetRef="Task_llm_edit"/>
+    <userTask id="Task_human_review" name="human-review">
+      <extensionElements>
+        <marksync:actorConfig actor="human" commMode="sync"/>
+        <marksync:property name="task_type" value="approval"/>
+        <marksync:property name="prompt" value="Approve or reject the edit"/>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_1" sourceRef="Task_llm_edit" targetRef="Task_human_review"/>
+    <exclusiveGateway id="Gateway_approval_check" name="Approval result?" gatewayDirection="Diverging"/>
+    <sequenceFlow id="Flow_2" sourceRef="Task_human_review" targetRef="Gateway_approval_check"/>
+    <scriptTask id="Task_deploy" name="deploy">
+      <extensionElements>
+        <marksync:actorConfig actor="script" commMode="sync"/>
+        <marksync:property name="script" value="deploy.sh"/>
+      </extensionElements>
+    </scriptTask>
+    <sequenceFlow id="Flow_3" sourceRef="Gateway_approval_check" targetRef="Task_deploy"/>
+    <serviceTask id="Task_senior_llm_edit" name="senior-llm-edit">
+      <extensionElements>
+        <marksync:actorConfig actor="llm" commMode="sync"/>
+        <marksync:property name="role" value="senior-editor"/>
+        <marksync:property name="model" value="qwen2.5-coder:32b"/>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="Flow_4" sourceRef="Task_deploy" targetRef="Task_senior_llm_edit"/>
+    <endEvent id="EndEvent_Process_approval_gateway" name="End"/>
+    <sequenceFlow id="Flow_5" sourceRef="Task_senior_llm_edit" targetRef="EndEvent_Process_approval_gateway"/>
+  </process>
+</definitions>

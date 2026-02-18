@@ -1,0 +1,117 @@
+<?xml version="1.0" ?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:marksync="http://marksync.dev/bpmn" id="Definitions_full_multiagent_collaboration" targetNamespace="http://marksync.dev/bpmn">
+  <message id="Message_edit_ready" name="edit-ready"/>
+  <message id="Message_deployment_approved" name="deployment-approved"/>
+  <collaboration id="Collaboration_full_multiagent_collaboration">
+    <participant id="Participant_editor_system" name="Editor System" processRef="Process_editor_system"/>
+    <participant id="Participant_review_system" name="Review System" processRef="Process_review_system"/>
+    <participant id="Participant_deploy_system" name="Deployment System" processRef="Process_deploy_system"/>
+    <messageFlow id="MsgFlow_mf_edit_to_review" sourceRef="Task_auto_format" targetRef="Task_llm_review" name="Edit ready for review" messageRef="Message_edit_ready"/>
+    <messageFlow id="MsgFlow_mf_review_to_deploy" sourceRef="Task_human_approve" targetRef="Task_deploy" name="Deployment approved" messageRef="Message_deployment_approved"/>
+  </collaboration>
+  <process id="Process_editor_system" name="Editor System" isExecutable="true">
+    <laneSet id="LaneSet_editor_system">
+      <lane id="Lane_editor_lane" name="Editor">
+        <flowNodeRef>Task_llm_edit</flowNodeRef>
+      </lane>
+      <lane id="Lane_formatter_lane" name="Formatter">
+        <flowNodeRef>Task_auto_format</flowNodeRef>
+      </lane>
+    </laneSet>
+    <startEvent id="StartEvent_Process_editor_system" name="Start"/>
+    <serviceTask id="Task_llm_edit" name="llm-edit">
+      <extensionElements>
+        <marksync:actorConfig actor="llm" commMode="sync"/>
+        <marksync:property name="role" value="editor"/>
+        <marksync:property name="model" value="qwen2.5-coder:7b"/>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="Flow_0" sourceRef="StartEvent_Process_editor_system" targetRef="Task_llm_edit"/>
+    <scriptTask id="Task_auto_format" name="auto-format">
+      <extensionElements>
+        <marksync:actorConfig actor="script" commMode="async"/>
+        <marksync:property name="script" value="ruff format ."/>
+      </extensionElements>
+    </scriptTask>
+    <intermediateThrowEvent id="ThrowEvent_auto_format" name="Send: edit-ready">
+      <messageEventDefinition messageRef="Message_edit_ready"/>
+    </intermediateThrowEvent>
+    <sequenceFlow id="Flow_1" sourceRef="Task_llm_edit" targetRef="ThrowEvent_auto_format"/>
+    <sequenceFlow id="Flow_2" sourceRef="Task_llm_edit" targetRef="Task_auto_format"/>
+    <endEvent id="EndEvent_Process_editor_system" name="End"/>
+    <sequenceFlow id="Flow_3" sourceRef="ThrowEvent_auto_format" targetRef="EndEvent_Process_editor_system"/>
+  </process>
+  <process id="Process_review_system" name="Review System" isExecutable="true">
+    <laneSet id="LaneSet_review_system">
+      <lane id="Lane_reviewer_lane" name="Reviewer">
+        <flowNodeRef>Task_llm_review</flowNodeRef>
+      </lane>
+      <lane id="Lane_approver_lane" name="Approver">
+        <flowNodeRef>Task_human_approve</flowNodeRef>
+      </lane>
+    </laneSet>
+    <startEvent id="StartEvent_Process_review_system" name="Start"/>
+    <serviceTask id="Task_llm_review" name="llm-review">
+      <extensionElements>
+        <marksync:actorConfig actor="llm" commMode="async"/>
+        <marksync:property name="role" value="reviewer"/>
+        <marksync:property name="model" value="qwen2.5-coder:7b"/>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopDataInputRef>security,performance,style</loopDataInputRef>
+        <completionCondition>allCompleted</completionCondition>
+      </multiInstanceLoopCharacteristics>
+    </serviceTask>
+    <intermediateCatchEvent id="CatchEvent_llm_review" name="Receive: edit-ready">
+      <messageEventDefinition messageRef="Message_edit_ready"/>
+    </intermediateCatchEvent>
+    <sequenceFlow id="Flow_0" sourceRef="StartEvent_Process_review_system" targetRef="CatchEvent_llm_review"/>
+    <sequenceFlow id="Flow_1" sourceRef="CatchEvent_llm_review" targetRef="Task_llm_review"/>
+    <userTask id="Task_human_approve" name="human-approve">
+      <extensionElements>
+        <marksync:actorConfig actor="human" commMode="async"/>
+        <marksync:property name="task_type" value="approval"/>
+        <marksync:property name="prompt" value="Review complete. Deploy?"/>
+      </extensionElements>
+    </userTask>
+    <intermediateThrowEvent id="ThrowEvent_human_approve" name="Send: deployment-approved">
+      <messageEventDefinition messageRef="Message_deployment_approved"/>
+    </intermediateThrowEvent>
+    <sequenceFlow id="Flow_2" sourceRef="Task_llm_review" targetRef="ThrowEvent_human_approve"/>
+    <sequenceFlow id="Flow_3" sourceRef="Task_llm_review" targetRef="Task_human_approve"/>
+    <endEvent id="EndEvent_Process_review_system" name="End"/>
+    <sequenceFlow id="Flow_4" sourceRef="ThrowEvent_human_approve" targetRef="EndEvent_Process_review_system"/>
+  </process>
+  <process id="Process_deploy_system" name="Deployment System" isExecutable="true">
+    <laneSet id="LaneSet_deploy_system">
+      <lane id="Lane_deployer_lane" name="Deployer">
+        <flowNodeRef>Task_deploy</flowNodeRef>
+      </lane>
+      <lane id="Lane_monitor_lane" name="Monitor">
+        <flowNodeRef>Task_monitor</flowNodeRef>
+      </lane>
+    </laneSet>
+    <startEvent id="StartEvent_Process_deploy_system" name="Start"/>
+    <scriptTask id="Task_deploy" name="deploy">
+      <extensionElements>
+        <marksync:actorConfig actor="script" commMode="async"/>
+        <marksync:property name="script" value="deploy.sh"/>
+      </extensionElements>
+    </scriptTask>
+    <intermediateCatchEvent id="CatchEvent_deploy" name="Receive: deployment-approved">
+      <messageEventDefinition messageRef="Message_deployment_approved"/>
+    </intermediateCatchEvent>
+    <sequenceFlow id="Flow_0" sourceRef="StartEvent_Process_deploy_system" targetRef="CatchEvent_deploy"/>
+    <sequenceFlow id="Flow_1" sourceRef="CatchEvent_deploy" targetRef="Task_deploy"/>
+    <scriptTask id="Task_monitor" name="monitor">
+      <extensionElements>
+        <marksync:actorConfig actor="script" commMode="sync"/>
+        <marksync:property name="script" value="monitor.py"/>
+        <marksync:property name="interval" value="30s"/>
+      </extensionElements>
+    </scriptTask>
+    <sequenceFlow id="Flow_2" sourceRef="Task_deploy" targetRef="Task_monitor"/>
+    <endEvent id="EndEvent_Process_deploy_system" name="End"/>
+    <sequenceFlow id="Flow_3" sourceRef="Task_monitor" targetRef="EndEvent_Process_deploy_system"/>
+  </process>
+</definitions>

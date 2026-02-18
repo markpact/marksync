@@ -1,3 +1,28 @@
+## [0.2.11] - 2026-02-18
+
+### Summary
+
+feat(examples): configuration management system
+
+### Docs
+
+- docs: update plugins.md
+
+### Other
+
+- update examples/bpmn_multiagent.py
+- update examples/output/1_parallel_review.bpmn
+- update examples/output/2_async_notification.bpmn
+- update examples/output/3_approval_gateway.bpmn
+- update examples/output/4_full_collaboration.bpmn
+- update marksync/plugins/__init__.py
+- update marksync/plugins/api/__init__.py
+- update marksync/plugins/api/asyncapi.py
+- update marksync/plugins/api/graphql.py
+- update marksync/plugins/api/grpc.py
+- ... and 21 more
+
+
 ## [0.2.10] - 2026-02-18
 
 ### Summary

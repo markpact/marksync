@@ -1,0 +1,40 @@
+<?xml version="1.0" ?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:marksync="http://marksync.dev/bpmn" id="Definitions_parallel_code_review" targetNamespace="http://marksync.dev/bpmn">
+  <process id="Process_parallel_code_review" name="parallel-code-review" isExecutable="true">
+    <documentation>Three LLM reviewer agents analyze code blocks in parallel (multi-instance |||). AND gateway synchronizes all reviewers before human approval gate.</documentation>
+    <startEvent id="StartEvent_Process_parallel_code_review" name="Start"/>
+    <parallelGateway id="Gateway_fork_reviewers" name="Fork: parallel reviewers" gatewayDirection="Diverging"/>
+    <sequenceFlow id="Flow_0" sourceRef="StartEvent_Process_parallel_code_review" targetRef="Gateway_fork_reviewers"/>
+    <serviceTask id="Task_llm_review" name="llm-review">
+      <extensionElements>
+        <marksync:actorConfig actor="llm" commMode="sync"/>
+        <marksync:property name="role" value="reviewer"/>
+        <marksync:property name="model" value="qwen2.5-coder:7b"/>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopDataInputRef>block-api,block-db,block-ui</loopDataInputRef>
+        <completionCondition>allCompleted</completionCondition>
+      </multiInstanceLoopCharacteristics>
+    </serviceTask>
+    <sequenceFlow id="Flow_1" sourceRef="Gateway_fork_reviewers" targetRef="Task_llm_review"/>
+    <userTask id="Task_human_approve" name="human-approve">
+      <extensionElements>
+        <marksync:actorConfig actor="human" commMode="sync"/>
+        <marksync:property name="task_type" value="approval"/>
+        <marksync:property name="prompt" value="Review all 3 LLM outputs"/>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_2" sourceRef="Task_llm_review" targetRef="Task_human_approve"/>
+    <scriptTask id="Task_merge_results" name="merge-results">
+      <extensionElements>
+        <marksync:actorConfig actor="script" commMode="sync"/>
+        <marksync:property name="script" value="merge_reviews.py"/>
+      </extensionElements>
+    </scriptTask>
+    <sequenceFlow id="Flow_3" sourceRef="Task_human_approve" targetRef="Task_merge_results"/>
+    <parallelGateway id="Gateway_join_reviewers" name="Join: all reviewers done" gatewayDirection="Converging"/>
+    <sequenceFlow id="Flow_4" sourceRef="Task_merge_results" targetRef="Gateway_join_reviewers"/>
+    <endEvent id="EndEvent_Process_parallel_code_review" name="End"/>
+    <sequenceFlow id="Flow_5" sourceRef="Gateway_join_reviewers" targetRef="EndEvent_Process_parallel_code_review"/>
+  </process>
+</definitions>
