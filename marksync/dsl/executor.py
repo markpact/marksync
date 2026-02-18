@@ -8,6 +8,7 @@ Can operate standalone or be driven by the REST/WS API.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import time
 from dataclasses import dataclass, field
@@ -571,3 +572,104 @@ class DSLExecutor:
             "config": dict(self.config),
             "history_count": len(self.history),
         }
+
+    # ── Persistence ────────────────────────────────────────────────────────
+
+    _DEFAULT_STATE_FILE = Path.home() / ".marksync_state.json"
+
+    def save_state(self, path: Path | None = None) -> Path:
+        """
+        Persist agents, pipelines, routes and config to a JSON file.
+        Returns the path written.
+        """
+        target = Path(path) if path else self._DEFAULT_STATE_FILE
+        state = {
+            "ts": time.time(),
+            "agents": {n: a.to_dict() for n, a in self.agents.items()},
+            "pipelines": {n: p.to_dict() for n, p in self.pipelines.items()},
+            "routes": [r.to_dict() for r in self.routes],
+            "config": dict(self.config),
+        }
+        target.write_text(json.dumps(state, indent=2, ensure_ascii=False), "utf-8")
+        log.info(f"State saved to {target}")
+        return target
+
+    def load_state(self, path: Path | None = None) -> dict:
+        """Load a previously saved state dict without applying it."""
+        target = Path(path) if path else self._DEFAULT_STATE_FILE
+        if not target.exists():
+            return {}
+        return json.loads(target.read_text("utf-8"))
+
+    def restore_state(self, path: Path | None = None) -> int:
+        """
+        Restore agents, pipelines, routes and config from a JSON file.
+        Returns the number of items restored (agents + pipelines + routes).
+        """
+        state = self.load_state(path)
+        if not state:
+            return 0
+        count = 0
+        for name, data in state.get("agents", {}).items():
+            if name not in self.agents:
+                self.agents[name] = AgentHandle(
+                    name=name,
+                    role=data.get("role", "editor"),
+                    options=data.get("options", {}),
+                    status="stopped",   # don't auto-start — require explicit AGENT cmd
+                    created_at=data.get("created_at", time.time()),
+                    stats=data.get("stats", {}),
+                )
+                count += 1
+        for name, data in state.get("pipelines", {}).items():
+            if name not in self.pipelines:
+                self.pipelines[name] = Pipeline(
+                    name=name,
+                    stages=data.get("stages", []),
+                    active=data.get("active", True),
+                )
+                count += 1
+        for r in state.get("routes", []):
+            route = Route(pattern=r.get("pattern", ""), agent=r.get("agent", ""))
+            if not any(x.pattern == route.pattern for x in self.routes):
+                self.routes.append(route)
+                count += 1
+        self.config.update(state.get("config", {}))
+        log.info(f"Restored {count} items from state")
+        return count
+
+    # ── Webhooks ───────────────────────────────────────────────────────────
+
+    def add_webhook(self, url: str, events: list[str] | None = None):
+        """
+        Register a webhook URL to be notified on agent events.
+
+        Args:
+            url:    HTTP(S) URL to POST event payloads to.
+            events: Event names to forward (None = all).
+        """
+        if not hasattr(self, "_webhooks"):
+            self._webhooks: list[dict] = []
+        self._webhooks.append({"url": url, "events": events or []})
+
+        def _fire(event: str, data: Any):
+            self._fire_webhook(url, event, data)
+
+        for ev in (events or ["*"]):
+            self.on(ev, _fire)
+        log.info(f"Webhook registered: {url} events={events or ['*']}")
+
+    def _fire_webhook(self, url: str, event: str, data: Any):
+        """Fire a webhook asynchronously (non-blocking)."""
+        import threading, urllib.request
+        payload = json.dumps({"event": event, "data": data, "ts": time.time()},
+                             default=str, ensure_ascii=False).encode()
+        def _post():
+            try:
+                req = urllib.request.Request(url, data=payload,
+                                             headers={"Content-Type": "application/json"},
+                                             method="POST")
+                urllib.request.urlopen(req, timeout=5)
+            except Exception as e:
+                log.warning(f"Webhook {url} failed: {e}")
+        threading.Thread(target=_post, daemon=True).start()
