@@ -55,44 +55,56 @@ cd marksync
 docker compose up --build
 ```
 
-This starts 5 containers:
+This starts 4 services (not 1-per-agent — all agents run in a single orchestrator):
 
 | Container | Role | What it does |
 |-----------|------|-------------|
 | `sync-server` | Hub | WebSocket server, persists README.md, broadcasts changes |
-| `agent-editor` | Editor | Receives code blocks, sends to Ollama for improvements |
-| `agent-reviewer` | Reviewer | Analyzes code quality via LLM, logs findings |
-| `agent-deployer` | Deployer | Watches for changes, triggers `markpact` builds |
-| `agent-monitor` | Monitor | Logs every block change with size and hash |
+| `orchestrator` | Agents | Reads `agents.yml`, spawns all agents in 1 process |
+| `api-server` | API | REST/WS API for remote DSL control |
+| `init-project` | Seed | Copies `examples/1/README.md` into shared volume |
+
+Agent definitions live in `agents.yml` — define once, use everywhere:
+
+```yaml
+# agents.yml
+agents:
+  editor-1:   { role: editor, auto_edit: true }
+  reviewer-1: { role: reviewer }
+  deployer-1: { role: deployer }
+  monitor-1:  { role: monitor }
+pipelines:
+  review-flow: { stages: [editor-1, reviewer-1] }
+```
 
 Then push changes from your host:
 
 ```bash
-# Install marksync locally
 pip install -e .
-
-# Push your README changes to the running server
-marksync push README.md --server-uri ws://localhost:8765
-
-# See what blocks are in a README
-marksync blocks demo-project.md
+marksync push README.md
+marksync blocks examples/1/README.md
 ```
 
 ## Quick Start — Without Docker
 
 ```bash
-pip install marksync[all]
+pip install -e .
 
 # Terminal 1: Start sync server
-marksync server README.md --port 8765
+marksync server examples/1/README.md
 
-# Terminal 2: Start a monitor agent
-marksync agent --role monitor --name watcher-1 \
-  --server-uri ws://localhost:8765 \
-  --ollama-url http://localhost:11434
+# Terminal 2: Start all agents from agents.yml
+marksync orchestrate -c agents.yml
 
-# Terminal 3: Push changes
-marksync push README.md --server-uri ws://localhost:8765
+# Terminal 3: Web sandbox (edit & test in browser)
+marksync sandbox
+# Open http://localhost:8888
+```
+
+Or start agents individually:
+
+```bash
+marksync agent --role editor --name editor-1
 ```
 
 ## DSL — Agent Orchestration
@@ -115,20 +127,17 @@ marksync> LIST agents
 marksync> STATUS
 ```
 
-### DSL Script Files (.msdsl)
+### Orchestrate from agents.yml
 
 ```bash
-marksync shell --script setup.msdsl
-```
+# Dry-run — preview the plan
+marksync orchestrate --dry-run
 
-```bash
-# setup.msdsl
-SET server_uri ws://localhost:8765
-SET ollama_model qwen2.5-coder:7b
-AGENT coder editor --auto-edit
-AGENT reviewer-1 reviewer
-PIPE review-flow coder -> reviewer-1
-ROUTE markpact:run -> deployer-1
+# Run all agents
+marksync orchestrate -c agents.yml
+
+# Run only editors
+marksync orchestrate --role editor
 ```
 
 ### REST / WebSocket API
@@ -158,13 +167,15 @@ See [docs/dsl-reference.md](docs/dsl-reference.md) and [docs/api.md](docs/api.md
 ```
 marksync server README.md [--host 0.0.0.0] [--port 8765]
 marksync agent --role {editor|reviewer|deployer|monitor} --name NAME
-               [--server-uri ws://...] [--ollama-url http://...]
-               [--model MODEL] [--auto-edit]
+marksync orchestrate [-c agents.yml] [--role ROLE] [--dry-run] [--export-dsl FILE]
 marksync push README.md [--server-uri ws://...]
 marksync blocks README.md
-marksync shell [--script FILE] [--server-uri ws://...] [--ollama-url http://...]
-marksync api [--host 0.0.0.0] [--port 8080] [--server-uri ws://...] [--ollama-url http://...]
+marksync shell [--script FILE]
+marksync api [--host 0.0.0.0] [--port 8080]
+marksync sandbox [--port 8888]
 ```
+
+All commands read defaults from `.env` — no need to pass `--server-uri`, `--ollama-url` etc.
 
 ## Agent Roles
 
@@ -237,20 +248,26 @@ Delta strategy: if patch < 80% of full content → send patch. Otherwise send fu
 
 ```
 marksync/
+├── .env                     # Centralized config (ports, hosts, model)
+├── agents.yml               # Agent definitions (single source of truth)
 ├── pyproject.toml           # Package config (pip install .)
 ├── Dockerfile               # Single image for server + agents
-├── docker-compose.yml       # Full ecosystem (5 containers)
-├── TODO.md                  # Project roadmap
-├── CHANGELOG.md             # Version history
+├── docker-compose.yml       # 4 services (server, orchestrator, api, init)
 ├── docs/
 │   ├── architecture.md      # System design & data flow
 │   ├── dsl-reference.md     # DSL command reference
-│   └── api.md               # REST & WebSocket API docs
+│   ├── api.md               # REST & WebSocket API docs
+│   └── 1/README.md          # Example 1 usage guide
+├── examples/
+│   ├── 1/                   # Task Manager API
+│   ├── 2/                   # Chat WebSocket App
+│   └── 3/                   # Data Pipeline CLI
 ├── marksync/
 │   ├── __init__.py          # Package exports
-│   ├── cli.py               # Click CLI (server, agent, push, blocks, shell, api)
+│   ├── cli.py               # Click CLI (server, agent, orchestrate, sandbox, ...)
+│   ├── settings.py          # Centralized config from .env
+│   ├── orchestrator.py      # Reads agents.yml, spawns agents
 │   ├── dsl/
-│   │   ├── __init__.py      # DSL public API
 │   │   ├── parser.py        # DSLParser, DSLCommand, CommandType
 │   │   ├── executor.py      # DSLExecutor, AgentHandle, Pipeline, Route
 │   │   ├── shell.py         # Interactive REPL (DSLShell)
@@ -260,23 +277,38 @@ marksync/
 │   │   ├── crdt.py          # CRDTDocument (pycrdt/Yjs)
 │   │   └── engine.py        # SyncServer, SyncClient
 │   ├── agents/
-│   │   ├── __init__.py      # AgentWorker, AgentConfig, OllamaClient
-│   │   └── base.py          # Re-exports
+│   │   └── __init__.py      # AgentWorker, AgentConfig, OllamaClient
+│   ├── sandbox/
+│   │   └── app.py           # Web sandbox UI (edit, test, orchestrate)
 │   └── transport/
 │       └── __init__.py      # MQTT/gRPC extension point
-├── tests/
-│   ├── test_marksync.py     # Import & smoke tests
-│   └── test_dsl.py          # DSL parser & executor tests
-└── demo-project.md          # Example Markpact README
+└── tests/
+    ├── test_dsl.py          # DSL parser & executor (36 tests)
+    ├── test_examples.py     # Example block parsing (21 tests)
+    ├── test_orchestrator.py # Orchestrator & agents.yml (24 tests)
+    └── test_settings.py     # Settings & .env loading (13 tests)
 ```
 
-## Environment Variables
+## Configuration
+
+All config lives in two files:
+
+| File | Purpose |
+|------|----------|
+| `.env` | Ports, hosts, model, log level |
+| `agents.yml` | Agent definitions, pipelines, routes |
+
+### Environment Variables (`.env`)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MARKSYNC_SERVER` | `ws://sync-server:8765` | Sync server URI |
-| `OLLAMA_URL` | `http://host.docker.internal:11434` | Ollama API endpoint |
+| `MARKSYNC_PORT` | `8765` | Sync server port |
+| `MARKSYNC_SERVER` | `ws://localhost:8765` | Sync server URI |
+| `MARKSYNC_API_PORT` | `8080` | DSL API port |
+| `OLLAMA_URL` | `http://localhost:11434` | Ollama API endpoint |
 | `OLLAMA_MODEL` | `qwen2.5-coder:7b` | LLM model for agents |
+| `MARKPACT_PORT` | `8088` | Markpact app port |
+| `LOG_LEVEL` | `INFO` | Logging level |
 
 ## Integration with Markpact
 
@@ -300,6 +332,7 @@ The deployer agent can automatically trigger `markpact` rebuilds when code block
 - [Architecture](docs/architecture.md) — system design, layers, data flow
 - [DSL Reference](docs/dsl-reference.md) — full command reference for the orchestration DSL
 - [API Reference](docs/api.md) — REST & WebSocket API documentation
+- [Example 1 Guide](docs/1/README.md) — Task Manager API walkthrough
 - [Changelog](CHANGELOG.md) — version history
 - [TODO](TODO.md) — roadmap and planned features
 

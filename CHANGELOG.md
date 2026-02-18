@@ -1,3 +1,40 @@
+## [0.2.4] - 2026-02-18
+
+### Summary
+
+feat(docs): CLI interface improvements
+
+### Docs
+
+- docs: update README
+- docs: update TODO.md
+- docs: update architecture.md
+- docs: update dsl-reference.md
+
+### Test
+
+- update tests/test_orchestrator.py
+- update tests/test_pipeline.py
+
+### Build
+
+- update pyproject.toml
+
+### Other
+
+- config: update agents.yml
+- update examples/1/orchestrate.msdsl
+- update examples/2/orchestrate.msdsl
+- update examples/3/orchestrate.msdsl
+- update marksync/cli.py
+- update marksync/pipeline/__init__.py
+- update marksync/pipeline/api.py
+- update marksync/pipeline/engine.py
+- update marksync/sandbox/__init__.py
+- update marksync/sandbox/app.py
+- ... and 2 more
+
+
 ## [0.2.3] - 2026-02-18
 
 ### Summary

@@ -24,13 +24,36 @@ agents:
   monitor-1:
     role: monitor
 
-# Pipelines: agent chains triggered on block changes
+# Pipelines: mixed actor chains (LLM, Script, Human)
+#
+# Actor types:
+#   llm    — AI agent (Ollama), async automatic processing
+#   script — Algorithm/function, sync deterministic processing
+#   human  — Human-in-the-loop, blocks until resolved via API endpoint
+#
+# Legacy format (stages list) still works for pure-LLM pipelines.
 pipelines:
   review-flow:
     stages: [editor-1, reviewer-1]
 
   deploy-flow:
     stages: [editor-1, reviewer-1, deployer-1]
+
+  # Full pipeline with human-in-the-loop
+  review-approve-deploy:
+    steps:
+      - name: llm-edit
+        actor: llm
+        config: {role: editor, auto_edit: true}
+      - name: human-review
+        actor: human
+        config: {prompt: "Review AI-generated changes. Approve or reject.", task_type: approval, channel: web}
+      - name: lint
+        actor: script
+        config: {script: lint}
+      - name: deploy
+        actor: script
+        config: {script: deploy}
 
 # Routes: map block patterns to agents
 routes:

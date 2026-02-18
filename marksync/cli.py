@@ -205,5 +205,20 @@ def api(host, port, server_uri, ollama_url):
     uvicorn.run(app, host=host, port=port, log_level="info")
 
 
+@main.command()
+@click.option("--host", default="0.0.0.0")
+@click.option("--port", default=8888, type=int)
+def sandbox(host, port):
+    """Start the web sandbox for testing examples (edit, run, orchestrate)."""
+    from marksync.sandbox.app import create_sandbox_app
+    import uvicorn
+
+    app = create_sandbox_app()
+    console.print(f"[bold green]Starting Sandbox[/] on http://{host}:{port}")
+    console.print(f"  Open in browser: [bold cyan]http://localhost:{port}[/]")
+    console.print(f"  API docs:        http://localhost:{port}/docs")
+    uvicorn.run(app, host=host, port=port, log_level="info")
+
+
 if __name__ == "__main__":
     main()
