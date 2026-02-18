@@ -500,21 +500,111 @@ async function loadPipeline() {
 
   var pending = taskData.pending || [];
   if (pending.length) {
-    html += '<div class="orch-section"><h3 style="color:var(--yellow)">Pending Human Tasks (' + pending.length + ')</h3>';
+    html += '<div class="orch-section"><h3 style="color:var(--yellow)">\u{1F464} Pending Human Tasks (' + pending.length + ')</h3>';
     pending.forEach(function(t) {
-      html += '<div class="block-card" style="border-color:var(--yellow)">' +
-        '<div class="block-header" style="background:#d2992215">' +
-        '<span class="id">' + escHtml(t.step_name) + '</span>' +
-        '<span class="meta">' + escHtml(t.task_type) + ' via ' + escHtml(t.channel) + ' &middot; ' + escHtml(t.id) + '</span></div>' +
-        '<div style="padding:12px 14px">' +
-        '<div style="font-size:14px;font-weight:600;margin-bottom:8px">' + escHtml(t.prompt) + '</div>' +
-        '<div style="font-size:12px;color:#8b949e;margin-bottom:10px">Run: ' + escHtml(t.run_id) + '</div>' +
-        (t.data && t.data.content ? '<pre style="background:var(--code-bg);padding:8px;border-radius:4px;font-size:12px;max-height:150px;overflow:auto;margin-bottom:10px">' + escHtml(String(t.data.content)) + '</pre>' : '') +
-        '<div style="display:flex;gap:8px;align-items:center">' +
-        '<button class="btn primary" onclick="resolveTask(\'' + t.id + '\',\'approve\')">Approve</button>' +
-        '<button class="btn danger" onclick="resolveTask(\'' + t.id + '\',\'reject\')">Reject</button>' +
-        '<input id="task-input-' + t.id + '" placeholder="Optional comment..." style="flex:1;padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--fg);font-size:13px">' +
-        '</div></div></div>';
+      // Filter context data: skip internal pipeline keys
+      var skipKeys = {'action':1,'human_response':1,'resolved_by':1,'task_id':1,'llm_action':1,'llm_model':1,'script':1,'script_status':1,'validation_error':1};
+      var ctxKeys = Object.keys(t.data || {}).filter(function(k){ return !skipKeys[k] && k !== 'content'; });
+
+      // Task type badge + action description
+      var typeDesc = t.task_type === 'approval'
+        ? 'Requires your <strong>approval or rejection</strong>'
+        : t.task_type === 'input'
+        ? 'Requires you to <strong>provide input data</strong>'
+        : 'Requires you to <strong>complete an action</strong>';
+
+      // Context data table rows
+      var ctxRows = ctxKeys.map(function(k) {
+        var v = t.data[k];
+        var display = (typeof v === 'object') ? JSON.stringify(v) : String(v);
+        return '<tr><td style="color:#8b949e;padding:3px 10px 3px 0;white-space:nowrap;font-family:monospace;font-size:12px">' +
+          escHtml(k) + '</td><td style="font-size:12px;word-break:break-all">' + escHtml(display) + '</td></tr>';
+      }).join('');
+
+      // Curl example
+      var curlCmd = 'curl -X POST http://localhost:8888/api/pipeline/tasks/' + t.id + ' \\\n' +
+        '     -H "Content-Type: application/json" \\\n' +
+        '     -d \'{"action": "approve", "response": {"comment": "LGTM"}, "resolved_by": "you"}\'';
+
+      // Time since created
+      var age = Math.round((Date.now()/1000 - t.created_at));
+      var ageStr = age < 60 ? age + 's ago' : Math.round(age/60) + 'min ago';
+
+      html += '<div class="block-card" style="border-color:var(--yellow);margin-bottom:16px">' +
+
+        // ── Header ────────────────────────────────────────────────
+        '<div class="block-header" style="background:#d2992215;flex-wrap:wrap;gap:8px">' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+        '<span class="id">\u{1F464} ' + escHtml(t.step_name) + '</span>' +
+        '<span style="background:#d2992233;color:var(--yellow);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">' + escHtml(t.task_type.toUpperCase()) + '</span>' +
+        '<span style="background:#1f6feb22;color:#8b949e;padding:2px 8px;border-radius:10px;font-size:11px">via ' + escHtml(t.channel) + '</span>' +
+        '</div>' +
+        '<span style="font-size:11px;color:#8b949e;margin-left:auto">' + escHtml(t.id) + ' &middot; ' + ageStr + '</span>' +
+        '</div>' +
+
+        '<div style="padding:14px">' +
+
+        // ── Prompt ────────────────────────────────────────────────
+        '<div style="font-size:15px;font-weight:700;margin-bottom:6px;color:var(--fg)">' + escHtml(t.prompt) + '</div>' +
+        '<div style="font-size:12px;color:#8b949e;margin-bottom:12px">' + typeDesc + ' &nbsp;&middot;&nbsp; Run: <code style="color:var(--accent)">' + escHtml(t.run_id) + '</code></div>' +
+
+        // ── Context data table ────────────────────────────────────
+        (ctxRows ? (
+          '<div style="margin-bottom:12px">' +
+          '<div style="font-size:11px;font-weight:600;color:#8b949e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Context data</div>' +
+          '<table style="width:100%;border-collapse:collapse">' + ctxRows + '</table>' +
+          '</div>'
+        ) : '') +
+
+        // ── Content block ─────────────────────────────────────────
+        (t.data && t.data.content ?
+          '<div style="margin-bottom:12px">' +
+          '<div style="font-size:11px;font-weight:600;color:#8b949e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Content</div>' +
+          '<pre style="background:var(--code-bg);padding:10px;border-radius:4px;font-size:12px;max-height:160px;overflow:auto;margin:0;white-space:pre-wrap;border:1px solid var(--border)">' + escHtml(String(t.data.content)) + '</pre>' +
+          '</div>'
+        : '') +
+
+        // ── Endpoint info ─────────────────────────────────────────
+        '<details style="margin-bottom:12px">' +
+        '<summary style="font-size:11px;font-weight:600;color:#8b949e;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;user-select:none">API Endpoint &amp; curl</summary>' +
+        '<div style="margin-top:8px">' +
+        '<div style="font-size:12px;margin-bottom:6px">' +
+        '<span style="background:#1f6feb33;color:var(--accent);padding:2px 7px;border-radius:4px;font-family:monospace;font-size:11px">POST</span>' +
+        ' <code style="font-size:12px">/api/pipeline/tasks/' + escHtml(t.id) + '</code>' +
+        '</div>' +
+        '<div style="font-size:11px;color:#8b949e;margin-bottom:6px">Expected request body:</div>' +
+        '<pre style="background:var(--code-bg);padding:8px;border-radius:4px;font-size:11px;margin:0 0 8px 0;border:1px solid var(--border)">' +
+        escHtml('{\n  "action": "approve" | "reject" | "provide_input",\n  "response": { "comment": "..." },\n  "resolved_by": "your-name"\n}') +
+        '</pre>' +
+        '<pre style="background:var(--code-bg);padding:8px;border-radius:4px;font-size:11px;margin:0;border:1px solid var(--border);overflow-x:auto">' + escHtml(curlCmd) + '</pre>' +
+        '</div></details>' +
+
+        // ── Action form ───────────────────────────────────────────
+        '<div style="background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:12px">' +
+        '<div style="font-size:11px;font-weight:600;color:#8b949e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Your response</div>' +
+
+        // resolved_by field
+        '<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px">' +
+        '<label style="font-size:12px;color:#8b949e;white-space:nowrap;min-width:80px">Resolved by</label>' +
+        '<input id="task-by-' + t.id + '" value="sandbox-user" style="flex:1;padding:5px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--fg);font-size:12px">' +
+        '</div>' +
+
+        // comment field
+        '<div style="margin-bottom:10px;display:flex;align-items:flex-start;gap:8px">' +
+        '<label style="font-size:12px;color:#8b949e;white-space:nowrap;min-width:80px;padding-top:6px">Comment</label>' +
+        '<textarea id="task-input-' + t.id + '" rows="2" placeholder="Optional comment or reason..." style="flex:1;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--fg);font-size:12px;resize:vertical;font-family:inherit"></textarea>' +
+        '</div>' +
+
+        // action buttons
+        '<div style="display:flex;gap:8px">' +
+        '<button class="btn primary" onclick="resolveTask(\'' + t.id + '\',\'approve\')">\u2714 Approve</button>' +
+        '<button class="btn danger" onclick="resolveTask(\'' + t.id + '\',\'reject\')">\u2716 Reject</button>' +
+        (t.task_type === 'input' ?
+          '<button class="btn" onclick="resolveTask(\'' + t.id + '\',\'provide_input\')">Submit Input</button>' : '') +
+        '</div>' +
+        '</div>' + // action form
+
+        '</div></div>'; // padding + block-card
     });
     html += '</div>';
   }
@@ -545,28 +635,28 @@ async function loadPipeline() {
     html += '</div>';
   }
 
-  // Save task input values before replacing DOM (prevents losing typed text)
+  // Save all task form values before replacing DOM
   var savedInputs = {};
-  el.querySelectorAll('input[id^="task-input-"]').forEach(function(inp) {
-    if (inp.value) savedInputs[inp.id] = inp.value;
+  el.querySelectorAll('input[id^="task-"], textarea[id^="task-"]').forEach(function(el) {
+    if (el.value) savedInputs[el.id] = el.value;
   });
 
   el.innerHTML = html;
 
-  // Restore saved input values
+  // Restore saved values
   Object.keys(savedInputs).forEach(function(id) {
-    var inp = document.getElementById(id);
-    if (inp) inp.value = savedInputs[id];
+    var el2 = document.getElementById(id);
+    if (el2) el2.value = savedInputs[id];
   });
 
   clearInterval(_pipelineTimer);
   var hasActive = runs.some(function(r) { return r.status==='running' || r.status==='blocked'; });
   if (hasActive || pending.length) {
     _pipelineTimer = setInterval(function() {
-      // Skip refresh while user is typing in a task input
       if (currentTab !== 'pipeline') return;
-      if (document.querySelector('#panel-pipeline input:focus')) {
-        _log('debug', 'Pipeline refresh skipped: input focused');
+      // Skip refresh while user is typing in any task form field
+      if (document.querySelector('#panel-pipeline input:focus, #panel-pipeline textarea:focus')) {
+        _log('debug', 'Pipeline refresh skipped: form field focused');
         return;
       }
       loadPipeline();
@@ -593,17 +683,21 @@ async function startDemo(scenario) {
 }
 
 async function resolveTask(taskId, action) {
-  var input = document.getElementById('task-input-' + taskId);
-  var comment = input ? input.value : '';
-  _log('info', 'Resolving task:', taskId, action, comment);
+  var commentEl = document.getElementById('task-input-' + taskId);
+  var byEl      = document.getElementById('task-by-'    + taskId);
+  var comment   = commentEl ? commentEl.value.trim() : '';
+  var resolvedBy = byEl && byEl.value.trim() ? byEl.value.trim() : 'sandbox-user';
+  _log('info', 'Resolving task:', taskId, 'action=' + action, 'by=' + resolvedBy, 'comment=' + comment);
+  var body = {action: action, response: {comment: comment, reason: comment}, resolved_by: resolvedBy};
+  _log('debug', 'POST /api/pipeline/tasks/' + taskId, JSON.stringify(body));
   var res = await fetch('/api/pipeline/tasks/' + taskId, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({action: action, response: {comment: comment, reason: comment}, resolved_by: 'sandbox-user'}),
+    body: JSON.stringify(body),
   });
   var data = await res.json();
   if (data.ok) {
-    logMsg('ok', 'Task ' + taskId + ': ' + action);
+    logMsg('ok', 'Task ' + taskId + ': ' + action + ' (by ' + resolvedBy + ')');
     setTimeout(loadPipeline, 500);
   } else {
     logMsg('err', data.detail || 'Failed to resolve task');

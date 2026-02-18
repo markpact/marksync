@@ -1,3 +1,14 @@
+## [0.2.8] - 2026-02-18
+
+### Summary
+
+feat(marksync): core module improvements
+
+### Other
+
+- update marksync/sandbox/html.py
+
+
 ## [0.2.7] - 2026-02-18
 
 ### Summary
