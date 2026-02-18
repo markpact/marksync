@@ -1,0 +1,132 @@
+# marksync | 20f 3301L | python:20
+# Keys: M=modules, D=details, i=imports, c=classes, f=functions, m=methods
+M[20]:
+  tests/test_settings.py,66
+  tests/test_orchestrator.py,156
+  tests/test_dsl.py,192
+  tests/test_marksync.py,7
+  tests/test_examples.py,110
+  marksync/cli.py,166
+  marksync/__init__.py,18
+  marksync/orchestrator.py,247
+  marksync/settings.py,102
+  marksync/sync/engine.py,228
+  marksync/sync/crdt.py,68
+  marksync/sync/__init__.py,92
+  marksync/transport/__init__.py,0
+  marksync/agents/base.py,2
+  marksync/agents/__init__.py,219
+  marksync/dsl/__init__.py,22
+  marksync/dsl/parser.py,174
+  marksync/dsl/api.py,167
+  marksync/dsl/executor.py,366
+  marksync/dsl/shell.py,166
+D:
+  tests/test_settings.py:
+    i: os,pytest,marksync.settings.{Settings,_find_dotenv,_load_dotenv,load_settings}
+    e: TestSettingsDefaults,TestDotenvParser,TestLoadSettings
+    TestSettingsDefaults: test_default_values(0),test_server_uri_property(0),test_ollama_url_property(0),test_api_host_property(0),test_api_port_property(0)
+    TestDotenvParser: test_parse_simple(1),test_parse_comments_and_blanks(1),test_parse_quoted_values(1),test_parse_no_value(1)
+    TestLoadSettings: test_env_override(1),test_dotenv_found(0),test_load_from_project_dotenv(0)
+  tests/test_orchestrator.py:
+    i: pytest,marksync.orchestrator.{AgentDef,OrchestrationPlan,Orchestrator,PipelineDef,RouteDef},pathlib.Path
+    e: AGENTS_YML,EXAMPLE_1_YML,EXAMPLE_2_YML,EXAMPLE_3_YML,TestPlanParsing,TestFromDict,TestPlanFiltering,TestDSLGeneration
+    TestPlanParsing: test_load_root_agents_yml(0),test_agent_roles(0),test_agent_auto_edit(0),test_pipelines(0),test_pipeline_stages(0)
+    TestFromDict: test_minimal(0),test_empty_agents(0),test_none_values(0)
+    TestPlanFiltering: test_filter_role(0),test_filter_keeps_relevant_pipelines(0),test_filter_keeps_relevant_routes(0),test_filter_nonexistent_role(0)
+    TestDSLGeneration: test_to_dsl_agents(0),test_to_dsl_pipelines(0),test_to_dsl_routes(0),test_to_msdsl_string(0),test_to_msdsl_file(1)
+    TestExampleConfigs: test_example_1(0),test_example_2(0),test_example_3(0),test_all_examples_generate_valid_dsl(0)
+  tests/test_dsl.py:
+    i: asyncio,pytest,marksync.dsl.executor.DSLExecutor,marksync.dsl.parser.{CommandType,DSLCommand,DSLParser}
+    e: TestDSLParser,TestDSLExecutor
+    TestDSLParser: setup_method(0),test_parse_agent(0),test_parse_agent_auto_edit(0),test_parse_kill(0),test_parse_list(0)
+    TestDSLExecutor: setup_method(0),test_agent_create(0),test_agent_duplicate(0),test_kill_agent(0),test_kill_nonexistent(0)
+  tests/test_marksync.py:
+    e: test_placeholder,test_import
+    test_placeholder()
+    test_import()
+  tests/test_examples.py:
+    i: pytest,marksync.sync.BlockParser,pathlib.Path
+    e: EXAMPLES_DIR,TestExample1,TestExample2,TestExample3
+    TestExample1: load(0),test_has_blocks(0),test_has_deps_block(0),test_has_file_blocks(0),test_has_run_block(0)  # examples/1/README.md — Task Manager API
+    TestExample2: load(0),test_has_blocks(0),test_has_deps_block(0),test_has_ws_manager(0),test_has_main(0)  # examples/2/README.md — Chat WebSocket...
+    TestExample3: load(0),test_has_blocks(0),test_has_deps_block(0),test_has_models(0),test_has_engine(0)  # examples/3/README.md — Data Pipeline CLI
+  marksync/cli.py:
+    i: asyncio,logging,os,sys,click,marksync.settings,rich.console.Console,rich.logging.RichHandler,rich.table.Table
+    e: main,server,agent,push,blocks,shell,orchestrate,api
+    _setup_logging(verbose:bool=False)
+    main(verbose)
+    server(readme;host;port)
+    agent(role;name;server_uri;ollama_url;model;auto_edit)
+    push(readme;server_uri;name)
+    blocks(readme)
+    shell(server_uri;ollama_url;script)
+    orchestrate(config;role;server_uri;ollama_url;model;dry_run;...+1)
+  marksync/orchestrator.py:
+    i: asyncio,logging,time,yaml,dataclasses.{dataclass,field},marksync.settings,pathlib.Path,typing.Any
+    e: AgentDef,PipelineDef,RouteDef,OrchestrationPlan,Orchestrator
+    AgentDef:   # Declarative agent definition from age...
+    PipelineDef:   # Declarative pipeline from agents.yml.
+    RouteDef:   # Declarative route from agents.yml.
+    OrchestrationPlan: agent_names(0),filter_role(1)  # Fully resolved orchestration plan.
+    Orchestrator: __init__(4),from_file(1),from_dict(1),_parse_plan(1),run(1)  # Reads agents.yml and orchestrates age...
+  marksync/settings.py:
+    i: os,dataclasses.{dataclass,field},pathlib.Path
+    e: Settings,load_settings
+    Settings: server_uri(0),ollama_url(0),api_host(0),api_port(0)  # Immutable application settings.
+    _find_dotenv()->Path | None
+    _load_dotenv(path:Path)->dict[str, str]
+    _env(key:str;default:str;dotenv:dict[str;str])->str
+    _env_int(key:str;default:int;dotenv:dict[str;str])->int
+    load_settings()->Settings
+  marksync/sync/engine.py:
+    i: asyncio,hashlib,json,logging,time,websockets,diff_match_patch,marksync.sync.BlockParser,pathlib.Path,websockets.asyncio.server.serve
+    e: SyncServer,SyncClient
+    SyncServer: __init__(3),on_deploy(1),load(0),save(0),_manifest(0)  # Central sync hub.
+    SyncClient: __init__(3),on_update(1),load(0),push_changes(1),watch(0)  # Connects to SyncServer, sends local c...
+    _signal(type:str)->str
+    _parse(raw:str)->dict
+  marksync/sync/crdt.py:
+    i: hashlib,time,marksync.sync.{BlockParser,MarkpactBlock},pycrdt.{Array,Doc,Map,Text}
+    e: CRDTDocument
+    CRDTDocument: __init__(1),load_markdown(1),set_block(2),get_block(1),get_all(0)  # CRDT-backed Markpact project document.
+  marksync/sync/__init__.py:
+    i: hashlib,re,dataclasses.{dataclass,field}
+    e: MarkpactBlock,_PATTERNS,BlockParser
+    MarkpactBlock: __post_init__(0)  # Single executable code block from a M...
+    BlockParser: parse(1),_make_id(2),rebuild_markdown(2),manifest(1)  # Extracts all markpact:* blocks from a...
+  marksync/agents/__init__.py:
+    i: asyncio,hashlib,json,logging,time,websockets,httpx,diff_match_patch,dataclasses.{dataclass,field}
+    e: OllamaClient,AgentConfig,AgentWorker
+    OllamaClient: __init__(2),generate(2),chat(1),health(0)  # Minimal Ollama HTTP client for agent...
+    AgentConfig: 
+    AgentWorker: __init__(1),run(0),_connect_and_run(0),_on_message(1),_process_update(2)  # Base agent that connects to SyncServe...
+    _signal(type:str)->str
+    _parse(raw:str)->dict
+  marksync/dsl/parser.py:
+    i: re,shlex,dataclasses.{dataclass,field},enum.Enum,typing.Any
+    e: CommandType,DSLCommand,_OPTION_RE,DSLParser
+    CommandType: 
+    DSLCommand: target(0),value(0)  # Parsed DSL command.
+    DSLParser: parse(1),_parse_pipe(2),_parse_route(2),_parse_options(1),parse_script(1)  # Parse marksync DSL commands from text.
+    _coerce(value:str)->Any
+  marksync/dsl/api.py:
+    i: asyncio,json,logging,time,fastapi.{FastAPI,HTTPException,WebSocket,WebSocketDisconnect},fastapi.middleware.cors.CORSMiddleware,typing.Any
+    e: ExecuteRequest,ScriptRequest,ConfigValue,APIResponse,create_api_app
+    ExecuteRequest: 
+    ScriptRequest: 
+    ConfigValue: 
+    APIResponse: __init__(0)
+    create_api_app(executor:Any=None)->FastAPI
+  marksync/dsl/executor.py:
+    i: asyncio,logging,time,dataclasses.{dataclass,field},marksync.dsl.parser.{CommandType,DSLCommand,DSLParser},typing.{Any,Callable}
+    e: AgentHandle,Pipeline,Route,DSLExecutor
+    AgentHandle: to_dict(0)  # Runtime handle for a managed agent.
+    Pipeline: to_dict(0)  # A named processing pipeline: series o...
+    Route: to_dict(0)  # Maps block patterns to agents.
+    DSLExecutor: __init__(3),execute(1),execute_command(1),execute_script(1),_cmd_agent(1)  # Executes DSL commands and manages the...
+  marksync/dsl/shell.py:
+    i: asyncio,json,logging,sys,marksync.dsl.executor.DSLExecutor,rich.console.Console,rich.panel.Panel,rich.syntax.Syntax,rich.table.Table,rich.text.Text
+    e: BANNER,PROMPT,DSLShell
+    DSLShell: __init__(1),run(0),_render(1),_render_help(1),_render_agents(1)  # Interactive DSL shell with rich output.
+    _fmt_time(ts:float)->str

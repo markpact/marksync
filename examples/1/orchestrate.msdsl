@@ -1,0 +1,14 @@
+# Example 1 — Task Manager API orchestration
+# Usage: marksync shell --script examples/1/orchestrate.msdsl
+
+AGENT editor-1 editor --model qwen2.5-coder:7b --auto-edit
+AGENT reviewer-1 reviewer --model qwen2.5-coder:7b
+AGENT deployer-1 deployer
+AGENT monitor-1 monitor
+
+PIPE review-flow editor-1 -> reviewer-1
+PIPE deploy-flow editor-1 -> reviewer-1 -> deployer-1
+
+ROUTE markpact:file=* -> editor-1
+ROUTE markpact:deps -> reviewer-1
+ROUTE markpact:run -> deployer-1

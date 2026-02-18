@@ -10,7 +10,7 @@ Usage:
     marksync agent --role editor --name "agent-1"
 """
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 from marksync.sync.engine import SyncServer, SyncClient
 from marksync.sync.crdt import CRDTDocument
@@ -20,5 +20,5 @@ from marksync.agents.base import AgentWorker
 __all__ = [
     "SyncServer", "SyncClient", "CRDTDocument",
     "BlockParser", "MarkpactBlock", "AgentWorker",
-    "DSLParser", "DSLExecutor",
+    "DSLParser", "DSLExecutor", "Orchestrator",
 ]

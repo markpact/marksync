@@ -1,3 +1,36 @@
+## [0.2.3] - 2026-02-18
+
+### Summary
+
+feat(examples): CLI interface improvements
+
+### Docs
+
+- docs: update README
+
+### Test
+
+- update tests/test_orchestrator.py
+
+### Build
+
+- update pyproject.toml
+
+### Other
+
+- config: update agents.yml
+- config: update agents.yml
+- update examples/1/orchestrate.msdsl
+- config: update agents.yml
+- update examples/2/orchestrate.msdsl
+- config: update agents.yml
+- update examples/3/orchestrate.msdsl
+- update marksync/__init__.py
+- update marksync/cli.py
+- update marksync/orchestrator.py
+- ... and 2 more
+
+
 ## [0.2.2] - 2026-02-18
 
 ### Summary

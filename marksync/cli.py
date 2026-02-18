@@ -146,6 +146,45 @@ def shell(server_uri, ollama_url, script):
 
 
 @main.command()
+@click.option("--config", "-c", default="agents.yml", help="Path to agents.yml")
+@click.option("--role", default=None, help="Only run agents with this role")
+@click.option("--server-uri", default=settings.MARKSYNC_SERVER, envvar="MARKSYNC_SERVER")
+@click.option("--ollama-url", default=settings.OLLAMA_URL, envvar="OLLAMA_URL")
+@click.option("--model", default=settings.OLLAMA_MODEL, envvar="OLLAMA_MODEL")
+@click.option("--dry-run", is_flag=True, help="Show plan without running")
+@click.option("--export-dsl", default=None, help="Export as .msdsl script")
+def orchestrate(config, role, server_uri, ollama_url, model, dry_run, export_dsl):
+    """Orchestrate all agents from agents.yml (replaces N containers with 1)."""
+    from marksync.orchestrator import Orchestrator
+
+    orch = Orchestrator.from_file(
+        config, server_uri=server_uri, ollama_url=ollama_url, model=model,
+    )
+
+    console.print(f"[bold cyan]Orchestration Plan[/] ({config})")
+    console.print(orch.summary())
+
+    if export_dsl:
+        orch.to_msdsl(export_dsl)
+        console.print(f"\n[green]Exported:[/] {export_dsl}")
+        return
+
+    if dry_run:
+        console.print("\n[dim]Dry run — no agents started.[/]")
+        dsl = orch.to_dsl()
+        if dsl:
+            console.print("\n[bold]Equivalent DSL commands:[/]")
+            for line in dsl:
+                console.print(f"  [cyan]{line}[/]")
+        return
+
+    console.print(f"\n[bold green]Starting orchestrator...[/]")
+    console.print(f"  Server: {server_uri}")
+    console.print(f"  Ollama: {ollama_url} ({model})")
+    asyncio.run(orch.run(role_filter=role))
+
+
+@main.command()
 @click.option("--host", default=settings.MARKSYNC_API_HOST)
 @click.option("--port", default=settings.MARKSYNC_API_PORT, type=int)
 @click.option("--server-uri", default=settings.MARKSYNC_SERVER, envvar="MARKSYNC_SERVER")

@@ -1,5 +1,5 @@
 # ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║  marksync Docker Compose — Multi-Agent Markpact Collaboration Ecosystem   ║
+# ║  marksync Docker Compose — Simplified Agent Orchestration                ║
 # ╠══════════════════════════════════════════════════════════════════════════════╣
 # ║                                                                            ║
 # ║  Prerequisites:                                                            ║
@@ -8,21 +8,18 @@
 # ║                                                                            ║
 # ║  Architecture:                                                             ║
 # ║                                                                            ║
-# ║  ┌─────────────┐     ┌──────────────┐     ┌──────────────┐                ║
-# ║  │ sync-server  │◄───►│ agent-editor  │     │ agent-deploy │                ║
-# ║  │ (WebSocket)  │◄───►│ (LLM edits)  │     │ (markpact)   │                ║
-# ║  │ port 8765    │◄───►│              │     │              │                ║
-# ║  └──────┬───────┘     └──────────────┘     └──────────────┘                ║
-# ║         │              ┌──────────────┐     ┌──────────────┐               ║
-# ║         ├─────────────►│agent-reviewer │     │ agent-monitor│               ║
-# ║         │              │ (code review) │     │ (log changes)│               ║
-# ║         │              └──────────────┘     └──────────────┘               ║
-# ║         │                                                                  ║
-# ║    /project (shared volume)                                                ║
-# ║    └── README.md  ← single source of truth                                ║
+# ║    agents.yml ─────► orchestrator ──┬──► editor-1                          ║
+# ║    (define once)     (1 container)  ├──► reviewer-1                        ║
+# ║                                     ├──► deployer-1                        ║
+# ║                                     └──► monitor-1                         ║
+# ║                           │                                                ║
+# ║                    sync-server (ws://8765)                                 ║
+# ║                           │                                                ║
+# ║                    api-server (http://8080)                                ║
+# ║                           │                                                ║
+# ║                   /project/README.md                                       ║
 # ║                                                                            ║
-# ║  Host:                                                                     ║
-# ║    Ollama (http://host.docker.internal:11434)                              ║
+# ║  Host: Ollama (http://host.docker.internal:11434)                          ║
 # ║                                                                            ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
@@ -51,7 +48,29 @@ services:
       start_period: 5s
     restart: unless-stopped
 
-  # ─── DSL API SERVER ─────────────────────────────────────────────────────
+  # ─── ORCHESTRATOR — all agents in 1 container from agents.yml ─────────
+  orchestrator:
+    build: .
+    container_name: marksync-orchestrator
+    command: >
+      orchestrate --config agents.yml
+      --server-uri ${MARKSYNC_SERVER_DOCKER:-ws://sync-server:8765}
+      --ollama-url ${OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
+      --model ${OLLAMA_MODEL:-qwen2.5-coder:7b}
+    depends_on:
+      sync-server:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MARKSYNC_SERVER=${MARKSYNC_SERVER_DOCKER:-ws://sync-server:8765}
+      - OLLAMA_URL=${OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5-coder:7b}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  # ─── DSL API SERVER ───────────────────────────────────────────────────────
   api-server:
     build: .
     container_name: marksync-api
@@ -69,85 +88,6 @@ services:
       - PYTHONUNBUFFERED=1
       - MARKSYNC_SERVER=${MARKSYNC_SERVER_DOCKER:-ws://sync-server:8765}
       - OLLAMA_URL=${OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    restart: unless-stopped
-
-  # ─── AGENT: EDITOR (LLM-powered code improvements) ───────────────────────
-  agent-editor:
-    build: .
-    container_name: marksync-agent-editor
-    command: >
-      agent --role editor --name "editor-1"
-      --server-uri ${MARKSYNC_SERVER_DOCKER:-ws://sync-server:8765}
-      --ollama-url ${OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
-      --model ${OLLAMA_MODEL:-qwen2.5-coder:7b}
-    depends_on:
-      sync-server:
-        condition: service_healthy
-    env_file: .env
-    environment:
-      - PYTHONUNBUFFERED=1
-      - MARKSYNC_SERVER=${MARKSYNC_SERVER_DOCKER:-ws://sync-server:8765}
-      - OLLAMA_URL=${OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5-coder:7b}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    restart: unless-stopped
-
-  # ─── AGENT: REVIEWER (code quality analysis) ─────────────────────────────
-  agent-reviewer:
-    build: .
-    container_name: marksync-agent-reviewer
-    command: >
-      agent --role reviewer --name "reviewer-1"
-      --server-uri ${MARKSYNC_SERVER_DOCKER:-ws://sync-server:8765}
-      --ollama-url ${OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
-      --model ${OLLAMA_MODEL:-qwen2.5-coder:7b}
-    depends_on:
-      sync-server:
-        condition: service_healthy
-    env_file: .env
-    environment:
-      - PYTHONUNBUFFERED=1
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    restart: unless-stopped
-
-  # ─── AGENT: DEPLOYER (triggers markpact build) ───────────────────────────
-  agent-deployer:
-    build: .
-    container_name: marksync-agent-deployer
-    command: >
-      agent --role deployer --name "deployer-1"
-      --server-uri ${MARKSYNC_SERVER_DOCKER:-ws://sync-server:8765}
-      --ollama-url ${OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
-    depends_on:
-      sync-server:
-        condition: service_healthy
-    volumes:
-      - project-data:/project
-    env_file: .env
-    environment:
-      - PYTHONUNBUFFERED=1
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    restart: unless-stopped
-
-  # ─── AGENT: MONITOR (logs all changes with stats) ────────────────────────
-  agent-monitor:
-    build: .
-    container_name: marksync-agent-monitor
-    command: >
-      agent --role monitor --name "monitor-1"
-      --server-uri ${MARKSYNC_SERVER_DOCKER:-ws://sync-server:8765}
-      --ollama-url ${OLLAMA_URL_DOCKER:-http://host.docker.internal:11434}
-    depends_on:
-      sync-server:
-        condition: service_healthy
-    env_file: .env
-    environment:
-      - PYTHONUNBUFFERED=1
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped

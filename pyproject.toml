@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "marksync"
-version = "0.2.2"
+version = "0.2.3"
 description = "Multi-agent collaborative editing and deployment of Markpact projects via CRDT delta sync"
 readme = "README.md"
 license = "Apache-2.0"
@@ -27,6 +27,7 @@ dependencies = [
     "httpx>=0.27",
     "rich>=13.0",
     "click>=8.1",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]

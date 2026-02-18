@@ -1,0 +1,42 @@
+# ──────────────────────────────────────────────────────────────
+# marksync agents — single source of truth
+#
+# Define agents once, use everywhere:
+#   marksync orchestrate              ← runs all agents in one process
+#   marksync orchestrate --role editor ← run only editors
+#   docker compose up                 ← orchestrator reads this file
+#
+# Each agent inherits server_uri, ollama_url, model from .env
+# unless overridden here.
+# ──────────────────────────────────────────────────────────────
+
+agents:
+  editor-1:
+    role: editor
+    auto_edit: true
+
+  reviewer-1:
+    role: reviewer
+
+  deployer-1:
+    role: deployer
+
+  monitor-1:
+    role: monitor
+
+# Pipelines: agent chains triggered on block changes
+pipelines:
+  review-flow:
+    stages: [editor-1, reviewer-1]
+
+  deploy-flow:
+    stages: [editor-1, reviewer-1, deployer-1]
+
+# Routes: map block patterns to agents
+routes:
+  - pattern: "markpact:file=*"
+    agent: editor-1
+  - pattern: "markpact:deps"
+    agent: reviewer-1
+  - pattern: "markpact:run"
+    agent: deployer-1

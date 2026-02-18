@@ -52,32 +52,72 @@ Expected output:
 marksync server examples/1/README.md
 ```
 
-### 3. Start agents
+### 3. Start all agents (one command)
+
+Instead of starting each agent separately, use the orchestrator:
 
 ```bash
-# Terminal 2 — editor agent (improves code via LLM)
-marksync agent --role editor --name editor-1 \
-  --server-uri ws://localhost:8765 \
-  --ollama-url http://localhost:11434 \
-  --model qwen2.5-coder:7b
-
-# Terminal 3 — monitor agent (logs all changes)
-marksync agent --role monitor --name monitor-1 \
-  --server-uri ws://localhost:8765
+# Terminal 2 — all agents from agents.yml
+marksync orchestrate -c examples/1/agents.yml
 ```
 
-### 4. Use DSL shell to orchestrate
+This reads `agents.yml` and spawns editor, reviewer, deployer, and monitor
+as async tasks in **one process** (no N containers needed).
+
+To preview the plan without running:
 
 ```bash
+marksync orchestrate -c examples/1/agents.yml --dry-run
+```
+
+To export as a DSL script:
+
+```bash
+marksync orchestrate -c examples/1/agents.yml --export-dsl setup.msdsl
+```
+
+To run only specific roles:
+
+```bash
+marksync orchestrate -c examples/1/agents.yml --role editor
+```
+
+#### agents.yml (define once, use everywhere)
+
+```yaml
+agents:
+  editor-1:
+    role: editor
+    auto_edit: true
+  reviewer-1:
+    role: reviewer
+  deployer-1:
+    role: deployer
+  monitor-1:
+    role: monitor
+
+pipelines:
+  review-flow:
+    stages: [editor-1, reviewer-1]
+
+routes:
+  - pattern: "markpact:file=*"
+    agent: editor-1
+```
+
+### 4. Use DSL shell (alternative)
+
+```bash
+# Run a pre-made DSL script
+marksync shell --script examples/1/orchestrate.msdsl
+
+# Or interactively
 marksync shell
 ```
 
 ```
 marksync> AGENT editor-1 editor --model qwen2.5-coder:7b --auto-edit
-marksync> AGENT reviewer-1 reviewer
-marksync> AGENT monitor-1 monitor
 marksync> PIPE review-flow editor-1 -> reviewer-1
-marksync> LIST agents
 marksync> STATUS
 ```
 
@@ -99,7 +139,7 @@ curl -X POST http://localhost:8080/api/v1/execute \
 After editing `examples/1/README.md` locally:
 
 ```bash
-marksync push examples/1/README.md --server-uri ws://localhost:8765
+marksync push examples/1/README.md
 ```
 
 ### 7. Deploy with markpact
@@ -155,25 +195,62 @@ curl http://localhost:8088/tasks?status=todo
 
 ## Docker Compose
 
-This example is used as the default seed project in `docker-compose.yml`.  
-The `init-project` service copies `examples/1/README.md` into the shared volume:
+This example is the default seed project. The simplified `docker-compose.yml` uses
+only **4 services** instead of one container per agent:
+
+| Service | Purpose |
+|---------|---------|
+| `sync-server` | CRDT WebSocket hub |
+| `orchestrator` | Spawns all agents from `agents.yml` in 1 container |
+| `api-server` | REST/WS API for remote control |
+| `init-project` | Seeds volume with `examples/1/README.md` |
 
 ```bash
 docker compose up --build
 ```
 
-All 4 agents + sync server start automatically and collaborate on this project.
+The orchestrator reads `agents.yml` and runs all agents as async tasks in a
+single process — no more duplicating config per agent container.
 
-## Configuration via .env
+### Before vs After
 
-All ports and hosts are configurable through the root `.env` file:
+```
+# BEFORE: 1 container per agent (7 services, lots of duplication)
+agent-editor:    command: agent --role editor --name editor-1 --server-uri ... --ollama-url ... --model ...
+agent-reviewer:  command: agent --role reviewer --name reviewer-1 --server-uri ... --ollama-url ...
+agent-deployer:  command: agent --role deployer --name deployer-1 --server-uri ... --ollama-url ...
+agent-monitor:   command: agent --role monitor --name monitor-1 --server-uri ... --ollama-url ...
+
+# AFTER: 1 orchestrator reads agents.yml (4 services, zero duplication)
+orchestrator:    command: orchestrate --config agents.yml
+```
+
+## Configuration
+
+All configuration lives in two files:
+
+| File | Purpose |
+|------|---------|
+| `.env` | Ports, hosts, model, log level |
+| `agents.yml` | Agent definitions, pipelines, routes |
 
 ```env
-MARKSYNC_PORT=8765        # sync server port
-MARKSYNC_API_PORT=8080    # DSL API port
+# .env — infrastructure
+MARKSYNC_PORT=8765
+MARKSYNC_API_PORT=8080
 OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=qwen2.5-coder:7b
-MARKPACT_PORT=8088        # Task Manager API port
+MARKPACT_PORT=8088
+```
+
+```yaml
+# agents.yml — orchestration
+agents:
+  editor-1:
+    role: editor
+    auto_edit: true
+  reviewer-1:
+    role: reviewer
 ```
 
 ## Code Blocks Explained

@@ -1,10 +1,15 @@
 project: marksync
-generated: "2026-02-18T19:15:26.358683"
-modules[15]{path,lang,items}:
+generated: "2026-02-18T19:35:25.194063"
+modules[20]{path,lang,items}:
+  tests/test_settings.py,python,13
+  tests/test_orchestrator.py,python,24
   tests/test_dsl.py,python,38
   tests/test_marksync.py,python,2
-  marksync/cli.py,python,8
+  tests/test_examples.py,python,24
+  marksync/cli.py,python,9
   marksync/__init__.py,python,0
+  marksync/orchestrator.py,python,12
+  marksync/settings.py,python,9
   marksync/sync/engine.py,python,16
   marksync/sync/crdt.py,python,10
   marksync/sync/__init__.py,python,5
@@ -18,6 +23,47 @@ modules[15]{path,lang,items}:
   marksync/dsl/shell.py,python,12
 
 function_details:
+  tests/test_settings.py:
+    functions[13]{name,kind,sig,loc,async,lines,cc,does}:
+      TestSettingsDefaults.test_default_values,method,(),11-19,false,9,1,checks default values
+      TestSettingsDefaults.test_server_uri_property,method,(),21-23,false,3,1,checks server uri property
+      TestSettingsDefaults.test_ollama_url_property,method,(),25-27,false,3,1,checks ollama url property
+      TestSettingsDefaults.test_api_host_property,method,(),29-31,false,3,1,checks api host property
+      TestSettingsDefaults.test_api_port_property,method,(),33-35,false,3,1,checks api port property
+      TestSettingsDefaults.test_frozen,method,(),37-40,false,4,1,checks frozen
+      TestDotenvParser.test_parse_simple,method,(tmp_path),45-49,false,5,1,checks parse simple
+      TestDotenvParser.test_parse_comments_and_blanks,method,(tmp_path),51-55,false,5,1,checks parse comments and blanks
+      TestDotenvParser.test_parse_quoted_values,method,(tmp_path),57-61,false,5,1,checks parse quoted values
+      TestDotenvParser.test_parse_no_value,method,(tmp_path),63-67,false,5,1,checks parse no value
+      TestLoadSettings.test_env_override,method,(monkeypatch),72-77,false,6,1,checks env override
+      TestLoadSettings.test_dotenv_found,method,(),79-83,false,5,1,checks dotenv found
+      TestLoadSettings.test_load_from_project_dotenv,method,(),85-89,false,5,1,checks load from project dotenv
+  tests/test_orchestrator.py:
+    functions[24]{name,kind,sig,loc,async,lines,cc,does}:
+      TestPlanParsing.test_load_root_agents_yml,method,(),26-33,false,8,1,checks load root agents yml
+      TestPlanParsing.test_agent_roles,method,(),35-41,false,7,2,checks agent roles
+      TestPlanParsing.test_agent_auto_edit,method,(),43-48,false,6,5,checks agent auto edit
+      TestPlanParsing.test_pipelines,method,(),50-55,false,6,2,checks pipelines
+      TestPlanParsing.test_pipeline_stages,method,(),57-60,false,4,3,checks pipeline stages
+      TestPlanParsing.test_routes,method,(),62-68,false,7,2,checks routes
+      TestPlanParsing.test_file_not_found,method,(),70-72,false,3,1,checks file not found
+      TestFromDict.test_minimal,method,(),77-83,false,7,1,checks minimal
+      TestFromDict.test_empty_agents,method,(),85-87,false,3,1,checks empty agents
+      TestFromDict.test_none_values,method,(),89-96,false,8,1,checks none values
+      TestPlanFiltering.test_filter_role,method,(),103-107,false,5,1,checks filter role
+      TestPlanFiltering.test_filter_keeps_relevant_pipelines,method,(),109-113,false,5,1,checks filter keeps relevant pipelines
+      TestPlanFiltering.test_filter_keeps_relevant_routes,method,(),115-119,false,5,1,checks filter keeps relevant routes
+      TestPlanFiltering.test_filter_nonexistent_role,method,(),121-124,false,4,1,checks filter nonexistent role
+      TestDSLGeneration.test_to_dsl_agents,method,(),131-137,false,7,5,checks to dsl agents
+      TestDSLGeneration.test_to_dsl_pipelines,method,(),139-144,false,6,4,checks to dsl pipelines
+      TestDSLGeneration.test_to_dsl_routes,method,(),146-150,false,5,3,checks to dsl routes
+      TestDSLGeneration.test_to_msdsl_string,method,(),152-157,false,6,1,checks to msdsl string
+      TestDSLGeneration.test_to_msdsl_file,method,(tmp_path),159-166,false,8,1,checks to msdsl file
+      TestDSLGeneration.test_summary,method,(),168-173,false,6,1,checks summary
+      TestExampleConfigs.test_example_1,method,(),180-184,false,5,1,checks example 1
+      TestExampleConfigs.test_example_2,method,(),186-190,false,5,1,checks example 2
+      TestExampleConfigs.test_example_3,method,(),192-196,false,5,1,checks example 3
+      TestExampleConfigs.test_all_examples_generate_valid_dsl,method,(),198-204,false,7,3,checks all examples generate valid dsl
   tests/test_dsl.py:
     functions[38]{name,kind,sig,loc,async,lines,cc,does}:
       TestDSLParser.setup_method,method,(),14-15,false,2,1,initializes method
@@ -62,16 +108,68 @@ function_details:
     functions[2]{name,kind,sig,loc,async,lines,cc,does}:
       test_placeholder,function,(),4-6,false,3,1,Placeholder test to verify the test setup works.
       test_import,function,(),9-11,false,3,1,Verify the main package can be imported.
+  tests/test_examples.py:
+    functions[24]{name,kind,sig,loc,async,lines,cc,does}:
+      TestExample1.load,method,(),17-19,false,3,1,retrieves
+      TestExample1.test_has_blocks,method,(),21-22,false,2,1,checks has blocks
+      TestExample1.test_has_deps_block,method,(),24-27,false,4,3,checks has deps block
+      TestExample1.test_has_file_blocks,method,(),29-34,false,6,4,checks has file blocks
+      TestExample1.test_has_run_block,method,(),36-39,false,4,3,checks has run block
+      TestExample1.test_models_content,method,(),41-44,false,4,3,checks models content
+      TestExample1.test_main_content,method,(),46-52,false,7,3,checks main content
+      TestExample1.test_sha256_not_empty,method,(),54-56,false,3,2,checks sha256 not empty
+      TestExample1.test_manifest,method,(),58-61,false,4,1,checks manifest
+      TestExample1.test_rebuild_roundtrip,method,(),63-69,false,7,3,checks rebuild roundtrip
+      TestExample2.load,method,(),76-78,false,3,1,retrieves
+      TestExample2.test_has_blocks,method,(),80-81,false,2,1,checks has blocks
+      TestExample2.test_has_deps_block,method,(),83-87,false,5,3,checks has deps block
+      TestExample2.test_has_ws_manager,method,(),89-92,false,4,3,checks has ws manager
+      TestExample2.test_has_main,method,(),94-97,false,4,3,checks has main
+      TestExample2.test_has_run_block,method,(),99-102,false,4,3,checks has run block
+      TestExample3.load,method,(),109-111,false,3,1,retrieves
+      TestExample3.test_has_blocks,method,(),113-114,false,2,1,checks has blocks
+      TestExample3.test_has_deps_block,method,(),116-120,false,5,3,checks has deps block
+      TestExample3.test_has_models,method,(),122-125,false,4,3,checks has models
+      TestExample3.test_has_engine,method,(),127-130,false,4,3,checks has engine
+      TestExample3.test_has_cli,method,(),132-135,false,4,3,checks has cli
+      TestExample3.test_has_sample_csv,method,(),137-140,false,4,3,checks has sample csv
+      TestExample3.test_has_run_block,method,(),142-145,false,4,3,checks has run block
   marksync/cli.py:
-    functions[8]{name,kind,sig,loc,async,lines,cc,does}:
-      _setup_logging,function,"(verbose:bool=False)",24-29,false,6,2,initializes logging
-      main,function,(verbose),34-36,false,3,1,marksync — Multi-agent collaborative editing for Markpact projects.
-      server,function,"(readme, host, port)",43-50,false,8,1,Start the sync server.
-      agent,function,"(role, name, server_uri, ollama_url, model, auto_edit)",61-76,false,16,2,Start an AI agent that collaborates on the project.
-      push,function,"(readme, server_uri, name)",83-91,false,9,1,Push local README changes to sync server (one-shot).
-      blocks,function,(readme),96-120,false,25,3,"Show all markpact:* blocks in a README."
-      shell,function,"(server_uri, ollama_url, script)",127-143,false,17,4,Interactive DSL shell for agent orchestration.
-      api,function,"(host, port, server_uri, ollama_url)",151-164,false,14,1,Start the REST/WS API server for DSL remote control.
+    functions[9]{name,kind,sig,loc,async,lines,cc,does}:
+      _setup_logging,function,"(verbose:bool=False)",26-31,false,6,2,initializes logging
+      main,function,(verbose),36-38,false,3,1,marksync — Multi-agent collaborative editing for Markpact projects.
+      server,function,"(readme, host, port)",45-52,false,8,1,Start the sync server.
+      agent,function,"(role, name, server_uri, ollama_url, model, auto_edit)",63-78,false,16,2,Start an AI agent that collaborates on the project.
+      push,function,"(readme, server_uri, name)",85-93,false,9,1,Push local README changes to sync server (one-shot).
+      blocks,function,(readme),98-122,false,25,3,"Show all markpact:* blocks in a README."
+      shell,function,"(server_uri, ollama_url, script)",129-145,false,17,4,Interactive DSL shell for agent orchestration.
+      orchestrate,function,"(config, role, server_uri, ollama_url, model, dry_run, export_dsl)",156-184,false,29,5,Orchestrate all agents from agents.yml (replaces N containers with 1).
+      api,function,"(host, port, server_uri, ollama_url)",192-205,false,14,1,Start the REST/WS API server for DSL remote control.
+  marksync/orchestrator.py:
+    functions[12]{name,kind,sig,loc,async,lines,cc,does}:
+      OrchestrationPlan.agent_names,method,"() -> list[str]",68-69,false,2,2,agent names
+      OrchestrationPlan.filter_role,method,"(role:str) -> \"OrchestrationPlan\"",71-80,false,10,9,Return a plan with only agents matching the given role.
+      Orchestrator.__init__,method,"(plan:OrchestrationPlan, server_uri:Any=None, ollama_url:Any=None, model:Any=None)",99-109,false,11,4,creates
+      Orchestrator.from_file,method,"(path:Any) -> \"Orchestrator\"",114-122,false,9,2,Load orchestration plan from agents.yml.
+      Orchestrator.from_dict,method,"(data:dict) -> \"Orchestrator\"",125-128,false,4,1,Load orchestration plan from a dict.
+      Orchestrator._parse_plan,method,"(raw:dict) -> OrchestrationPlan",131-160,false,30,11,parses plan
+      Orchestrator.run,method,"(role_filter:Any=None)",164-208,true,45,7,Spawn all agents as async tasks in one process.
+      Orchestrator.stop,method,(),210-220,true,11,4,Gracefully stop all agents.
+      Orchestrator.status,method,() -> dict,222-233,false,12,4,Return status of all managed agents.
+      Orchestrator.to_dsl,method,"() -> list[str]",237-261,false,25,8,Convert the orchestration plan to DSL commands.
+      Orchestrator.to_msdsl,method,"(path:Any=None) -> str",263-284,false,22,2,Generate a .msdsl script file from the orchestration plan.
+      Orchestrator.summary,method,() -> str,288-310,false,23,9,Human-readable summary of the plan.
+  marksync/settings.py:
+    functions[9]{name,kind,sig,loc,async,lines,cc,does}:
+      _find_dotenv,function,() -> Path | None,24-33,false,10,3,Walk up from CWD and package dir to find .env.
+      _load_dotenv,function,"(path:Path) -> dict[str, str]",36-52,false,17,8,Minimal .env parser — no external dependency required.
+      _env,function,"(key:str, default:str, dotenv:dict[str,str]) -> str",55-57,false,3,1,"Read from os.environ first, then dotenv, then default."
+      _env_int,function,"(key:str, default:int, dotenv:dict[str,str]) -> int",60-65,false,6,2,env int
+      load_settings,function,() -> Settings,115-135,false,21,2,Load settings from environment + .env file.
+      Settings.server_uri,method,() -> str,99-100,false,2,1,server uri
+      Settings.ollama_url,method,() -> str,103-104,false,2,1,ollama url
+      Settings.api_host,method,() -> str,107-108,false,2,1,api host
+      Settings.api_port,method,() -> int,111-112,false,2,1,api port
   marksync/sync/engine.py:
     functions[16]{name,kind,sig,loc,async,lines,cc,does}:
       _signal,function,"(type:str) -> str",38-39,false,2,1,signal
@@ -145,33 +243,33 @@ function_details:
       APIResponse.__init__,method,(),59-62,false,4,3,creates
   marksync/dsl/executor.py:
     functions[27]{name,kind,sig,loc,async,lines,cc,does}:
-      AgentHandle.to_dict,method,() -> dict,32-40,false,9,1,converts dict
-      Pipeline.to_dict,method,() -> dict,50-51,false,2,1,converts dict
-      Route.to_dict,method,() -> dict,61-62,false,2,1,converts dict
-      DSLExecutor.__init__,method,"(server_uri:str='ws://localhost:8765', ollama_url:str='http://localhost:11434', agent_factory:Any=None)",77-95,false,19,1,creates
-      DSLExecutor.execute,method,"(line:str) -> dict[str, Any]",99-102,true,4,1,Parse and execute a DSL command.
-      DSLExecutor.execute_command,method,"(cmd:DSLCommand) -> dict[str, Any]",104-139,true,36,4,Execute a parsed DSLCommand.
-      DSLExecutor.execute_script,method,"(text:str) -> list[dict[str, Any]]",141-148,true,8,2,Execute a multi-line DSL script.
-      DSLExecutor._cmd_agent,method,"(cmd:DSLCommand) -> dict",152-184,true,33,6,"AGENT <name> <role> [--model M] [--auto-edit] [--watch block1,block2]"
-      DSLExecutor._spawn_agent,method,"(handle:AgentHandle)",186-206,true,21,3,Spawn an actual AgentWorker via the factory.
-      DSLExecutor._cmd_kill,method,"(cmd:DSLCommand) -> dict",208-229,true,22,6,KILL <name> — stop an agent.
-      DSLExecutor._cmd_list,method,"(cmd:DSLCommand) -> dict",231-244,true,14,10,"LIST [agents|pipelines|routes|config]"
-      DSLExecutor._cmd_pipe,method,"(cmd:DSLCommand) -> dict",246-258,true,13,4,PIPE <name> <src> -> <dst1> -> <dst2>
-      DSLExecutor._cmd_send,method,"(cmd:DSLCommand) -> dict",260-274,true,15,5,SEND <agent> <message>
-      DSLExecutor._cmd_set,method,"(cmd:DSLCommand) -> dict",276-287,true,12,2,SET <key> <value>
-      DSLExecutor._cmd_status,method,"(cmd:DSLCommand) -> dict",289-306,true,18,5,"STATUS [<agent>]"
-      DSLExecutor._cmd_deploy,method,"(cmd:DSLCommand) -> dict",308-313,true,6,1,"DEPLOY [--force]"
-      DSLExecutor._cmd_sync,method,"(cmd:DSLCommand) -> dict",315-320,true,6,2,"SYNC [push|pull|status]"
-      DSLExecutor._cmd_route,method,"(cmd:DSLCommand) -> dict",322-334,true,13,3,ROUTE <pattern> -> <agent>
-      DSLExecutor._cmd_log,method,"(cmd:DSLCommand) -> dict",336-340,true,5,1,"LOG [<agent>] [--tail N]"
-      DSLExecutor._cmd_help,method,"(cmd:DSLCommand) -> dict",342-368,true,27,3,"HELP [<command>]"
-      DSLExecutor._cmd_connect,method,"(cmd:DSLCommand) -> dict",370-375,true,6,2,"CONNECT [<uri>]"
-      DSLExecutor._cmd_disconnect,method,"(cmd:DSLCommand) -> dict",377-380,true,4,1,DISCONNECT
-      DSLExecutor._cmd_load,method,"(cmd:DSLCommand) -> dict",382-395,true,14,3,LOAD <file.msdsl> — load and execute script.
-      DSLExecutor._cmd_save,method,"(cmd:DSLCommand) -> dict",397-427,true,31,7,SAVE <file.msdsl> — export current state as DSL script.
-      DSLExecutor.on,method,"(event:str, handler:Callable)",431-433,false,3,1,Register event handler.
-      DSLExecutor._emit,method,"(event:str, data:Any=None)",435-441,false,7,3,Emit event to all registered handlers.
-      DSLExecutor.snapshot,method,() -> dict,445-453,false,9,4,Full runtime state snapshot.
+      AgentHandle.to_dict,method,() -> dict,33-41,false,9,1,converts dict
+      Pipeline.to_dict,method,() -> dict,51-52,false,2,1,converts dict
+      Route.to_dict,method,() -> dict,62-63,false,2,1,converts dict
+      DSLExecutor.__init__,method,"(server_uri:Any=None, ollama_url:Any=None, agent_factory:Any=None)",78-96,false,19,3,creates
+      DSLExecutor.execute,method,"(line:str) -> dict[str, Any]",100-103,true,4,1,Parse and execute a DSL command.
+      DSLExecutor.execute_command,method,"(cmd:DSLCommand) -> dict[str, Any]",105-140,true,36,4,Execute a parsed DSLCommand.
+      DSLExecutor.execute_script,method,"(text:str) -> list[dict[str, Any]]",142-149,true,8,2,Execute a multi-line DSL script.
+      DSLExecutor._cmd_agent,method,"(cmd:DSLCommand) -> dict",153-185,true,33,6,"AGENT <name> <role> [--model M] [--auto-edit] [--watch block1,block2]"
+      DSLExecutor._spawn_agent,method,"(handle:AgentHandle)",187-207,true,21,3,Spawn an actual AgentWorker via the factory.
+      DSLExecutor._cmd_kill,method,"(cmd:DSLCommand) -> dict",209-230,true,22,6,KILL <name> — stop an agent.
+      DSLExecutor._cmd_list,method,"(cmd:DSLCommand) -> dict",232-245,true,14,10,"LIST [agents|pipelines|routes|config]"
+      DSLExecutor._cmd_pipe,method,"(cmd:DSLCommand) -> dict",247-259,true,13,4,PIPE <name> <src> -> <dst1> -> <dst2>
+      DSLExecutor._cmd_send,method,"(cmd:DSLCommand) -> dict",261-275,true,15,5,SEND <agent> <message>
+      DSLExecutor._cmd_set,method,"(cmd:DSLCommand) -> dict",277-288,true,12,2,SET <key> <value>
+      DSLExecutor._cmd_status,method,"(cmd:DSLCommand) -> dict",290-307,true,18,5,"STATUS [<agent>]"
+      DSLExecutor._cmd_deploy,method,"(cmd:DSLCommand) -> dict",309-314,true,6,1,"DEPLOY [--force]"
+      DSLExecutor._cmd_sync,method,"(cmd:DSLCommand) -> dict",316-321,true,6,2,"SYNC [push|pull|status]"
+      DSLExecutor._cmd_route,method,"(cmd:DSLCommand) -> dict",323-335,true,13,3,ROUTE <pattern> -> <agent>
+      DSLExecutor._cmd_log,method,"(cmd:DSLCommand) -> dict",337-341,true,5,1,"LOG [<agent>] [--tail N]"
+      DSLExecutor._cmd_help,method,"(cmd:DSLCommand) -> dict",343-369,true,27,3,"HELP [<command>]"
+      DSLExecutor._cmd_connect,method,"(cmd:DSLCommand) -> dict",371-376,true,6,2,"CONNECT [<uri>]"
+      DSLExecutor._cmd_disconnect,method,"(cmd:DSLCommand) -> dict",378-381,true,4,1,DISCONNECT
+      DSLExecutor._cmd_load,method,"(cmd:DSLCommand) -> dict",383-396,true,14,3,LOAD <file.msdsl> — load and execute script.
+      DSLExecutor._cmd_save,method,"(cmd:DSLCommand) -> dict",398-428,true,31,7,SAVE <file.msdsl> — export current state as DSL script.
+      DSLExecutor.on,method,"(event:str, handler:Callable)",432-434,false,3,1,Register event handler.
+      DSLExecutor._emit,method,"(event:str, data:Any=None)",436-442,false,7,3,Emit event to all registered handlers.
+      DSLExecutor.snapshot,method,() -> dict,446-454,false,9,4,Full runtime state snapshot.
   marksync/dsl/shell.py:
     functions[12]{name,kind,sig,loc,async,lines,cc,does}:
       _fmt_time,function,"(ts:float) -> str",192-196,false,5,2,fmt time
