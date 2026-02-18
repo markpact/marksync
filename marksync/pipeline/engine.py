@@ -524,6 +524,11 @@ class PipelineEngine:
         )
         self.human_tasks[task_id] = task
 
+        # Set pipeline status to blocked while waiting for human
+        run = self.runs.get(run_id)
+        if run:
+            run.status = "blocked"
+
         log.info(f"[{run_id}] Human task created: {task_id} "
                  f"({task.task_type} via {task.channel})")
         self._emit("human.task_created", task.to_dict())
@@ -535,8 +540,14 @@ class PipelineEngine:
         except asyncio.TimeoutError:
             task.status = "expired"
             self.human_tasks.pop(task_id, None)
+            if run:
+                run.status = "failed"
             raise
 
+        # Reset status to running after human responds
+        if run:
+            run.status = "running"
+        
         return result
 
     def resolve_task(self, task_id: str, action: str,

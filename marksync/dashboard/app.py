@@ -84,12 +84,29 @@ def create_dashboard_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    try:
+        from marksync.auth.middleware import AuthMiddleware
+        app.add_middleware(AuthMiddleware)
+    except Exception:
+        pass
+
     # ── Pipeline engine (re-used from sandbox) ────────────────────────
     from marksync.pipeline.engine import PipelineEngine
     from marksync.pipeline.api import create_pipeline_router
 
     pipeline_engine = PipelineEngine()
     app.include_router(create_pipeline_router(pipeline_engine))
+
+    # ── Health ────────────────────────────────────────────────────────
+
+    @app.get("/health")
+    def health():
+        return {
+            "status": "ok",
+            "service": "marksync-dashboard",
+            "version": "0.2.0",
+            "sse_subscribers": len(_sse_queues),
+        }
 
     # ── UI ─────────────────────────────────────────────────────────────
 
@@ -392,6 +409,100 @@ def create_dashboard_app() -> FastAPI:
                 }
         except Exception as e:
             return {"server": "disconnected", "uri": settings.MARKSYNC_SERVER, "error": str(e)}
+
+    # ── WebSocket bridge to SyncServer ────────────────────────────────
+
+    @app.websocket("/ws")
+    async def ws_bridge(websocket: WebSocket):
+        """Proxy between browser WebSocket and SyncServer, forward block updates as SSE."""
+        await websocket.accept()
+        try:
+            import websockets as _ws
+            async with _ws.connect(settings.MARKSYNC_SERVER) as sync_ws:
+
+                async def _sync_to_browser():
+                    async for raw in sync_ws:
+                        try:
+                            msg = json.loads(raw)
+                            await websocket.send_text(raw)
+                            if msg.get("type") in ("patch", "full"):
+                                await _broadcast_sse({
+                                    "type": "block_updated",
+                                    "block_id": msg.get("block_id"),
+                                    "ts": time.time(),
+                                })
+                        except Exception:
+                            break
+
+                async def _browser_to_sync():
+                    try:
+                        while True:
+                            data = await websocket.receive_text()
+                            await sync_ws.send(data)
+                    except WebSocketDisconnect:
+                        pass
+
+                await asyncio.gather(_sync_to_browser(), _browser_to_sync(), return_exceptions=True)
+        except Exception as e:
+            log.debug(f"WS bridge ended: {e}")
+        finally:
+            try:
+                await websocket.close()
+            except Exception:
+                pass
+
+    # ── Snapshots & Rollback ──────────────────────────────────────────
+
+    @app.get("/api/snapshots")
+    def list_snapshots(contract_path: str = "README.md"):
+        try:
+            from marksync.sync.snapshots import SnapshotStore
+            store = SnapshotStore(project=Path(contract_path).stem)
+            return {"ok": True, "snapshots": store.list_snapshots()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/api/snapshots")
+    async def create_snapshot(contract_path: str = "README.md", label: str = ""):
+        try:
+            from marksync.sync.crdt import CRDTDocument
+            from marksync.sync.snapshots import SnapshotStore
+            p = Path(contract_path)
+            if not p.exists():
+                raise HTTPException(404, f"Contract not found: {contract_path}")
+            crdt = CRDTDocument(project=p.stem)
+            crdt.load_markdown(p.read_text("utf-8"))
+            store = SnapshotStore(project=p.stem)
+            snap_id = store.save(crdt.snapshot(), label=label or "manual")
+            return {"ok": True, "snapshot_id": snap_id}
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(500, str(e))
+
+    @app.post("/api/rollback")
+    async def rollback(contract_path: str = "README.md", snapshot_id: str = ""):
+        try:
+            from marksync.sync.crdt import CRDTDocument
+            from marksync.sync.snapshots import SnapshotStore
+            p = Path(contract_path)
+            if not p.exists():
+                raise HTTPException(404, f"Contract not found: {contract_path}")
+            store = SnapshotStore(project=p.stem)
+            snap = store.load(snapshot_id) if snapshot_id else store.latest()
+            if not snap:
+                raise HTTPException(404, "No snapshot found")
+            crdt = CRDTDocument(project=p.stem)
+            n = crdt.rollback_to(snap)
+            md = p.read_text("utf-8")
+            rebuilt = BlockParser.rebuild_markdown(md, crdt.get_all())
+            p.write_text(rebuilt, "utf-8")
+            await _broadcast_sse({"type": "rollback", "snapshot_id": snapshot_id, "blocks": n, "ts": time.time()})
+            return {"ok": True, "blocks_restored": n, "snapshot_id": snapshot_id}
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(500, str(e))
 
     return app
 

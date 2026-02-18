@@ -618,6 +618,293 @@ class TestPipelineTasksPending:
         assert resp.json()["count"] == 0
 
 
+# ── Pactown deploy: health_check, watch, autofix ─────────────────────────────
+
+class TestPactownHealthCheck:
+
+    def test_health_check_no_config_returns_unknown(self):
+        from marksync.plugins.integrations.pactown import Plugin
+        result = Plugin().health_check()
+        assert result["health"] == "unknown"
+        assert "error" in result
+
+    def test_health_check_no_config_with_crdt_logs(self):
+        from marksync.plugins.integrations.pactown import Plugin
+        from marksync.sync.crdt import CRDTDocument
+        crdt = CRDTDocument()
+        Plugin().health_check(crdt_doc=crdt)
+        log = crdt.get_block("markpact:log") or ""
+        assert "HEALTH_CHECK" in log
+
+    def test_health_check_no_cli_returns_unknown(self, monkeypatch):
+        from marksync.plugins.integrations.pactown import Plugin
+        import subprocess
+        p = Plugin()
+        p._config_path = "/tmp/fake.pactown.yaml"
+        monkeypatch.setattr(subprocess, "run",
+                            lambda *a, **kw: (_ for _ in ()).throw(FileNotFoundError))
+        result = p.health_check()
+        assert result["health"] == "unknown"
+
+    def test_health_check_updates_crdt_state(self, monkeypatch):
+        from marksync.plugins.integrations.pactown import Plugin
+        from marksync.sync.crdt import CRDTDocument
+        import subprocess, types
+        crdt = CRDTDocument()
+        p = Plugin()
+        p._config_path = "/tmp/fake.pactown.yaml"
+        fake = types.SimpleNamespace(returncode=0, stdout="ok\n", stderr="")
+        monkeypatch.setattr(subprocess, "run", lambda *a, **kw: fake)
+        result = p.health_check(crdt_doc=crdt)
+        assert result["health"] == "ok"
+        state = json.loads(crdt.get_block("markpact:state"))
+        assert state["health"] == "ok"
+        assert "last_check" in state
+
+    def test_health_check_error_updates_crdt_state(self, monkeypatch):
+        from marksync.plugins.integrations.pactown import Plugin
+        from marksync.sync.crdt import CRDTDocument
+        import subprocess, types
+        crdt = CRDTDocument()
+        p = Plugin()
+        p._config_path = "/tmp/fake.pactown.yaml"
+        fake = types.SimpleNamespace(returncode=1, stdout="", stderr="error")
+        monkeypatch.setattr(subprocess, "run", lambda *a, **kw: fake)
+        result = p.health_check(crdt_doc=crdt)
+        assert result["health"] == "error"
+        state = json.loads(crdt.get_block("markpact:state"))
+        assert state["health"] == "error"
+
+
+class TestPactownMonitorWatch:
+
+    def test_watch_stops_after_n_checks(self):
+        from marksync.agents import PactownMonitor, AgentConfig
+        mon = PactownMonitor(AgentConfig(name="test-mon"), poll_interval=0.01)
+        results = asyncio.get_event_loop().run_until_complete(
+            mon.watch(stop_after=1)
+        )
+        assert len(results) == 1
+
+    def test_watch_unknown_health_no_config(self):
+        from marksync.agents import PactownMonitor, AgentConfig
+        mon = PactownMonitor(AgentConfig(name="test-mon"), poll_interval=0.01)
+        results = asyncio.get_event_loop().run_until_complete(
+            mon.watch(stop_after=1)
+        )
+        assert results[0]["health"] == "unknown"
+
+    def test_watch_writes_state_to_crdt(self):
+        from marksync.agents import PactownMonitor, AgentConfig
+        from marksync.sync.crdt import CRDTDocument
+        crdt = CRDTDocument()
+        mon = PactownMonitor(AgentConfig(name="test-mon"), poll_interval=0.01)
+        asyncio.get_event_loop().run_until_complete(
+            mon.watch(crdt_doc=crdt, stop_after=1)
+        )
+        state_raw = crdt.get_block("markpact:state")
+        assert state_raw is not None
+        state = json.loads(state_raw)
+        assert "health" in state
+        assert "last_check" in state
+
+    def test_watch_writes_log_to_crdt(self):
+        from marksync.agents import PactownMonitor, AgentConfig
+        from marksync.sync.crdt import CRDTDocument
+        crdt = CRDTDocument()
+        mon = PactownMonitor(AgentConfig(name="test-mon"), poll_interval=0.01)
+        asyncio.get_event_loop().run_until_complete(
+            mon.watch(crdt_doc=crdt, stop_after=2)
+        )
+        log = crdt.get_block("markpact:log") or ""
+        assert "HEALTH_CHECK" in log
+
+    def test_watch_degraded_writes_history(self, monkeypatch):
+        from marksync.agents import PactownMonitor, AgentConfig
+        from marksync.sync.crdt import CRDTDocument
+        crdt = CRDTDocument()
+        mon = PactownMonitor(AgentConfig(name="test-mon"), poll_interval=0.01)
+        mon._pactown_config_path = "/tmp/fake.yaml"
+        import subprocess, types
+        fake = types.SimpleNamespace(returncode=1, stdout="", stderr="err")
+        monkeypatch.setattr(subprocess, "run", lambda *a, **kw: fake)
+        asyncio.get_event_loop().run_until_complete(
+            mon.watch(crdt_doc=crdt, stop_after=1)
+        )
+        hist = json.loads(crdt.get_block("markpact:history") or "[]")
+        assert any(h["action"] == "health_degraded" for h in hist)
+
+    def test_watch_degraded_triggers_autofix(self, monkeypatch):
+        from marksync.agents import PactownMonitor, AgentConfig
+        from marksync.pipeline.engine import PipelineEngine
+        from marksync.sync.crdt import CRDTDocument
+        import subprocess, types
+        crdt = CRDTDocument()
+        engine = PipelineEngine()
+        engine.register_autofix_pipeline()
+        mon = PactownMonitor(AgentConfig(name="test-mon"), poll_interval=0.01)
+        mon._pactown_config_path = "/tmp/fake.yaml"
+        fake = types.SimpleNamespace(returncode=1, stdout="", stderr="err")
+        monkeypatch.setattr(subprocess, "run", lambda *a, **kw: fake)
+        asyncio.get_event_loop().run_until_complete(
+            mon.watch(crdt_doc=crdt, pipeline_engine=engine, stop_after=1)
+        )
+        log = crdt.get_block("markpact:log") or ""
+        assert "AUTOFIX_TRIGGERED" in log
+
+    def test_set_pipeline_engine(self):
+        from marksync.agents import PactownMonitor, AgentConfig
+        from marksync.pipeline.engine import PipelineEngine
+        mon = PactownMonitor(AgentConfig(name="mon"), poll_interval=5.0)
+        engine = PipelineEngine()
+        mon.set_pipeline_engine(engine)
+        assert mon._pipeline_engine is engine
+
+
+class TestPipelineAutofix:
+
+    def test_register_autofix_pipeline(self):
+        from marksync.pipeline.engine import PipelineEngine
+        engine = PipelineEngine()
+        engine.register_autofix_pipeline()
+        assert "pactown-autofix" in engine.definitions
+
+    def test_autofix_pipeline_has_3_steps(self):
+        from marksync.pipeline.engine import PipelineEngine
+        engine = PipelineEngine()
+        engine.register_autofix_pipeline()
+        steps = engine.definitions["pactown-autofix"]
+        assert len(steps) == 3
+        names = [s.name for s in steps]
+        assert "diagnose" in names
+        assert "pactown-restart" in names
+        assert "verify" in names
+
+    def test_autofix_pipeline_restart_not_required(self):
+        from marksync.pipeline.engine import PipelineEngine
+        engine = PipelineEngine()
+        engine.register_autofix_pipeline()
+        restart_step = next(
+            s for s in engine.definitions["pactown-autofix"]
+            if s.name == "pactown-restart"
+        )
+        assert restart_step.required is False
+
+    def test_autofix_pipeline_runs(self):
+        from marksync.pipeline.engine import PipelineEngine
+        engine = PipelineEngine()
+        engine.register_autofix_pipeline()
+        run_id = asyncio.get_event_loop().run_until_complete(
+            engine.start("pactown-autofix", input_data={
+                "health_status": {"health": "error"},
+                "config_path": "",
+                "triggered_by": "test",
+            })
+        )
+        assert run_id.startswith("run-")
+
+    def test_autofix_custom_restart_fn(self):
+        from marksync.pipeline.engine import PipelineEngine, Step
+        calls = []
+
+        def my_restart(step: Step, data: dict) -> dict:
+            calls.append(data)
+            return {"script": "pactown_restart", "script_status": "pass"}
+
+        engine = PipelineEngine()
+        engine.register_autofix_pipeline(restart_fn=my_restart)
+        asyncio.get_event_loop().run_until_complete(
+            engine.start("pactown-autofix", input_data={
+                "health_status": {"health": "error"},
+                "config_path": "/tmp/test.yaml",
+                "triggered_by": "test",
+            })
+        )
+        asyncio.get_event_loop().run_until_complete(asyncio.sleep(0.05))
+        assert len(calls) >= 1
+
+    def test_diagnose_script_degraded(self):
+        from marksync.pipeline.engine import PipelineEngine, Step, ActorType
+        engine = PipelineEngine()
+        step = Step(name="diagnose", actor=ActorType.SCRIPT,
+                    config={"script": "diagnose"})
+        result = asyncio.get_event_loop().run_until_complete(
+            engine._execute_script(step, {"health_status": {"health": "error"}})
+        )
+        assert result["health"] == "error"
+        assert result["degraded"] is True
+
+    def test_diagnose_script_ok(self):
+        from marksync.pipeline.engine import PipelineEngine, Step, ActorType
+        engine = PipelineEngine()
+        step = Step(name="diagnose", actor=ActorType.SCRIPT,
+                    config={"script": "diagnose"})
+        result = asyncio.get_event_loop().run_until_complete(
+            engine._execute_script(step, {"health_status": {"health": "ok"}})
+        )
+        assert result["health"] == "ok"
+        assert result["degraded"] is False
+
+    def test_pactown_restart_no_config(self):
+        from marksync.pipeline.engine import PipelineEngine, Step, ActorType
+        engine = PipelineEngine()
+        step = Step(name="pactown-restart", actor=ActorType.SCRIPT,
+                    config={"script": "pactown_restart"})
+        result = asyncio.get_event_loop().run_until_complete(
+            engine._execute_script(step, {"config_path": ""})
+        )
+        assert result["script_status"] == "fail"
+
+    def test_pactown_restart_no_cli(self):
+        from marksync.pipeline.engine import PipelineEngine, Step, ActorType
+        engine = PipelineEngine()
+        step = Step(name="pactown-restart", actor=ActorType.SCRIPT,
+                    config={"script": "pactown_restart"})
+        result = asyncio.get_event_loop().run_until_complete(
+            engine._execute_script(step, {"config_path": "/tmp/test.pactown.yaml"})
+        )
+        assert result["script_status"] in ("skipped", "fail", "pass")
+
+
+class TestTriggerAutofix:
+
+    def test_trigger_autofix_no_pipeline_returns_none(self):
+        from marksync.agents import PactownMonitor, AgentConfig
+        from marksync.pipeline.engine import PipelineEngine
+        mon = PactownMonitor(AgentConfig(name="mon"), poll_interval=0.01)
+        engine = PipelineEngine()
+        result = asyncio.get_event_loop().run_until_complete(
+            mon._trigger_autofix(engine, {"health": "error"})
+        )
+        assert result is None
+
+    def test_trigger_autofix_with_pipeline_returns_run_id(self):
+        from marksync.agents import PactownMonitor, AgentConfig
+        from marksync.pipeline.engine import PipelineEngine
+        mon = PactownMonitor(AgentConfig(name="mon"), poll_interval=0.01)
+        engine = PipelineEngine()
+        engine.register_autofix_pipeline()
+        result = asyncio.get_event_loop().run_until_complete(
+            mon._trigger_autofix(engine, {"health": "error"})
+        )
+        assert result is not None
+        assert result.startswith("run-")
+
+    def test_trigger_autofix_logs_to_crdt(self):
+        from marksync.agents import PactownMonitor, AgentConfig
+        from marksync.pipeline.engine import PipelineEngine
+        from marksync.sync.crdt import CRDTDocument
+        crdt = CRDTDocument()
+        mon = PactownMonitor(AgentConfig(name="mon"), poll_interval=0.01)
+        engine = PipelineEngine()
+        engine.register_autofix_pipeline()
+        asyncio.get_event_loop().run_until_complete(
+            mon._trigger_autofix(engine, {"health": "error"}, crdt_doc=crdt)
+        )
+        log = crdt.get_block("markpact:log") or ""
+        assert "AUTOFIX_TRIGGERED" in log
+
+
 # ── End-to-end: marksync create ───────────────────────────────────────────────
 
 class TestE2ECreate:

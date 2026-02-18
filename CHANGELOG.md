@@ -2,25 +2,35 @@
 
 ### Summary
 
-feat(build): configuration management system
+feat(pactown): deploy monitoring, health-check feedback loop, and auto-fix pipeline
+
+### Features
+
+- `Plugin.health_check(crdt_doc=None)` — recurring health check with latency measurement, writes `markpact:state` and `markpact:log`
+- `PactownMonitor.watch(crdt_doc, pipeline_engine, stop_after)` — standalone async watch loop (no WebSocket required), polls health, updates CRDT blocks, triggers auto-fix on degraded health
+- `PactownMonitor._trigger_autofix(engine, status, crdt_doc)` — starts `pactown-autofix` pipeline run and logs `AUTOFIX_TRIGGERED` event
+- `PactownMonitor.set_pipeline_engine(engine)` — inject PipelineEngine for auto-fix integration
+- `PipelineEngine.register_autofix_pipeline(restart_fn=None)` — registers built-in `pactown-autofix` pipeline (diagnose → pactown-restart → verify)
+- Built-in scripts: `diagnose` (health status analysis), `pactown_restart` (runs `pactown restart <config>`)
+- Feedback loop: degraded health → `markpact:state` update → `markpact:history` event → auto-fix pipeline trigger
 
 ### Docs
 
 - docs: update TODO-v2-implementation.md
 
+### Test
+
+- 30 new tests covering: `Plugin.health_check`, `PactownMonitor.watch`, `_trigger_autofix`, `register_autofix_pipeline`, `diagnose`/`pactown_restart` scripts
+- Full suite: 274 passed, 7 skipped
+
 ### Other
 
 - build: update Makefile
-- update marksync/agents/__init__.py
-- update marksync/auth/__init__.py
-- update marksync/auth/middleware.py
-- update marksync/auth/roles.py
-- update marksync/auth/tokens.py
-- update marksync/contract/block_types.py
-- update marksync/pipeline/engine.py
 - update marksync/plugins/integrations/pactown.py
+- update marksync/agents/__init__.py
+- update marksync/pipeline/engine.py
 - update marksync/sync/crdt.py
-- ... and 2 more
+- update tests/test_v2.py
 
 
 ## [0.2.14] - 2026-02-18

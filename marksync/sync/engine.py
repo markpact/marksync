@@ -184,6 +184,18 @@ class SyncServer:
                 return_exceptions=True,
             )
 
+    def health(self) -> dict:
+        """Return a health status dict for monitoring."""
+        return {
+            "status": "ok",
+            "service": "marksync-sync",
+            "host": self.host,
+            "port": self.port,
+            "blocks": len(self.blocks),
+            "clients": len(self.clients),
+            "seq": self.seq,
+        }
+
     # ── Run ───────────────────────────────────────────────────────────────
 
     async def run(self):

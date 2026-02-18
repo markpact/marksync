@@ -23,6 +23,58 @@ log = logging.getLogger("marksync.agent")
 _dmp = diff_match_patch()
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# GENERIC LLM ADAPTER (multi-provider)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class AgentLLMClient:
+    """
+    Thin async adapter wrapping pipeline.LLMClient for agent use.
+
+    Falls back to OllamaClient if LLMClient / litellm is unavailable.
+    """
+
+    def __init__(self, llm_client=None, ollama_fallback: OllamaClient | None = None):
+        self._llm = llm_client
+        self._fallback = ollama_fallback
+
+    async def generate(self, prompt: str, system: str = "") -> str:
+        if self._llm:
+            try:
+                messages = []
+                if system:
+                    messages.append({"role": "system", "content": system})
+                messages.append({"role": "user", "content": prompt})
+                resp = self._llm.complete(messages)
+                if resp.ok:
+                    return resp.content
+                log.warning(f"LLMClient error: {resp.error}")
+            except Exception as e:
+                log.warning(f"LLMClient failed, falling back to Ollama: {e}")
+
+        if self._fallback:
+            return await self._fallback.generate(prompt, system=system)
+        return ""
+
+    async def chat(self, messages: list[dict]) -> str:
+        if self._llm:
+            try:
+                resp = self._llm.complete(messages)
+                if resp.ok:
+                    return resp.content
+            except Exception as e:
+                log.warning(f"LLMClient chat failed, falling back to Ollama: {e}")
+
+        if self._fallback:
+            return await self._fallback.chat(messages)
+        return ""
+
+    async def health(self) -> bool:
+        if self._fallback:
+            return await self._fallback.health()
+        return self._llm is not None
+
+
 def _signal(type: str, **kw) -> str:
     return json.dumps({"type": type, "ts": time.time(), **kw})
 
@@ -85,6 +137,7 @@ class AgentConfig:
     auto_edit: bool = False       # auto-apply LLM suggestions
     poll_interval: float = 5.0    # seconds between checks
     max_retries: int = 3
+    llm_client: object = None     # optional pipeline.LLMClient for multi-provider
 
 
 class AgentWorker:
@@ -97,7 +150,11 @@ class AgentWorker:
         self.config = config
         self.blocks: dict[str, str] = {}
         self.server_manifest: dict[str, str] = {}
-        self.llm = OllamaClient(config.ollama_url, config.ollama_model)
+        _ollama = OllamaClient(config.ollama_url, config.ollama_model)
+        self.llm = AgentLLMClient(
+            llm_client=config.llm_client,
+            ollama_fallback=_ollama,
+        )
         self.ws = None
         self._running = False
         self._history: list[dict] = []
