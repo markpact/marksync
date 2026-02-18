@@ -1,3 +1,22 @@
+## [0.2.9] - 2026-02-18
+
+### Summary
+
+feat(docs): deep code analysis engine with 6 supporting modules
+
+### Docs
+
+- docs: update pipelines.md
+
+### Build
+
+- update pyproject.toml
+
+### Other
+
+- update marksync/sandbox/app.py
+
+
 ## [0.2.8] - 2026-02-18
 
 ### Summary

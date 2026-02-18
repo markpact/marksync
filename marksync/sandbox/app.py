@@ -23,7 +23,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -32,16 +32,16 @@ import nfo
 from marksync.settings import settings
 from marksync.sync import BlockParser
 
-# Configure nfo: bridge marksync.* loggers to SQLite + terminal
+# Configure nfo: structured logging to SQLite + terminal
 nfo.configure(
     name="marksync-sandbox",
-    level="DEBUG",
+    level="INFO",
     sinks=["sqlite:sandbox_logs.db", "terminal:color"],
-    modules=["marksync.sandbox", "marksync.pipeline", "marksync.orchestrator"],
-    bridge_stdlib=False,
+    propagate_stdlib=True,
     force=True,
 )
 
+# Stdlib logger for internal module messages (bridged via propagate_stdlib)
 log = nfo.get_logger("marksync.sandbox")
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent.parent / "examples"
@@ -79,6 +79,14 @@ def create_sandbox_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # ── nfo request logging middleware ───────────────────────────────
+    from nfo import FastAPIMiddleware
+    app.add_middleware(
+        FastAPIMiddleware,
+        skip_paths=["/docs", "/openapi.json", "/redoc", "/api/status"],
+        skip_2xx=False,
+    )
+
     # ── Pipeline engine ──────────────────────────────────────────────
     from marksync.pipeline.engine import PipelineEngine
     from marksync.pipeline.api import create_pipeline_router
@@ -93,18 +101,6 @@ def create_sandbox_app() -> FastAPI:
         return _render_html()
 
     # ── Examples API ──────────────────────────────────────────────────
-
-    # ── Request logging middleware ─────────────────────────────────────
-
-    @app.middleware("http")
-    async def log_requests(request: Request, call_next):
-        start = time.time()
-        response = await call_next(request)
-        dt = (time.time() - start) * 1000
-        if not request.url.path.startswith("/api/status"):
-            log.info("%s %s → %d (%.0fms)",
-                     request.method, request.url.path, response.status_code, dt)
-        return response
 
     @app.get("/api/examples")
     def list_examples():
@@ -122,7 +118,7 @@ def create_sandbox_app() -> FastAPI:
                         "path": str(readme),
                         "has_agents_yml": agents_yml.exists(),
                     })
-        log.debug("Listed %d examples", len(examples))
+        nfo.event("examples.list", count=len(examples))
         return {"examples": examples}
 
     @app.get("/api/examples/{example_id}")
@@ -135,7 +131,7 @@ def create_sandbox_app() -> FastAPI:
 
         md = readme.read_text("utf-8")
         blocks = BlockParser.parse(md)
-        log.info("Loaded example %s: %d blocks, %d chars", example_id, len(blocks), len(md))
+        nfo.event("example.load", example_id=example_id, blocks=len(blocks), chars=len(md))
 
         agents_yml = EXAMPLES_DIR / example_id / "agents.yml"
         agents_config = None
