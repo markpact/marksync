@@ -22,11 +22,11 @@
 ## Low Priority
 
 - [ ] **Plugin system** — loadable agent roles from external packages
-- [ ] **Multi-project support** — single server managing multiple README.md files
+- [x] **Multi-project support** — `MultiProjectServer` routes by `?project=<name>` query param
 - [x] **Git integration** — `SyncServer(git_auto_commit=True)` auto-commits on save
-- [ ] **Ollama model auto-pull** — detect missing models and pull automatically
+- [x] **Ollama model auto-pull** — `OllamaClient._ensure_model()` pulls missing models automatically
 - [x] **CRDT garbage collection** — `CRDTDocument.garbage_collect()` compacts logs + removes empty blocks
-- [ ] **DSL macros** — user-defined command aliases and templates
+- [x] **DSL macros** — `MACRO NAME = template $1 $2` with argument substitution
 - [x] **Webhook notifications** — `DSLExecutor.add_webhook(url, events)` fires on agent events
 - [ ] **Docker Swarm / K8s** — orchestration templates for production deployment
 

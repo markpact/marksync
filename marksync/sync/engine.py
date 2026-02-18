@@ -17,6 +17,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import ssl
 import subprocess
 import time
 from collections import defaultdict, deque
@@ -64,6 +65,89 @@ class _RateLimiter:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# TLS HELPERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _three_way_merge(base: str, local: str, remote: str) -> tuple[str, bool]:
+    """
+    Line-level three-way merge.
+
+    Args:
+        base:   Common ancestor (what the server had before both edits).
+        local:  Client's version (what the patch was trying to produce).
+        remote: Current server version (what's actually on the server).
+
+    Returns:
+        (merged_text, had_conflicts) where conflict lines are marked with
+        ``<<<<<<< / ======= / >>>>>>>`` markers if auto-resolution failed.
+    """
+    base_lines = base.splitlines(keepends=True)
+    local_lines = local.splitlines(keepends=True)
+    remote_lines = remote.splitlines(keepends=True)
+
+    # Build a diff-based merge using diff_match_patch to detect common chunks
+    patches_l = _dmp.patch_make(base, local)
+    patches_r = _dmp.patch_make(base, remote)
+
+    # Try applying both patch sets to base
+    merged_lr, flags_lr = _dmp.patch_apply(patches_l, remote)  # apply local changes onto remote
+    if all(flags_lr):
+        return merged_lr, False
+
+    # Fall back to line-level merge with conflict markers
+    result: list[str] = []
+    had_conflicts = False
+    max_len = max(len(base_lines), len(local_lines), len(remote_lines))
+    for i in range(max_len):
+        b = base_lines[i] if i < len(base_lines) else ""
+        l = local_lines[i] if i < len(local_lines) else ""
+        r = remote_lines[i] if i < len(remote_lines) else ""
+        if l == r:
+            result.append(l)
+        elif l == b:
+            result.append(r)   # remote changed, local didn't
+        elif r == b:
+            result.append(l)   # local changed, remote didn't
+        else:
+            # True conflict
+            had_conflicts = True
+            result.append("<<<<<<< local\n")
+            result.append(l)
+            result.append("=======\n")
+            result.append(r)
+            result.append(">>>>>>> remote\n")
+    return "".join(result), had_conflicts
+
+
+def _make_ssl_server_context(certfile: str, keyfile: str) -> ssl.SSLContext | None:
+    """Build an SSLContext for the server from PEM cert+key files. Returns None if not configured."""
+    if not certfile or not keyfile:
+        return None
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.load_cert_chain(certfile=certfile, keyfile=keyfile)
+    return ctx
+
+
+def _make_ssl_client_context(verify: bool = True, ca_cert: str = "") -> ssl.SSLContext | None:
+    """
+    Build an SSLContext for the client.
+
+    Args:
+        verify:  Verify the server certificate (default: True).
+        ca_cert: Path to a custom CA bundle/cert PEM file.
+
+    Returns None for plain ws:// connections.
+    """
+    ctx = ssl.create_default_context()
+    if ca_cert:
+        ctx.load_verify_locations(ca_cert)
+    if not verify:
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # SIGNAL PROTOCOL
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -94,7 +178,8 @@ class SyncServer:
 
     def __init__(self, readme: str = "README.md", host="0.0.0.0", port=8765,
                  rate_limit: int = 60, rate_window: float = 10.0,
-                 git_auto_commit: bool = False):
+                 git_auto_commit: bool = False,
+                 ssl_certfile: str = "", ssl_keyfile: str = ""):
         self.readme_path = Path(readme)
         self.host = host
         self.port = port
@@ -106,6 +191,7 @@ class SyncServer:
         self._deploy_callback = None
         self._rate_limiter = _RateLimiter(max_requests=rate_limit, window_seconds=rate_window)
         self.git_auto_commit = git_auto_commit
+        self._ssl_context = _make_ssl_server_context(ssl_certfile, ssl_keyfile)
         self._metrics: dict[str, int] = {
             "messages_received": 0,
             "patches_applied": 0,
@@ -217,7 +303,35 @@ class SyncServer:
                 if self._deploy_callback:
                     self._deploy_callback([bid])
             else:
-                await sender.send(_signal("nack", block_id=bid, reason="patch_failed"))
+                # Patch failed — attempt three-way merge, return conflict info
+                local_text, _ = _dmp.patch_apply(patches, "")  # client's intended content
+                merged, had_conflicts = _three_way_merge(
+                    base=old, local=local_text, remote=self.blocks.get(bid, "")
+                )
+                await sender.send(_signal(
+                    "conflict",
+                    block_id=bid,
+                    merged=merged,
+                    had_conflicts=had_conflicts,
+                    server_content=self.blocks.get(bid, ""),
+                ))
+
+        elif t == "merge":
+            # Client resolved a conflict and sends the final merged content
+            bid = msg["block_id"]
+            content = msg["content"]
+            self.blocks[bid] = content
+            self.crdt.set_block(bid, content)
+            self.seq += 1
+            self.save()
+            self._metrics["patches_applied"] += 1
+            sha = hashlib.sha256(content.encode()).hexdigest()
+            bcast = _signal("full", block_id=bid, content=content,
+                            sha=sha, seq=self.seq, merged=True)
+            await self._broadcast(bcast, exclude=sender)
+            await sender.send(_signal("ack", block_id=bid, seq=self.seq,
+                                      merged=True))
+            log.info(f"Merge applied: {bid} (seq={self.seq})")
 
         elif t == "full":
             bid = msg["block_id"]
@@ -297,8 +411,10 @@ class SyncServer:
 
     async def run(self):
         self.load()
-        async with serve(self._handler, self.host, self.port):
-            log.info(f"SyncServer on ws://{self.host}:{self.port}  "
+        proto = "wss" if self._ssl_context else "ws"
+        async with serve(self._handler, self.host, self.port,
+                         ssl=self._ssl_context):
+            log.info(f"SyncServer on {proto}://{self.host}:{self.port}  "
                      f"({len(self.blocks)} blocks)")
             await asyncio.Future()
 
@@ -456,13 +572,20 @@ class SyncClient:
     """
 
     def __init__(self, readme: str = "README.md", uri="ws://localhost:8765",
-                 name: str = "client"):
+                 name: str = "client", ssl_verify: bool = True,
+                 ssl_ca_cert: str = ""):
         self.readme_path = Path(readme)
         self.uri = uri
         self.name = name
         self.blocks: dict[str, str] = {}
         self.server_manifest: dict[str, str] = {}
         self._on_update = None
+        # SSL context for wss:// connections (None = plain ws://)
+        self._ssl_ctx = (
+            _make_ssl_client_context(verify=ssl_verify, ca_cert=ssl_ca_cert)
+            if self.uri.startswith("wss://")
+            else None
+        )
 
     def on_update(self, callback):
         """Register callback(block_id, new_content) for remote changes."""
@@ -485,7 +608,7 @@ class SyncClient:
         patches_sent = 0
         bytes_saved = 0
 
-        async with websockets.connect(self.uri) as ws:
+        async with websockets.connect(self.uri, ssl=self._ssl_ctx) as ws:
             # Get server manifest
             raw = await asyncio.wait_for(ws.recv(), timeout=10)
             msg = _parse(raw)
@@ -529,7 +652,7 @@ class SyncClient:
         and push local changes on file save.
         """
         self.load()
-        async with websockets.connect(self.uri) as ws:
+        async with websockets.connect(self.uri, ssl=self._ssl_ctx) as ws:
             raw = await asyncio.wait_for(ws.recv(), timeout=10)
             msg = _parse(raw)
             if msg["type"] == "manifest":

@@ -43,13 +43,31 @@ def main(verbose):
 @click.argument("readme", default=settings.PROJECT_README)
 @click.option("--host", default=settings.MARKSYNC_HOST)
 @click.option("--port", default=settings.MARKSYNC_PORT, type=int)
-def server(readme, host, port):
+@click.option("--ssl-cert", default="", envvar="MARKSYNC_SSL_CERT",
+              help="Path to TLS certificate PEM file (enables wss://)")
+@click.option("--ssl-key", default="", envvar="MARKSYNC_SSL_KEY",
+              help="Path to TLS private key PEM file")
+@click.option("--git-auto-commit", is_flag=True,
+              help="Auto-commit README.md to git on every block save")
+@click.option("--rate-limit", default=60, type=int, show_default=True,
+              help="Max messages per client per 10s window")
+def server(readme, host, port, ssl_cert, ssl_key, git_auto_commit, rate_limit):
     """Start the sync server."""
     from marksync.sync.engine import SyncServer
 
-    srv = SyncServer(readme=readme, host=host, port=port)
-    console.print(f"[bold green]Starting SyncServer[/] on ws://{host}:{port}")
-    console.print(f"  README: {readme}")
+    srv = SyncServer(
+        readme=readme, host=host, port=port,
+        ssl_certfile=ssl_cert, ssl_keyfile=ssl_key,
+        git_auto_commit=git_auto_commit,
+        rate_limit=rate_limit,
+    )
+    proto = "wss" if ssl_cert else "ws"
+    console.print(f"[bold green]Starting SyncServer[/] on {proto}://{host}:{port}")
+    console.print(f"  README:          {readme}")
+    if ssl_cert:
+        console.print(f"  TLS cert:        {ssl_cert}")
+    if git_auto_commit:
+        console.print(f"  Git auto-commit: enabled")
     asyncio.run(srv.run())
 
 

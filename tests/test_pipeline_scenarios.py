@@ -36,7 +36,8 @@ from marksync.pipeline.api import (
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 def run(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
+    """Helper to run async coroutines in tests."""
+    return asyncio.run(coro)
 
 
 def approve_all_tasks(engine: PipelineEngine, wait: float = 0.15) -> int:

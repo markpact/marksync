@@ -1,3 +1,43 @@
+## [0.2.20] - 2026-02-18
+
+### Summary
+
+feat(docs): CLI interface improvements
+
+### Docs
+
+- docs: update README
+- docs: update TODO-v2-implementation.md
+- docs: update TODO.md
+
+### Test
+
+- update tests/test_dsl.py
+- update tests/test_pipeline.py
+- update tests/test_pipeline_scenarios.py
+- update tests/test_v2.py
+
+### Build
+
+- update pyproject.toml
+
+### Config
+
+- config: update goal.yaml
+
+### Other
+
+- update LICENSE
+- build: update Makefile
+- config: update agents.yml
+- scripts: update demo_scenario.sh
+- update marksync/cli.py
+- update marksync/sync/engine.py
+- update project.functions.toon
+- scripts: update project.sh
+- update project.toon-schema.json
+
+
 ## [0.2.19] - 2026-02-18
 
 ### Summary

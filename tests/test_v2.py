@@ -323,7 +323,7 @@ class TestConversationEngine:
 
     def test_process_message_no_llm(self):
         from marksync.conversation.engine import ConversationEngine
-        reply = asyncio.get_event_loop().run_until_complete(
+        reply = asyncio.run(
             ConversationEngine().process_message("hello", sender="human")
         )
         assert "[no LLM configured]" in reply
@@ -526,7 +526,7 @@ class TestDSLExecutorV2:
         self.executor = DSLExecutor()
 
     def _run(self, coro):
-        return asyncio.get_event_loop().run_until_complete(coro)
+        return asyncio.run(coro)
 
     def test_dashboard_command(self):
         result = self._run(self.executor.execute("DASHBOARD --port 9999"))
@@ -681,7 +681,7 @@ class TestPactownMonitorWatch:
     def test_watch_stops_after_n_checks(self):
         from marksync.agents import PactownMonitor, AgentConfig
         mon = PactownMonitor(AgentConfig(name="test-mon"), poll_interval=0.01)
-        results = asyncio.get_event_loop().run_until_complete(
+        results = asyncio.run(
             mon.watch(stop_after=1)
         )
         assert len(results) == 1
@@ -689,7 +689,7 @@ class TestPactownMonitorWatch:
     def test_watch_unknown_health_no_config(self):
         from marksync.agents import PactownMonitor, AgentConfig
         mon = PactownMonitor(AgentConfig(name="test-mon"), poll_interval=0.01)
-        results = asyncio.get_event_loop().run_until_complete(
+        results = asyncio.run(
             mon.watch(stop_after=1)
         )
         assert results[0]["health"] == "unknown"
@@ -699,7 +699,7 @@ class TestPactownMonitorWatch:
         from marksync.sync.crdt import CRDTDocument
         crdt = CRDTDocument()
         mon = PactownMonitor(AgentConfig(name="test-mon"), poll_interval=0.01)
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             mon.watch(crdt_doc=crdt, stop_after=1)
         )
         state_raw = crdt.get_block("markpact:state")
@@ -713,7 +713,7 @@ class TestPactownMonitorWatch:
         from marksync.sync.crdt import CRDTDocument
         crdt = CRDTDocument()
         mon = PactownMonitor(AgentConfig(name="test-mon"), poll_interval=0.01)
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             mon.watch(crdt_doc=crdt, stop_after=2)
         )
         log = crdt.get_block("markpact:log") or ""
@@ -728,7 +728,7 @@ class TestPactownMonitorWatch:
         import subprocess, types
         fake = types.SimpleNamespace(returncode=1, stdout="", stderr="err")
         monkeypatch.setattr(subprocess, "run", lambda *a, **kw: fake)
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             mon.watch(crdt_doc=crdt, stop_after=1)
         )
         hist = json.loads(crdt.get_block("markpact:history") or "[]")
@@ -746,7 +746,7 @@ class TestPactownMonitorWatch:
         mon._pactown_config_path = "/tmp/fake.yaml"
         fake = types.SimpleNamespace(returncode=1, stdout="", stderr="err")
         monkeypatch.setattr(subprocess, "run", lambda *a, **kw: fake)
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             mon.watch(crdt_doc=crdt, pipeline_engine=engine, stop_after=1)
         )
         log = crdt.get_block("markpact:log") or ""
@@ -794,7 +794,7 @@ class TestPipelineAutofix:
         from marksync.pipeline.engine import PipelineEngine
         engine = PipelineEngine()
         engine.register_autofix_pipeline()
-        run_id = asyncio.get_event_loop().run_until_complete(
+        run_id = asyncio.run(
             engine.start("pactown-autofix", input_data={
                 "health_status": {"health": "error"},
                 "config_path": "",
@@ -813,14 +813,14 @@ class TestPipelineAutofix:
 
         engine = PipelineEngine()
         engine.register_autofix_pipeline(restart_fn=my_restart)
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             engine.start("pactown-autofix", input_data={
                 "health_status": {"health": "error"},
                 "config_path": "/tmp/test.yaml",
                 "triggered_by": "test",
             })
         )
-        asyncio.get_event_loop().run_until_complete(asyncio.sleep(0.05))
+        asyncio.run(asyncio.sleep(0.05))
         assert len(calls) >= 1
 
     def test_diagnose_script_degraded(self):
@@ -828,7 +828,7 @@ class TestPipelineAutofix:
         engine = PipelineEngine()
         step = Step(name="diagnose", actor=ActorType.SCRIPT,
                     config={"script": "diagnose"})
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             engine._execute_script(step, {"health_status": {"health": "error"}})
         )
         assert result["health"] == "error"
@@ -839,7 +839,7 @@ class TestPipelineAutofix:
         engine = PipelineEngine()
         step = Step(name="diagnose", actor=ActorType.SCRIPT,
                     config={"script": "diagnose"})
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             engine._execute_script(step, {"health_status": {"health": "ok"}})
         )
         assert result["health"] == "ok"
@@ -850,7 +850,7 @@ class TestPipelineAutofix:
         engine = PipelineEngine()
         step = Step(name="pactown-restart", actor=ActorType.SCRIPT,
                     config={"script": "pactown_restart"})
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             engine._execute_script(step, {"config_path": ""})
         )
         assert result["script_status"] == "fail"
@@ -860,7 +860,7 @@ class TestPipelineAutofix:
         engine = PipelineEngine()
         step = Step(name="pactown-restart", actor=ActorType.SCRIPT,
                     config={"script": "pactown_restart"})
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             engine._execute_script(step, {"config_path": "/tmp/test.pactown.yaml"})
         )
         assert result["script_status"] in ("skipped", "fail", "pass")
@@ -873,7 +873,7 @@ class TestTriggerAutofix:
         from marksync.pipeline.engine import PipelineEngine
         mon = PactownMonitor(AgentConfig(name="mon"), poll_interval=0.01)
         engine = PipelineEngine()
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             mon._trigger_autofix(engine, {"health": "error"})
         )
         assert result is None
@@ -884,7 +884,7 @@ class TestTriggerAutofix:
         mon = PactownMonitor(AgentConfig(name="mon"), poll_interval=0.01)
         engine = PipelineEngine()
         engine.register_autofix_pipeline()
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             mon._trigger_autofix(engine, {"health": "error"})
         )
         assert result is not None
@@ -898,7 +898,7 @@ class TestTriggerAutofix:
         mon = PactownMonitor(AgentConfig(name="mon"), poll_interval=0.01)
         engine = PipelineEngine()
         engine.register_autofix_pipeline()
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             mon._trigger_autofix(engine, {"health": "error"}, crdt_doc=crdt)
         )
         log = crdt.get_block("markpact:log") or ""

@@ -17,7 +17,8 @@ from marksync.pipeline.engine import (
 # ── Helpers ───────────────────────────────────────────────────────────────
 
 def run(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
+    """Helper to run async coroutines in tests."""
+    return asyncio.run(coro)
 
 
 # ── Step model ────────────────────────────────────────────────────────────
