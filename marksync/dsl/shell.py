@@ -11,6 +11,7 @@ import asyncio
 import json
 import logging
 import sys
+from pathlib import Path
 
 from rich.console import Console
 from rich.panel import Panel
@@ -24,6 +25,53 @@ from marksync.dsl.parser import CommandType
 log = logging.getLogger("marksync.shell")
 console = Console()
 
+_HISTORY_FILE = Path.home() / ".marksync_history"
+_COMPLETIONS = [
+    "AGENT", "KILL", "LIST", "PIPE", "SEND", "SET", "STATUS",
+    "DEPLOY", "SYNC", "ROUTE", "LOG", "HELP", "CONNECT",
+    "DISCONNECT", "LOAD", "SAVE", "CREATE", "DASHBOARD",
+    "LEARN", "PATTERNS",
+    "--model", "--tail", "--server", "--ollama",
+    "editor", "reviewer", "deployer", "monitor",
+]
+
+
+def _setup_readline(executor: DSLExecutor | None = None) -> bool:
+    """Configure readline with tab completion and persistent history. Returns True on success."""
+    try:
+        import readline
+        import rlcompleter  # noqa: F401
+
+        def _complete(text: str, state: int):
+            options = []
+            text_upper = text.upper()
+            for item in _COMPLETIONS:
+                if item.upper().startswith(text_upper):
+                    options.append(item)
+            # Also complete known agent names from executor
+            if executor:
+                for name in executor.agents:
+                    if name.startswith(text):
+                        options.append(name)
+            try:
+                return options[state]
+            except IndexError:
+                return None
+
+        readline.set_completer(_complete)
+        readline.parse_and_bind("tab: complete")
+        readline.set_completer_delims(" \t\n")
+
+        if _HISTORY_FILE.exists():
+            readline.read_history_file(str(_HISTORY_FILE))
+        readline.set_history_length(500)
+
+        import atexit
+        atexit.register(lambda: readline.write_history_file(str(_HISTORY_FILE)))
+        return True
+    except (ImportError, Exception):
+        return False
+
 BANNER = r"""
   ╔══════════════════════════════════════════════╗
   ║          [bold cyan]marksync[/] DSL Shell               ║
@@ -36,20 +84,24 @@ PROMPT = "[bold cyan]marksync>[/] "
 
 
 class DSLShell:
-    """Interactive DSL shell with rich output."""
+    """Interactive DSL shell with rich output, readline tab completion, and persistent history."""
 
     def __init__(self, executor: DSLExecutor | None = None, **kw):
         self.executor = executor or DSLExecutor(**kw)
         self._running = False
+        self._readline_ok = False
 
     async def run(self):
         """Start the interactive REPL."""
         self._running = True
+        self._readline_ok = _setup_readline(self.executor)
         console.print(BANNER)
+        if self._readline_ok:
+            console.print(f"  [dim]History: {_HISTORY_FILE}  |  Tab completion: enabled[/]\n")
 
         while self._running:
             try:
-                line = console.input(PROMPT).strip()
+                line = self._prompt()
             except (EOFError, KeyboardInterrupt):
                 console.print("\n[dim]Goodbye.[/]")
                 break
@@ -63,6 +115,15 @@ class DSLShell:
 
             result = await self.executor.execute(line)
             self._render(result)
+
+    def _prompt(self) -> str:
+        """Read a line from stdin using readline if available, else Rich console.input."""
+        if self._readline_ok:
+            try:
+                return input("marksync> ").strip()
+            except EOFError:
+                raise
+        return console.input(PROMPT).strip()
 
     def _render(self, result: dict):
         """Render a command result with rich formatting."""

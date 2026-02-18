@@ -10,7 +10,7 @@ Usage:
     marksync agent --role editor --name "agent-1"
 """
 
-__version__ = "0.2.15"
+__version__ = "0.2.18"
 
 __all__ = [
     "SyncServer", "SyncClient", "CRDTDocument",

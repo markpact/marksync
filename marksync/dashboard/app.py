@@ -70,12 +70,13 @@ class CreateContractRequest(BaseModel):
 
 # ── Factory ───────────────────────────────────────────────────────────────
 
-def create_dashboard_app() -> FastAPI:
+def create_dashboard_app(contract_path: str = "README.md") -> FastAPI:
     app = FastAPI(
         title="marksync Dashboard",
         description="Graphical dashboard for Markpact contract lifecycle management",
         version="0.2.0",
     )
+    app.state.contract_path = contract_path
 
     app.add_middleware(
         CORSMiddleware,
@@ -110,9 +111,14 @@ def create_dashboard_app() -> FastAPI:
 
     # ── UI ─────────────────────────────────────────────────────────────
 
+    @app.get("/api/config")
+    def get_config():
+        """Return server-side configuration (e.g. initial contract path)."""
+        return {"contract_path": app.state.contract_path}
+
     @app.get("/", response_class=HTMLResponse)
     def index():
-        return _render_html()
+        return _render_html(app.state.contract_path)
 
     # ── SSE — live block change stream ────────────────────────────────
 
@@ -509,9 +515,10 @@ def create_dashboard_app() -> FastAPI:
 
 # ── HTML SPA ──────────────────────────────────────────────────────────────
 
-def _render_html() -> str:
+def _render_html(contract_path: str = "README.md") -> str:
     from marksync.dashboard.html import DASHBOARD_HTML
-    return DASHBOARD_HTML
+    safe = contract_path.replace("\\", "\\\\").replace("'", "\\'")
+    return DASHBOARD_HTML.replace("__INITIAL_CONTRACT_PATH__", safe)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────

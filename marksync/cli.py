@@ -912,7 +912,12 @@ def create(prompt, output, no_llm, deploy, open_dashboard, env):
             if result_deploy.get("status") == "deployed":
                 console.print(f"  → [green]Deployed![/] config: {result_deploy.get('config')}")
             else:
-                console.print(f"  → [yellow]{result_deploy.get('status')}:[/] {result_deploy.get('error', '')}")
+                _msg = (
+                    result_deploy.get("error")
+                    or (result_deploy.get("output") or "")[:200]
+                    or f"rc={result_deploy.get('returncode', '?')}"
+                )
+                console.print(f"  → [yellow]{result_deploy.get('status')}:[/] {_msg}")
         except Exception as e:
             console.print(f"  → [yellow]Deploy skipped:[/] {e}")
     else:
@@ -1015,7 +1020,7 @@ def dashboard_cmd(host, port, contract, sync_server):
     _host = host or settings.DASHBOARD_HOST
     _port = port or settings.DASHBOARD_PORT
 
-    app = create_dashboard_app()
+    app = create_dashboard_app(contract_path=contract or settings.PROJECT_README)
 
     console.print(f"\n[bold green]Starting Dashboard[/] on http://{_host}:{_port}")
     console.print(f"  Contract:    {contract or settings.PROJECT_README}")

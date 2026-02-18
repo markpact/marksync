@@ -1,3 +1,52 @@
+## [0.2.18] - 2026-02-18
+
+### Summary
+
+feat(docs): CLI interface improvements
+
+### Docs
+
+- docs: update README
+
+### Build
+
+- update pyproject.toml
+
+### Other
+
+- update .gitignore
+- update marksync/cli.py
+- update marksync/dashboard/app.py
+- update marksync/dashboard/html.py
+- update marksync/dsl/shell.py
+
+
+## [0.2.17] - 2026-02-18
+
+### Summary
+
+fix(dashboard): contract path wired from --contract arg; fix deploy error message
+
+### Bug Fixes
+
+- `cli.py` — deploy step showed empty error message: `result.get('error')` was always empty on non-zero exit because the return dict uses key `output`, not `error`; now falls back to `output[:200]` then `rc=N`
+- `dashboard/app.py` — `create_dashboard_app()` now accepts `contract_path` arg; stored in `app.state`; exposed via `GET /api/config`; injected into HTML as `__INITIAL_CONTRACT_PATH__` placeholder
+- `dashboard/html.py` — `App` component initial `contractPath` state now uses server-injected value instead of hardcoded `'README.md'`; `ContractPanel` syncs local path state when prop changes via `useEffect`
+- `.gitignore` — added `build-*/` pattern to catch `build-web-dashboard/` and similar generated dirs
+- `cli.py` — `dashboard_cmd` now passes `contract or settings.PROJECT_README` to `create_dashboard_app()`
+
+### Test
+
+- Full suite: 274 passed, 7 skipped
+
+### Other
+
+- update marksync/cli.py
+- update marksync/dashboard/app.py
+- update marksync/dashboard/html.py
+- update .gitignore
+
+
 ## [0.2.16] - 2026-02-18
 
 ### Summary

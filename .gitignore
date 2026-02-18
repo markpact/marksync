@@ -229,6 +229,7 @@ examples/output/
 *-cli/
 *-worker/
 *-test/
+build-*/
 cli-test/
 test-api/
 rest-api-test/

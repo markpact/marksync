@@ -118,6 +118,7 @@ function ContractPanel({contractPath}) {
     try { setContract(await api.get('/api/contract?path='+encodeURIComponent(path))); }
     catch(e){} finally { setLoading(false); }
   }
+  useEffect(()=>{ if(contractPath) setPath(contractPath); },[contractPath]);
   useEffect(()=>{load();},[path]);
   return html`<div>
     <div style="display:flex;gap:8px;margin-bottom:16px;">
@@ -342,7 +343,7 @@ function CreatePanel({onCreated}) {
 
 function App() {
   const [tab, setTab] = useState('contract');
-  const [contractPath, setContractPath] = useState('README.md');
+  const [contractPath, setContractPath] = useState('__INITIAL_CONTRACT_PATH__');
   const [liveEvents, setLiveEvents] = useState(0);
   const [syncOk, setSyncOk] = useState(false);
 
