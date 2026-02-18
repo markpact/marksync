@@ -1,3 +1,19 @@
+## [0.2.10] - 2026-02-18
+
+### Summary
+
+feat(docs): deep code analysis engine with 5 supporting modules
+
+### Docs
+
+- docs: update comparison.md
+
+### Other
+
+- update project.functions.toon
+- update project.toon
+
+
 ## [0.2.9] - 2026-02-18
 
 ### Summary

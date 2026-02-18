@@ -1,12 +1,14 @@
 project: marksync
-generated: "2026-02-18T19:35:25.194063"
-modules[20]{path,lang,items}:
+generated: "2026-02-18T21:23:10.340116"
+modules[28]{path,lang,items}:
   tests/test_settings.py,python,13
   tests/test_orchestrator.py,python,24
+  tests/test_pipeline_scenarios.py,python,32
   tests/test_dsl.py,python,38
   tests/test_marksync.py,python,2
   tests/test_examples.py,python,24
-  marksync/cli.py,python,9
+  tests/test_pipeline.py,python,24
+  marksync/cli.py,python,10
   marksync/__init__.py,python,0
   marksync/orchestrator.py,python,12
   marksync/settings.py,python,9
@@ -14,6 +16,12 @@ modules[20]{path,lang,items}:
   marksync/sync/crdt.py,python,10
   marksync/sync/__init__.py,python,5
   marksync/transport/__init__.py,python,0
+  marksync/sandbox/app.py,python,2
+  marksync/sandbox/__init__.py,python,0
+  marksync/sandbox/html.py,python,0
+  marksync/pipeline/engine.py,python,25
+  marksync/pipeline/__init__.py,python,0
+  marksync/pipeline/api.py,python,8
   marksync/agents/base.py,python,0
   marksync/agents/__init__.py,python,18
   marksync/dsl/__init__.py,python,0
@@ -43,27 +51,61 @@ function_details:
       TestPlanParsing.test_load_root_agents_yml,method,(),26-33,false,8,1,checks load root agents yml
       TestPlanParsing.test_agent_roles,method,(),35-41,false,7,2,checks agent roles
       TestPlanParsing.test_agent_auto_edit,method,(),43-48,false,6,5,checks agent auto edit
-      TestPlanParsing.test_pipelines,method,(),50-55,false,6,2,checks pipelines
-      TestPlanParsing.test_pipeline_stages,method,(),57-60,false,4,3,checks pipeline stages
-      TestPlanParsing.test_routes,method,(),62-68,false,7,2,checks routes
-      TestPlanParsing.test_file_not_found,method,(),70-72,false,3,1,checks file not found
-      TestFromDict.test_minimal,method,(),77-83,false,7,1,checks minimal
-      TestFromDict.test_empty_agents,method,(),85-87,false,3,1,checks empty agents
-      TestFromDict.test_none_values,method,(),89-96,false,8,1,checks none values
-      TestPlanFiltering.test_filter_role,method,(),103-107,false,5,1,checks filter role
-      TestPlanFiltering.test_filter_keeps_relevant_pipelines,method,(),109-113,false,5,1,checks filter keeps relevant pipelines
-      TestPlanFiltering.test_filter_keeps_relevant_routes,method,(),115-119,false,5,1,checks filter keeps relevant routes
-      TestPlanFiltering.test_filter_nonexistent_role,method,(),121-124,false,4,1,checks filter nonexistent role
-      TestDSLGeneration.test_to_dsl_agents,method,(),131-137,false,7,5,checks to dsl agents
-      TestDSLGeneration.test_to_dsl_pipelines,method,(),139-144,false,6,4,checks to dsl pipelines
-      TestDSLGeneration.test_to_dsl_routes,method,(),146-150,false,5,3,checks to dsl routes
-      TestDSLGeneration.test_to_msdsl_string,method,(),152-157,false,6,1,checks to msdsl string
-      TestDSLGeneration.test_to_msdsl_file,method,(tmp_path),159-166,false,8,1,checks to msdsl file
-      TestDSLGeneration.test_summary,method,(),168-173,false,6,1,checks summary
-      TestExampleConfigs.test_example_1,method,(),180-184,false,5,1,checks example 1
-      TestExampleConfigs.test_example_2,method,(),186-190,false,5,1,checks example 2
-      TestExampleConfigs.test_example_3,method,(),192-196,false,5,1,checks example 3
-      TestExampleConfigs.test_all_examples_generate_valid_dsl,method,(),198-204,false,7,3,checks all examples generate valid dsl
+      TestPlanParsing.test_pipelines,method,(),50-60,false,11,2,checks pipelines
+      TestPlanParsing.test_pipeline_stages,method,(),62-65,false,4,3,checks pipeline stages
+      TestPlanParsing.test_routes,method,(),67-73,false,7,2,checks routes
+      TestPlanParsing.test_file_not_found,method,(),75-77,false,3,1,checks file not found
+      TestFromDict.test_minimal,method,(),82-88,false,7,1,checks minimal
+      TestFromDict.test_empty_agents,method,(),90-92,false,3,1,checks empty agents
+      TestFromDict.test_none_values,method,(),94-101,false,8,1,checks none values
+      TestPlanFiltering.test_filter_role,method,(),108-112,false,5,1,checks filter role
+      TestPlanFiltering.test_filter_keeps_relevant_pipelines,method,(),114-118,false,5,1,checks filter keeps relevant pipelines
+      TestPlanFiltering.test_filter_keeps_relevant_routes,method,(),120-124,false,5,1,checks filter keeps relevant routes
+      TestPlanFiltering.test_filter_nonexistent_role,method,(),126-129,false,4,1,checks filter nonexistent role
+      TestDSLGeneration.test_to_dsl_agents,method,(),136-142,false,7,5,checks to dsl agents
+      TestDSLGeneration.test_to_dsl_pipelines,method,(),144-149,false,6,4,checks to dsl pipelines
+      TestDSLGeneration.test_to_dsl_routes,method,(),151-155,false,5,3,checks to dsl routes
+      TestDSLGeneration.test_to_msdsl_string,method,(),157-162,false,6,1,checks to msdsl string
+      TestDSLGeneration.test_to_msdsl_file,method,(tmp_path),164-171,false,8,1,checks to msdsl file
+      TestDSLGeneration.test_summary,method,(),173-178,false,6,1,checks summary
+      TestExampleConfigs.test_example_1,method,(),185-189,false,5,1,checks example 1
+      TestExampleConfigs.test_example_2,method,(),191-195,false,5,1,checks example 2
+      TestExampleConfigs.test_example_3,method,(),197-201,false,5,1,checks example 3
+      TestExampleConfigs.test_all_examples_generate_valid_dsl,method,(),203-209,false,7,3,checks all examples generate valid dsl
+  tests/test_pipeline_scenarios.py:
+    functions[32]{name,kind,sig,loc,async,lines,cc,does}:
+      run,function,(coro),38-39,false,2,1,starts
+      approve_all_tasks,function,"(engine:PipelineEngine, wait:float=0.15) -> int",42-48,false,7,2,Approve every pending human task.
+      resolve_run_fully,function,"(engine:PipelineEngine, run_id:str, max_rounds:int=10, wait:float=0.15) -> str",51-62,false,12,6,Keep approving tasks until the run is no longer blocked.
+      TestCodeReviewScenario.test_starts_successfully,method,(),68-72,false,5,1,checks starts successfully
+      TestCodeReviewScenario.test_step_sequence,method,(),74-94,false,21,1,checks step sequence
+      TestCodeReviewScenario.test_rejected_by_human_stops_pipeline,method,(),96-113,false,18,1,checks rejected by human stops pipeline
+      TestCodeReviewScenario.test_actor_types_in_results,method,(),115-124,false,10,2,checks actor types in results
+      TestAccountCreationScenario.test_starts_successfully,method,(),130-134,false,5,1,checks starts successfully
+      TestAccountCreationScenario.test_two_human_steps,method,(),136-156,false,21,3,checks two human steps
+      TestAccountCreationScenario.test_human_input_task_type,method,(),158-173,false,16,1,checks human input task type
+      TestPaymentScenario.test_starts_successfully,method,(),179-183,false,5,1,checks starts successfully
+      TestPaymentScenario.test_full_approval_flow,method,(),185-201,false,17,1,checks full approval flow
+      TestPaymentScenario.test_payment_blocked_on_authorization,method,(),203-211,false,9,2,checks payment blocked on authorization
+      TestDocGenerationScenario.test_starts_successfully,method,(),217-221,false,5,1,checks starts successfully
+      TestDocGenerationScenario.test_five_steps_in_sequence,method,(),223-241,false,19,1,checks five steps in sequence
+      TestDocGenerationScenario.test_actor_order_script_llm_human_llm_script,method,(),243-261,false,19,2,checks actor order script llm human llm script
+      TestDocGenerationScenario.test_human_can_reject_docs,method,(),263-278,false,16,3,checks human can reject docs
+      TestIncidentResponseScenario.test_starts_successfully,method,(),284-288,false,5,1,checks starts successfully
+      TestIncidentResponseScenario.test_full_resolution_flow,method,(),290-311,false,22,1,checks full resolution flow
+      TestIncidentResponseScenario.test_acknowledges_before_llm_analysis,method,(),313-328,false,16,1,Human must acknowledge before LLM can analyse — strict ordering.
+      TestContentModerationScenario.test_starts_successfully,method,(),334-338,false,5,1,checks starts successfully
+      TestContentModerationScenario.test_full_moderation_flow,method,(),340-356,false,17,1,checks full moderation flow
+      TestContentModerationScenario.test_llm_first_then_human,method,(),358-376,false,19,1,"LLM scans first (auto), human only decides on borderline."
+      TestContentModerationScenario.test_human_decision_carries_forward,method,(),378-396,false,19,1,Human's input data should be available to enforce-decision step.
+      TestDataMigrationScenario.test_starts_successfully,method,(),402-406,false,5,1,checks starts successfully
+      TestDataMigrationScenario.test_five_steps_two_human_gates,method,(),408-433,false,26,3,checks five steps two human gates
+      TestDataMigrationScenario.test_migration_blocked_at_spot_check,method,(),435-445,false,11,4,checks migration blocked at spot check
+      TestDataMigrationScenario.test_full_yaml_pipeline_loads,method,(),447-457,false,11,2,Confirm the agents.yml data-migration pipeline loads correctly.
+      TestAllScenariosIntegration.test_all_seven_scenarios_start,method,(),463-480,false,18,2,"Smoke test: every scenario starts without raising."
+      TestAllScenariosIntegration.test_all_complete_after_approving_all_tasks,method,(),482-513,false,32,7,Each scenario completes when all human tasks are approved.
+      TestAllScenariosIntegration.test_agents_yml_has_all_seven_pipelines,method,(),515-525,false,11,1,checks agents yml has all seven pipelines
+      TestAllScenariosIntegration.test_mixed_actor_scenarios_contain_all_three_types,method,(),527-538,false,12,3,"doc-generation, incident-response, data-migration all use LLM+SCRIPT+HUMAN."
   tests/test_dsl.py:
     functions[38]{name,kind,sig,loc,async,lines,cc,does}:
       TestDSLParser.setup_method,method,(),14-15,false,2,1,initializes method
@@ -134,8 +176,34 @@ function_details:
       TestExample3.test_has_cli,method,(),132-135,false,4,3,checks has cli
       TestExample3.test_has_sample_csv,method,(),137-140,false,4,3,checks has sample csv
       TestExample3.test_has_run_block,method,(),142-145,false,4,3,checks has run block
+  tests/test_pipeline.py:
+    functions[24]{name,kind,sig,loc,async,lines,cc,does}:
+      run,function,(coro),19-20,false,2,1,starts
+      TestStep.test_to_dict,method,(),26-31,false,6,1,checks to dict
+      TestStep.test_defaults,method,(),33-37,false,5,1,checks defaults
+      TestDefinition.test_define,method,(),43-50,false,8,1,checks define
+      TestDefinition.test_define_from_yaml_steps,method,(),52-68,false,17,1,checks define from yaml steps
+      TestDefinition.test_define_from_yaml_legacy_stages,method,(),70-78,false,9,2,checks define from yaml legacy stages
+      TestDefinition.test_list_definitions,method,(),80-86,false,7,1,checks list definitions
+      TestScriptExecution.test_run_script_only_pipeline,method,(),92-106,false,15,1,checks run script only pipeline
+      TestScriptExecution.test_custom_script,method,(),108-122,false,15,1,checks custom script
+      TestScriptExecution.test_builtin_lint_pass,method,(),124-132,false,9,1,checks builtin lint pass
+      TestScriptExecution.test_builtin_lint_fail,method,(),134-142,false,9,1,checks builtin lint fail
+      TestLLMExecution.test_simulated_llm,method,(),148-157,false,10,1,checks simulated llm
+      TestLLMExecution.test_custom_llm_handler,method,(),159-172,false,14,1,checks custom llm handler
+      TestHumanInTheLoop.test_human_step_creates_task,method,(),178-199,false,22,1,checks human step creates task
+      TestHumanInTheLoop.test_approve_unblocks_pipeline,method,(),201-222,false,22,1,checks approve unblocks pipeline
+      TestHumanInTheLoop.test_reject_stops_pipeline,method,(),224-242,false,19,1,checks reject stops pipeline
+      TestHumanInTheLoop.test_resolve_nonexistent_task,method,(),244-247,false,4,1,checks resolve nonexistent task
+      TestHumanInTheLoop.test_resolve_already_resolved,method,(),249-262,false,14,1,checks resolve already resolved
+      TestMixedPipeline.test_llm_human_script_flow,method,(),268-295,false,28,1,"Full flow: LLM → Human → Script."
+      TestMixedPipeline.test_multiple_human_steps,method,(),297-324,false,28,1,Pipeline with 2 human checkpoints.
+      TestSnapshot.test_snapshot,method,(),330-336,false,7,1,checks snapshot
+      TestSnapshot.test_list_runs_empty,method,(),338-340,false,3,1,checks list runs empty
+      TestEvents.test_event_emitted_on_start,method,(),346-353,false,8,1,checks event emitted on start
+      TestEvents.test_event_emitted_on_human_task,method,(),355-363,false,9,1,checks event emitted on human task
   marksync/cli.py:
-    functions[9]{name,kind,sig,loc,async,lines,cc,does}:
+    functions[10]{name,kind,sig,loc,async,lines,cc,does}:
       _setup_logging,function,"(verbose:bool=False)",26-31,false,6,2,initializes logging
       main,function,(verbose),36-38,false,3,1,marksync — Multi-agent collaborative editing for Markpact projects.
       server,function,"(readme, host, port)",45-52,false,8,1,Start the sync server.
@@ -145,6 +213,7 @@ function_details:
       shell,function,"(server_uri, ollama_url, script)",129-145,false,17,4,Interactive DSL shell for agent orchestration.
       orchestrate,function,"(config, role, server_uri, ollama_url, model, dry_run, export_dsl)",156-184,false,29,5,Orchestrate all agents from agents.yml (replaces N containers with 1).
       api,function,"(host, port, server_uri, ollama_url)",192-205,false,14,1,Start the REST/WS API server for DSL remote control.
+      sandbox,function,"(host, port)",211-220,false,10,1,"Start the web sandbox for testing examples (edit, run, orchestrate)."
   marksync/orchestrator.py:
     functions[12]{name,kind,sig,loc,async,lines,cc,does}:
       OrchestrationPlan.agent_names,method,"() -> list[str]",68-69,false,2,2,agent names
@@ -207,6 +276,47 @@ function_details:
       BlockParser._make_id,method,"(kind:str, meta:str) -> str",82-88,false,7,3,creates id
       BlockParser.rebuild_markdown,method,"(original:str, blocks:dict[str,str]) -> str",91-106,false,16,6,Replace block contents in original markdown with updated versions.
       BlockParser.manifest,method,"(blocks:list[MarkpactBlock]) -> dict[str, str]",109-111,false,3,2,block_id -> sha256 map for delta detection.
+  marksync/sandbox/app.py:
+    functions[2]{name,kind,sig,loc,async,lines,cc,does}:
+      create_sandbox_app,function,() -> FastAPI,68-304,false,237,1,creates sandbox app
+      _render_html,function,() -> str,309-311,false,3,1,formats html
+  marksync/pipeline/engine.py:
+    functions[25]{name,kind,sig,loc,async,lines,cc,does}:
+      Step.to_dict,method,() -> dict,72-79,false,8,1,converts dict
+      StepResult.duration_ms,method,() -> float,96-99,false,4,3,duration ms
+      StepResult.to_dict,method,() -> dict,101-111,false,11,2,converts dict
+      HumanTask.to_dict,method,() -> dict,139-154,false,16,4,converts dict
+      PipelineRun.current_step_name,method,() -> str,171-174,false,4,2,current step name
+      PipelineRun.to_dict,method,() -> dict,176-188,false,13,4,converts dict
+      PipelineEngine.__init__,method,(),205-214,false,10,1,creates
+      PipelineEngine.define,method,"(name:str, steps:list[Step])",218-221,false,4,1,Define a named pipeline.
+      PipelineEngine.define_from_yaml,method,"(pipeline_cfg:dict)",223-263,false,41,7,Define pipelines from YAML config (extended agents.yml format).
+      PipelineEngine.register_script,method,"(name:str, fn:Callable)",267-269,false,3,1,Register a script/algorithm handler.
+      PipelineEngine.set_llm_handler,method,"(handler:Callable)",271-273,false,3,1,"Set the LLM handler: async fn(step, input_data) -> output_data."
+      PipelineEngine.start,method,"(pipeline_name:str, input_data:Any=None) -> str",277-302,true,26,3,Start a pipeline run.
+      PipelineEngine._execute_run,method,"(run:PipelineRun)",304-383,true,80,12,Execute all steps in sequence.
+      PipelineEngine._execute_llm,method,"(step:Step, data:dict[str,Any]) -> dict[str, Any]",387-401,true,15,2,Execute an LLM step via the registered handler or simulation.
+      PipelineEngine._execute_script,method,"(step:Step, data:dict[str,Any]) -> dict[str, Any]",403-420,true,18,4,Execute a script/algorithm step.
+      PipelineEngine._execute_human,method,"(step:Step, data:dict[str,Any], run_id:str) -> dict[str, Any]",422-457,true,36,5,Create a HumanTask and wait for resolution via API endpoint.
+      PipelineEngine.resolve_task,method,"(task_id:str, action:str, response:Any=None, resolved_by:str='anonymous') -> HumanTask",459-496,false,38,7,Resolve a human task — called from API endpoint.
+      PipelineEngine._register_builtins,method,(),500-546,false,47,1,Register built-in script actors.
+      PipelineEngine.get_run,method,"(run_id:str) -> PipelineRun | None",550-551,false,2,1,retrieves run
+      PipelineEngine.get_pending_tasks,method,"() -> list[HumanTask]",553-554,false,2,3,retrieves pending tasks
+      PipelineEngine.list_definitions,method,"() -> dict[str, list[dict]]",556-558,false,3,3,list definitions
+      PipelineEngine.list_runs,method,"() -> list[dict]",560-561,false,2,2,list runs
+      PipelineEngine.snapshot,method,() -> dict,563-568,false,6,2,snapshot
+      PipelineEngine.on,method,"(event:str, handler:Callable)",572-573,false,2,1,handles
+      PipelineEngine._emit,method,"(event:str, data:Any=None)",575-580,false,6,3,sends
+  marksync/pipeline/api.py:
+    functions[8]{name,kind,sig,loc,async,lines,cc,does}:
+      create_pipeline_router,function,"(engine:PipelineEngine) -> APIRouter",43-173,false,131,1,creates pipeline router
+      _demo_code_review,function,"(engine:PipelineEngine) -> dict",178-213,true,36,1,"Demo: LLM edit → Human review → Lint → Deploy"
+      _demo_account_creation,function,"(engine:PipelineEngine) -> dict",216-254,true,39,1,"Demo: Validate request → Human provides details → Create account → Human confirm..."
+      _demo_payment,function,"(engine:PipelineEngine) -> dict",257-295,true,39,1,"Demo: Fraud check → Human authorize → Process payment → Human confirm receipt..."
+      _demo_doc_generation,function,"(engine:PipelineEngine) -> dict",298-339,true,42,1,"Demo: Script scrapes code → LLM writes docs → Human reviews → LLM refines → Scri..."
+      _demo_incident_response,function,"(engine:PipelineEngine) -> dict",342-385,true,44,1,"Demo: Script detects → Human acknowledges → LLM analyses → Human resolves → Scri..."
+      _demo_content_moderation,function,"(engine:PipelineEngine) -> dict",388-425,true,38,1,"Demo: LLM scans content → Script scores risk → Human decides borderline → Script..."
+      _demo_data_migration,function,"(engine:PipelineEngine) -> dict",428-472,true,45,1,"Demo: Script validates schema → LLM transforms → Human spot-checks → Script migr..."
   marksync/agents/__init__.py:
     functions[18]{name,kind,sig,loc,async,lines,cc,does}:
       _signal,function,"(type:str) -> str",26-27,false,2,1,signal
