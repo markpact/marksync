@@ -223,6 +223,16 @@ __marimo__/
 generated/
 examples/output/
 
+# marksync create — generated project dirs in workspace root
+*-api/
+*-app/
+*-cli/
+*-worker/
+*-test/
+cli-test/
+test-api/
+rest-api-test/
+
 # Generated test artifacts and local data
 # (avoid adding rapidly changing files created by test/e2e scripts)
 frontend/tests/all-pages-documentation.md
