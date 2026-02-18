@@ -1,3 +1,19 @@
+## [0.2.23] - 2026-02-19
+
+### Summary
+
+feat(examples): configuration management system
+
+### Other
+
+- scripts: update demo_browser.sh
+- scripts: update demo_contract.sh
+- scripts: update demo_integrations.sh
+- scripts: update demo_slides.sh
+- scripts: update run.sh
+- update project.functions.toon
+
+
 ## [0.2.22] - 2026-02-18
 
 ### Summary

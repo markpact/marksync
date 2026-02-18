@@ -1,17 +1,18 @@
 project: marksync
-generated: "2026-02-18T23:01:59.671741"
-modules[89]{path,lang,items}:
+generated: "2026-02-19T00:22:14.720667"
+modules[95]{path,lang,items}:
   examples/bpmn_multiagent.py,python,6
   tests/test_settings.py,python,13
   tests/test_orchestrator.py,python,24
+  tests/conftest.py,python,1
   tests/test_hardware_detect.py,python,30
   tests/test_pipeline_scenarios.py,python,32
   tests/test_dsl.py,python,38
   tests/test_marksync.py,python,2
-  tests/test_v2.py,python,77
+  tests/test_v2.py,python,101
   tests/test_examples.py,python,24
   tests/test_pipeline.py,python,24
-  marksync/cli.py,python,24
+  marksync/cli.py,python,26
   marksync/__init__.py,python,1
   marksync/orchestrator.py,python,12
   marksync/hardware_detect.py,python,9
@@ -19,15 +20,16 @@ modules[89]{path,lang,items}:
   marksync/dashboard/app.py,python,6
   marksync/dashboard/__init__.py,python,0
   marksync/dashboard/html.py,python,0
-  marksync/sync/engine.py,python,16
-  marksync/sync/crdt.py,python,10
+  marksync/sync/snapshots.py,python,8
+  marksync/sync/engine.py,python,32
+  marksync/sync/crdt.py,python,17
   marksync/sync/__init__.py,python,5
-  marksync/transport/__init__.py,python,0
+  marksync/transport/__init__.py,python,18
   marksync/intent/__init__.py,python,0
   marksync/intent/parser.py,python,11
   marksync/intent/yaml_generator.py,python,4
   marksync/plugins/base.py,python,32
-  marksync/plugins/registry.py,python,10
+  marksync/plugins/registry.py,python,11
   marksync/plugins/__init__.py,python,0
   marksync/conversation/engine.py,python,9
   marksync/conversation/__init__.py,python,0
@@ -35,25 +37,29 @@ modules[89]{path,lang,items}:
   marksync/learning/feedback.py,python,5
   marksync/learning/prompt_refiner.py,python,7
   marksync/learning/patterns.py,python,13
-  marksync/contract/block_types.py,python,2
+  marksync/contract/block_types.py,python,4
   marksync/contract/generator.py,python,7
   marksync/contract/__init__.py,python,0
   marksync/contract/templates.py,python,7
   marksync/sandbox/app.py,python,2
   marksync/sandbox/__init__.py,python,0
   marksync/sandbox/html.py,python,0
-  marksync/pipeline/engine.py,python,25
+  marksync/auth/__init__.py,python,0
+  marksync/auth/middleware.py,python,5
+  marksync/auth/tokens.py,python,9
+  marksync/auth/roles.py,python,2
+  marksync/pipeline/engine.py,python,34
   marksync/pipeline/prompt_generator.py,python,8
   marksync/pipeline/__init__.py,python,0
   marksync/pipeline/llm_client.py,python,8
   marksync/pipeline/api.py,python,8
   marksync/agents/base.py,python,0
-  marksync/agents/__init__.py,python,25
+  marksync/agents/__init__.py,python,34
   marksync/dsl/__init__.py,python,0
-  marksync/dsl/parser.py,python,8
+  marksync/dsl/parser.py,python,11
   marksync/dsl/api.py,python,2
-  marksync/dsl/executor.py,python,31
-  marksync/dsl/shell.py,python,12
+  marksync/dsl/executor.py,python,38
+  marksync/dsl/shell.py,python,14
   marksync/plugins/channels/sse.py,python,10
   marksync/plugins/channels/websocket.py,python,9
   marksync/plugins/channels/nats.py,python,9
@@ -77,7 +83,7 @@ modules[89]{path,lang,items}:
   marksync/plugins/integrations/__init__.py,python,0
   marksync/plugins/integrations/kubernetes.py,python,3
   marksync/plugins/integrations/gitlab.py,python,3
-  marksync/plugins/integrations/pactown.py,python,8
+  marksync/plugins/integrations/pactown.py,python,9
   marksync/plugins/integrations/n8n.py,python,3
   marksync/plugins/integrations/ansible.py,python,3
   marksync/plugins/integrations/github.py,python,3
@@ -141,6 +147,9 @@ function_details:
       TestExampleConfigs.test_example_2,method,(),191-195,false,5,1,checks example 2
       TestExampleConfigs.test_example_3,method,(),197-201,false,5,1,checks example 3
       TestExampleConfigs.test_all_examples_generate_valid_dsl,method,(),203-209,false,7,3,checks all examples generate valid dsl
+  tests/conftest.py:
+    functions[1]{name,kind,sig,loc,async,lines,cc,does}:
+      anyio_backend,function,(),6-7,false,2,1,anyio backend
   tests/test_hardware_detect.py:
     functions[30]{name,kind,sig,loc,async,lines,cc,does}:
       test_suggest_model_high_vram,function,(),24-27,false,4,1,checks suggest model high vram
@@ -175,38 +184,38 @@ function_details:
       test_detect_skips_model_list_when_not_running,function,(),277-288,false,12,1,checks detect skips model list when not running
   tests/test_pipeline_scenarios.py:
     functions[32]{name,kind,sig,loc,async,lines,cc,does}:
-      run,function,(coro),38-39,false,2,1,starts
-      approve_all_tasks,function,"(engine:PipelineEngine, wait:float=0.15) -> int",42-48,false,7,2,Approve every pending human task.
-      resolve_run_fully,function,"(engine:PipelineEngine, run_id:str, max_rounds:int=10, wait:float=0.15) -> str",51-62,false,12,6,Keep approving tasks until the run is no longer blocked.
-      TestCodeReviewScenario.test_starts_successfully,method,(),68-72,false,5,1,checks starts successfully
-      TestCodeReviewScenario.test_step_sequence,method,(),74-94,false,21,1,checks step sequence
-      TestCodeReviewScenario.test_rejected_by_human_stops_pipeline,method,(),96-113,false,18,1,checks rejected by human stops pipeline
-      TestCodeReviewScenario.test_actor_types_in_results,method,(),115-124,false,10,2,checks actor types in results
-      TestAccountCreationScenario.test_starts_successfully,method,(),130-134,false,5,1,checks starts successfully
-      TestAccountCreationScenario.test_two_human_steps,method,(),136-156,false,21,3,checks two human steps
-      TestAccountCreationScenario.test_human_input_task_type,method,(),158-173,false,16,1,checks human input task type
-      TestPaymentScenario.test_starts_successfully,method,(),179-183,false,5,1,checks starts successfully
-      TestPaymentScenario.test_full_approval_flow,method,(),185-201,false,17,1,checks full approval flow
-      TestPaymentScenario.test_payment_blocked_on_authorization,method,(),203-211,false,9,2,checks payment blocked on authorization
-      TestDocGenerationScenario.test_starts_successfully,method,(),217-221,false,5,1,checks starts successfully
-      TestDocGenerationScenario.test_five_steps_in_sequence,method,(),223-241,false,19,1,checks five steps in sequence
-      TestDocGenerationScenario.test_actor_order_script_llm_human_llm_script,method,(),243-261,false,19,2,checks actor order script llm human llm script
-      TestDocGenerationScenario.test_human_can_reject_docs,method,(),263-278,false,16,3,checks human can reject docs
-      TestIncidentResponseScenario.test_starts_successfully,method,(),284-288,false,5,1,checks starts successfully
-      TestIncidentResponseScenario.test_full_resolution_flow,method,(),290-311,false,22,1,checks full resolution flow
-      TestIncidentResponseScenario.test_acknowledges_before_llm_analysis,method,(),313-328,false,16,1,Human must acknowledge before LLM can analyse — strict ordering.
-      TestContentModerationScenario.test_starts_successfully,method,(),334-338,false,5,1,checks starts successfully
-      TestContentModerationScenario.test_full_moderation_flow,method,(),340-356,false,17,1,checks full moderation flow
-      TestContentModerationScenario.test_llm_first_then_human,method,(),358-376,false,19,1,"LLM scans first (auto), human only decides on borderline."
-      TestContentModerationScenario.test_human_decision_carries_forward,method,(),378-396,false,19,1,Human's input data should be available to enforce-decision step.
-      TestDataMigrationScenario.test_starts_successfully,method,(),402-406,false,5,1,checks starts successfully
-      TestDataMigrationScenario.test_five_steps_two_human_gates,method,(),408-433,false,26,3,checks five steps two human gates
-      TestDataMigrationScenario.test_migration_blocked_at_spot_check,method,(),435-445,false,11,4,checks migration blocked at spot check
-      TestDataMigrationScenario.test_full_yaml_pipeline_loads,method,(),447-457,false,11,2,Confirm the agents.yml data-migration pipeline loads correctly.
-      TestAllScenariosIntegration.test_all_seven_scenarios_start,method,(),463-480,false,18,2,"Smoke test: every scenario starts without raising."
-      TestAllScenariosIntegration.test_all_complete_after_approving_all_tasks,method,(),482-513,false,32,7,Each scenario completes when all human tasks are approved.
-      TestAllScenariosIntegration.test_agents_yml_has_all_seven_pipelines,method,(),515-525,false,11,1,checks agents yml has all seven pipelines
-      TestAllScenariosIntegration.test_mixed_actor_scenarios_contain_all_three_types,method,(),527-538,false,12,3,"doc-generation, incident-response, data-migration all use LLM+SCRIPT+HUMAN."
+      run,function,(coro),39-41,false,3,1,Helper to run async coroutines in tests.
+      approve_all_tasks_async,function,"(engine:PipelineEngine, wait:float=0.15) -> int",44-50,true,7,2,Approve every pending human task.
+      resolve_run_fully_async,function,"(engine:PipelineEngine, run_id:str, max_rounds:int=10, wait:float=0.15) -> str",53-64,true,12,6,Keep approving tasks until the run is no longer blocked.
+      TestCodeReviewScenario.test_starts_successfully,method,(),72-76,true,5,1,checks starts successfully
+      TestCodeReviewScenario.test_step_sequence,method,(),79-99,true,21,1,checks step sequence
+      TestCodeReviewScenario.test_rejected_by_human_stops_pipeline,method,(),102-119,true,18,1,checks rejected by human stops pipeline
+      TestCodeReviewScenario.test_actor_types_in_results,method,(),122-131,true,10,2,checks actor types in results
+      TestAccountCreationScenario.test_starts_successfully,method,(),139-143,true,5,1,checks starts successfully
+      TestAccountCreationScenario.test_two_human_steps,method,(),146-166,true,21,3,checks two human steps
+      TestAccountCreationScenario.test_human_input_task_type,method,(),169-184,true,16,1,checks human input task type
+      TestPaymentScenario.test_starts_successfully,method,(),192-196,true,5,1,checks starts successfully
+      TestPaymentScenario.test_full_approval_flow,method,(),199-215,true,17,1,checks full approval flow
+      TestPaymentScenario.test_payment_blocked_on_authorization,method,(),218-226,true,9,2,checks payment blocked on authorization
+      TestDocGenerationScenario.test_starts_successfully,method,(),234-238,true,5,1,checks starts successfully
+      TestDocGenerationScenario.test_five_steps_in_sequence,method,(),241-259,true,19,1,checks five steps in sequence
+      TestDocGenerationScenario.test_actor_order_script_llm_human_llm_script,method,(),262-280,true,19,2,checks actor order script llm human llm script
+      TestDocGenerationScenario.test_human_can_reject_docs,method,(),283-298,true,16,3,checks human can reject docs
+      TestIncidentResponseScenario.test_starts_successfully,method,(),306-310,true,5,1,checks starts successfully
+      TestIncidentResponseScenario.test_full_resolution_flow,method,(),313-334,true,22,1,checks full resolution flow
+      TestIncidentResponseScenario.test_acknowledges_before_llm_analysis,method,(),337-352,true,16,1,Human must acknowledge before LLM can analyse — strict ordering.
+      TestContentModerationScenario.test_starts_successfully,method,(),360-364,true,5,1,checks starts successfully
+      TestContentModerationScenario.test_full_moderation_flow,method,(),367-383,true,17,1,checks full moderation flow
+      TestContentModerationScenario.test_llm_first_then_human,method,(),386-404,true,19,1,"LLM scans first (auto), human only decides on borderline."
+      TestContentModerationScenario.test_human_decision_carries_forward,method,(),407-425,true,19,1,Human's input data should be available to enforce-decision step.
+      TestDataMigrationScenario.test_starts_successfully,method,(),433-437,true,5,1,checks starts successfully
+      TestDataMigrationScenario.test_five_steps_two_human_gates,method,(),440-465,true,26,3,checks five steps two human gates
+      TestDataMigrationScenario.test_migration_blocked_at_spot_check,method,(),468-478,true,11,4,checks migration blocked at spot check
+      TestDataMigrationScenario.test_full_yaml_pipeline_loads,method,(),480-490,false,11,2,Confirm the agents.yml data-migration pipeline loads correctly.
+      TestAllScenariosIntegration.test_all_seven_scenarios_start,method,(),498-515,true,18,2,"Smoke test: every scenario starts without raising."
+      TestAllScenariosIntegration.test_all_complete_after_approving_all_tasks,method,(),518-549,true,32,7,Each scenario completes when all human tasks are approved.
+      TestAllScenariosIntegration.test_agents_yml_has_all_seven_pipelines,method,(),551-561,false,11,1,checks agents yml has all seven pipelines
+      TestAllScenariosIntegration.test_mixed_actor_scenarios_contain_all_three_types,method,(),564-575,true,12,3,"doc-generation, incident-response, data-migration all use LLM+SCRIPT+HUMAN."
   tests/test_dsl.py:
     functions[38]{name,kind,sig,loc,async,lines,cc,does}:
       TestDSLParser.setup_method,method,(),14-15,false,2,1,initializes method
@@ -233,26 +242,26 @@ function_details:
       TestDSLParser.test_coerce_integer,method,(),125-127,false,3,1,checks coerce integer
       TestDSLParser.test_coerce_float,method,(),129-131,false,3,1,checks coerce float
       TestDSLExecutor.setup_method,method,(),138-139,false,2,1,initializes method
-      TestDSLExecutor.test_agent_create,method,(),141-148,false,8,1,checks agent create
-      TestDSLExecutor.test_agent_duplicate,method,(),150-155,false,6,1,checks agent duplicate
-      TestDSLExecutor.test_kill_agent,method,(),157-162,false,6,1,checks kill agent
-      TestDSLExecutor.test_kill_nonexistent,method,(),164-168,false,5,1,checks kill nonexistent
-      TestDSLExecutor.test_list_agents,method,(),170-176,false,7,1,checks list agents
-      TestDSLExecutor.test_set_config,method,(),178-183,false,6,1,checks set config
-      TestDSLExecutor.test_status,method,(),185-190,false,6,1,checks status
-      TestDSLExecutor.test_pipe_create,method,(),192-198,false,7,1,checks pipe create
-      TestDSLExecutor.test_route_create,method,(),200-206,false,7,1,checks route create
-      TestDSLExecutor.test_help,method,(),208-213,false,6,1,checks help
-      TestDSLExecutor.test_execute_script,method,(),215-221,false,7,2,checks execute script
-      TestDSLExecutor.test_snapshot,method,(),223-229,false,7,1,checks snapshot
-      TestDSLExecutor.test_history_tracking,method,(),231-235,false,5,1,checks history tracking
-      TestDSLExecutor.test_unknown_command,method,(),237-241,false,5,1,checks unknown command
+      TestDSLExecutor.test_agent_create,method,(),142-147,true,6,1,checks agent create
+      TestDSLExecutor.test_agent_duplicate,method,(),150-154,true,5,1,checks agent duplicate
+      TestDSLExecutor.test_kill_agent,method,(),157-161,true,5,1,checks kill agent
+      TestDSLExecutor.test_kill_nonexistent,method,(),164-166,true,3,1,checks kill nonexistent
+      TestDSLExecutor.test_list_agents,method,(),169-174,true,6,1,checks list agents
+      TestDSLExecutor.test_set_config,method,(),177-180,true,4,1,checks set config
+      TestDSLExecutor.test_status,method,(),183-186,true,4,1,checks status
+      TestDSLExecutor.test_pipe_create,method,(),189-193,true,5,1,checks pipe create
+      TestDSLExecutor.test_route_create,method,(),196-200,true,5,1,checks route create
+      TestDSLExecutor.test_help,method,(),203-206,true,4,1,checks help
+      TestDSLExecutor.test_execute_script,method,(),209-213,true,5,2,checks execute script
+      TestDSLExecutor.test_snapshot,method,(),216-221,true,6,1,checks snapshot
+      TestDSLExecutor.test_history_tracking,method,(),224-227,true,4,1,checks history tracking
+      TestDSLExecutor.test_unknown_command,method,(),230-232,true,3,1,checks unknown command
   tests/test_marksync.py:
     functions[2]{name,kind,sig,loc,async,lines,cc,does}:
       test_placeholder,function,(),4-6,false,3,1,Placeholder test to verify the test setup works.
       test_import,function,(),9-11,false,3,1,Verify the main package can be imported.
   tests/test_v2.py:
-    functions[77]{name,kind,sig,loc,async,lines,cc,does}:
+    functions[101]{name,kind,sig,loc,async,lines,cc,does}:
       tmp_contract_dir,function,(tmp_path),16-26,false,11,1,tmp contract dir
       TestBlockParserV2.test_plain_blocks_parse,method,(),33-40,false,8,1,checks plain blocks parse
       TestBlockParserV2.test_json_block_no_meta_bleed,method,(),42-49,false,8,1,checks json block no meta bleed
@@ -328,8 +337,32 @@ function_details:
       TestAgentsV2.test_agent_status_fields,method,(),582-588,false,7,1,checks agent status fields
       TestPipelineTasksPending.test_tasks_pending_endpoint_exists,method,(),595-607,false,13,1,checks tasks pending endpoint exists
       TestPipelineTasksPending.test_tasks_pending_empty_by_default,method,(),609-618,false,10,1,checks tasks pending empty by default
-      TestE2ECreate.test_full_contract_10_blocks,method,(tmp_path),625-658,false,34,2,checks full contract 10 blocks
-      TestE2ECreate.test_create_cli_command,method,"(tmp_path, monkeypatch)",660-672,false,13,1,checks create cli command
+      TestPactownHealthCheck.test_health_check_no_config_returns_unknown,method,(),625-629,false,5,1,checks health check no config returns unknown
+      TestPactownHealthCheck.test_health_check_no_config_with_crdt_logs,method,(),631-637,false,7,2,checks health check no config with crdt logs
+      TestPactownHealthCheck.test_health_check_no_cli_returns_unknown,method,(monkeypatch),639-647,false,9,1,checks health check no cli returns unknown
+      TestPactownHealthCheck.test_health_check_updates_crdt_state,method,(monkeypatch),649-662,false,14,1,checks health check updates crdt state
+      TestPactownHealthCheck.test_health_check_error_updates_crdt_state,method,(monkeypatch),664-676,false,13,1,checks health check error updates crdt state
+      TestPactownMonitorWatch.test_watch_stops_after_n_checks,method,(),681-687,false,7,1,checks watch stops after n checks
+      TestPactownMonitorWatch.test_watch_unknown_health_no_config,method,(),689-695,false,7,1,checks watch unknown health no config
+      TestPactownMonitorWatch.test_watch_writes_state_to_crdt,method,(),697-709,false,13,1,checks watch writes state to crdt
+      TestPactownMonitorWatch.test_watch_writes_log_to_crdt,method,(),711-720,false,10,2,checks watch writes log to crdt
+      TestPactownMonitorWatch.test_watch_degraded_writes_history,method,(monkeypatch),722-735,false,14,3,checks watch degraded writes history
+      TestPactownMonitorWatch.test_watch_degraded_triggers_autofix,method,(monkeypatch),737-753,false,17,2,checks watch degraded triggers autofix
+      TestPactownMonitorWatch.test_set_pipeline_engine,method,(),755-761,false,7,1,checks set pipeline engine
+      TestPipelineAutofix.test_register_autofix_pipeline,method,(),766-770,false,5,1,checks register autofix pipeline
+      TestPipelineAutofix.test_autofix_pipeline_has_3_steps,method,(),772-781,false,10,2,checks autofix pipeline has 3 steps
+      TestPipelineAutofix.test_autofix_pipeline_restart_not_required,method,(),783-791,false,9,3,checks autofix pipeline restart not required
+      TestPipelineAutofix.test_autofix_pipeline_runs,method,(),793-804,false,12,1,checks autofix pipeline runs
+      TestPipelineAutofix.test_autofix_custom_restart_fn,method,(),806-824,false,19,1,checks autofix custom restart fn
+      TestPipelineAutofix.test_diagnose_script_degraded,method,(),826-835,false,10,1,checks diagnose script degraded
+      TestPipelineAutofix.test_diagnose_script_ok,method,(),837-846,false,10,1,checks diagnose script ok
+      TestPipelineAutofix.test_pactown_restart_no_config,method,(),848-856,false,9,1,checks pactown restart no config
+      TestPipelineAutofix.test_pactown_restart_no_cli,method,(),858-866,false,9,1,checks pactown restart no cli
+      TestTriggerAutofix.test_trigger_autofix_no_pipeline_returns_none,method,(),871-879,false,9,1,checks trigger autofix no pipeline returns none
+      TestTriggerAutofix.test_trigger_autofix_with_pipeline_returns_run_id,method,(),881-891,false,11,1,checks trigger autofix with pipeline returns run id
+      TestTriggerAutofix.test_trigger_autofix_logs_to_crdt,method,(),893-905,false,13,2,checks trigger autofix logs to crdt
+      TestE2ECreate.test_full_contract_10_blocks,method,(tmp_path),912-945,false,34,2,checks full contract 10 blocks
+      TestE2ECreate.test_create_cli_command,method,"(tmp_path, monkeypatch)",947-959,false,13,1,checks create cli command
   tests/test_examples.py:
     functions[24]{name,kind,sig,loc,async,lines,cc,does}:
       TestExample1.load,method,(),17-19,false,3,1,retrieves
@@ -358,56 +391,58 @@ function_details:
       TestExample3.test_has_run_block,method,(),142-145,false,4,3,checks has run block
   tests/test_pipeline.py:
     functions[24]{name,kind,sig,loc,async,lines,cc,does}:
-      run,function,(coro),19-20,false,2,1,starts
-      TestStep.test_to_dict,method,(),26-31,false,6,1,checks to dict
-      TestStep.test_defaults,method,(),33-37,false,5,1,checks defaults
-      TestDefinition.test_define,method,(),43-50,false,8,1,checks define
-      TestDefinition.test_define_from_yaml_steps,method,(),52-68,false,17,1,checks define from yaml steps
-      TestDefinition.test_define_from_yaml_legacy_stages,method,(),70-78,false,9,2,checks define from yaml legacy stages
-      TestDefinition.test_list_definitions,method,(),80-86,false,7,1,checks list definitions
-      TestScriptExecution.test_run_script_only_pipeline,method,(),92-106,false,15,1,checks run script only pipeline
-      TestScriptExecution.test_custom_script,method,(),108-122,false,15,1,checks custom script
-      TestScriptExecution.test_builtin_lint_pass,method,(),124-132,false,9,1,checks builtin lint pass
-      TestScriptExecution.test_builtin_lint_fail,method,(),134-142,false,9,1,checks builtin lint fail
-      TestLLMExecution.test_simulated_llm,method,(),148-157,false,10,1,checks simulated llm
-      TestLLMExecution.test_custom_llm_handler,method,(),159-172,false,14,1,checks custom llm handler
-      TestHumanInTheLoop.test_human_step_creates_task,method,(),178-199,false,22,1,checks human step creates task
-      TestHumanInTheLoop.test_approve_unblocks_pipeline,method,(),201-222,false,22,1,checks approve unblocks pipeline
-      TestHumanInTheLoop.test_reject_stops_pipeline,method,(),224-242,false,19,1,checks reject stops pipeline
-      TestHumanInTheLoop.test_resolve_nonexistent_task,method,(),244-247,false,4,1,checks resolve nonexistent task
-      TestHumanInTheLoop.test_resolve_already_resolved,method,(),249-262,false,14,1,checks resolve already resolved
-      TestMixedPipeline.test_llm_human_script_flow,method,(),268-295,false,28,1,"Full flow: LLM → Human → Script."
-      TestMixedPipeline.test_multiple_human_steps,method,(),297-324,false,28,1,Pipeline with 2 human checkpoints.
-      TestSnapshot.test_snapshot,method,(),330-336,false,7,1,checks snapshot
-      TestSnapshot.test_list_runs_empty,method,(),338-340,false,3,1,checks list runs empty
-      TestEvents.test_event_emitted_on_start,method,(),346-353,false,8,1,checks event emitted on start
-      TestEvents.test_event_emitted_on_human_task,method,(),355-363,false,9,1,checks event emitted on human task
+      run,function,(coro),19-21,false,3,1,Helper to run async coroutines in tests.
+      TestStep.test_to_dict,method,(),27-32,false,6,1,checks to dict
+      TestStep.test_defaults,method,(),34-38,false,5,1,checks defaults
+      TestDefinition.test_define,method,(),44-51,false,8,1,checks define
+      TestDefinition.test_define_from_yaml_steps,method,(),53-69,false,17,1,checks define from yaml steps
+      TestDefinition.test_define_from_yaml_legacy_stages,method,(),71-79,false,9,2,checks define from yaml legacy stages
+      TestDefinition.test_list_definitions,method,(),81-87,false,7,1,checks list definitions
+      TestScriptExecution.test_run_script_only_pipeline,method,(),93-107,false,15,1,checks run script only pipeline
+      TestScriptExecution.test_custom_script,method,(),109-123,false,15,1,checks custom script
+      TestScriptExecution.test_builtin_lint_pass,method,(),125-133,false,9,1,checks builtin lint pass
+      TestScriptExecution.test_builtin_lint_fail,method,(),135-143,false,9,1,checks builtin lint fail
+      TestLLMExecution.test_simulated_llm,method,(),149-158,false,10,1,checks simulated llm
+      TestLLMExecution.test_custom_llm_handler,method,(),160-173,false,14,1,checks custom llm handler
+      TestHumanInTheLoop.test_human_step_creates_task,method,(),181-202,true,22,1,checks human step creates task
+      TestHumanInTheLoop.test_approve_unblocks_pipeline,method,(),205-226,true,22,1,checks approve unblocks pipeline
+      TestHumanInTheLoop.test_reject_stops_pipeline,method,(),229-247,true,19,1,checks reject stops pipeline
+      TestHumanInTheLoop.test_resolve_nonexistent_task,method,(),249-252,false,4,1,checks resolve nonexistent task
+      TestHumanInTheLoop.test_resolve_already_resolved,method,(),255-268,true,14,1,checks resolve already resolved
+      TestMixedPipeline.test_llm_human_script_flow,method,(),275-302,true,28,1,"Full flow: LLM → Human → Script."
+      TestMixedPipeline.test_multiple_human_steps,method,(),305-332,true,28,1,Pipeline with 2 human checkpoints.
+      TestSnapshot.test_snapshot,method,(),338-344,false,7,1,checks snapshot
+      TestSnapshot.test_list_runs_empty,method,(),346-348,false,3,1,checks list runs empty
+      TestEvents.test_event_emitted_on_start,method,(),354-361,false,8,1,checks event emitted on start
+      TestEvents.test_event_emitted_on_human_task,method,(),363-371,false,9,1,checks event emitted on human task
   marksync/cli.py:
-    functions[24]{name,kind,sig,loc,async,lines,cc,does}:
+    functions[26]{name,kind,sig,loc,async,lines,cc,does}:
       _setup_logging,function,"(verbose:bool=False)",27-32,false,6,2,initializes logging
       main,function,(verbose),37-39,false,3,1,marksync — Multi-agent collaborative editing for Markpact projects.
-      server,function,"(readme, host, port)",46-53,false,8,1,Start the sync server.
-      agent,function,"(role, name, server_uri, ollama_url, model, auto_edit)",64-79,false,16,2,Start an AI agent that collaborates on the project.
-      push,function,"(readme, server_uri, name)",86-94,false,9,1,Push local README changes to sync server (one-shot).
-      blocks,function,(readme),99-123,false,25,3,"Show all markpact:* blocks in a README."
-      shell,function,"(server_uri, ollama_url, script)",130-146,false,17,4,Interactive DSL shell for agent orchestration.
-      orchestrate,function,"(config, role, server_uri, ollama_url, model, dry_run, export_dsl)",157-185,false,29,5,Orchestrate all agents from agents.yml (replaces N containers with 1).
-      api,function,"(host, port, server_uri, ollama_url)",193-206,false,14,1,Start the REST/WS API server for DSL remote control.
-      sandbox,function,"(host, port)",212-221,false,10,1,"Start the web sandbox for testing examples (edit, run, orchestrate)."
-      _ensure_dotenv,function,() -> Path,224-252,false,29,5,Ensure .env file exists.
-      _save_key_to_dotenv,function,"(env_path:Path, key:str, value:str)",255-267,false,13,5,Update or append a key=value in .env file.
-      _prompt_api_key,function,"(env_path:Path) -> str",270-303,false,34,4,Interactively ask the user for their OpenRouter API key.
-      _prompt_model_choice,function,"(current_model:str) -> str",306-334,false,29,5,Let user confirm or change the model.
-      _print_hw_summary,function,(info) -> None,362-369,false,8,4,logs hw summary
-      _setup_ollama,function,"(env_path:Path, info) -> tuple[str, str]",372-415,false,44,13,Interactive Ollama setup.
-      _setup_api_provider,function,"(env_path:Path, provider:str) -> tuple[str, str]",418-446,false,29,5,Prompt API key + model for cloud providers.
-      _setup_litellm_custom,function,"(env_path:Path) -> tuple[str, str]",449-461,false,13,2,Prompt for custom LiteLLM base URL + model.
-      _test_connection,function,"(provider:str, model:str, api_key:str='', api_base:str='') -> bool",464-482,false,19,4,Send a ping message to the configured LLM.
-      init,function,(),486-557,false,72,15,"First-run wizard: choose LLM provider, configure API key, test connection."
-      generate,function,"(prompt, output, model, dry_run, build, up)",567-798,false,232,53,Generate a Docker service from a YAML prompt via LLM (LiteLLM/OpenRouter).
-      create,function,"(prompt, output, no_llm, deploy, open_dashboard)",807-941,false,135,18,Create a complete Markpact contract from a natural language prompt.
-      _build_readme,function,"(intent, contract, crdt) -> str",944-981,false,38,9,Assemble the full README.md content from CRDT blocks.
-      dashboard_cmd,function,"(host, port, contract, sync_server)",989-1019,false,31,5,Start the graphical Dashboard for contract lifecycle management.
+      server,function,"(readme, host, port, ssl_cert, ssl_key, git_auto_commit, rate_limit)",54-71,false,18,4,Start the sync server.
+      agent,function,"(role, name, server_uri, ollama_url, model, auto_edit)",82-97,false,16,2,Start an AI agent that collaborates on the project.
+      push,function,"(readme, server_uri, name)",104-112,false,9,1,Push local README changes to sync server (one-shot).
+      blocks,function,(readme),117-141,false,25,3,"Show all markpact:* blocks in a README."
+      shell,function,"(server_uri, ollama_url, script)",148-164,false,17,4,Interactive DSL shell for agent orchestration.
+      orchestrate,function,"(config, role, server_uri, ollama_url, model, dry_run, export_dsl)",175-203,false,29,5,Orchestrate all agents from agents.yml (replaces N containers with 1).
+      api,function,"(host, port, server_uri, ollama_url)",211-224,false,14,1,Start the REST/WS API server for DSL remote control.
+      sandbox,function,"(host, port)",230-239,false,10,1,"Start the web sandbox for testing examples (edit, run, orchestrate)."
+      _ensure_dotenv,function,() -> Path,242-270,false,29,5,Ensure .env file exists.
+      _save_key_to_dotenv,function,"(env_path:Path, key:str, value:str)",273-285,false,13,5,Update or append a key=value in .env file.
+      _prompt_api_key,function,"(env_path:Path) -> str",288-321,false,34,4,Interactively ask the user for their OpenRouter API key.
+      _prompt_model_choice,function,"(current_model:str) -> str",324-352,false,29,5,Let user confirm or change the model.
+      _print_hw_summary,function,(info) -> None,380-387,false,8,4,logs hw summary
+      _setup_ollama,function,"(env_path:Path, info) -> tuple[str, str]",390-433,false,44,13,Interactive Ollama setup.
+      _setup_api_provider,function,"(env_path:Path, provider:str) -> tuple[str, str]",436-464,false,29,5,Prompt API key + model for cloud providers.
+      _setup_litellm_custom,function,"(env_path:Path) -> tuple[str, str]",467-479,false,13,2,Prompt for custom LiteLLM base URL + model.
+      _test_connection,function,"(provider:str, model:str, api_key:str='', api_base:str='') -> bool",482-500,false,19,4,Send a ping message to the configured LLM.
+      init,function,(),504-575,false,72,15,"First-run wizard: choose LLM provider, configure API key, test connection."
+      generate,function,"(prompt, output, model, dry_run, build, up)",585-816,false,232,53,Generate a Docker service from a YAML prompt via LLM (LiteLLM/OpenRouter).
+      create,function,"(prompt, output, no_llm, deploy, open_dashboard, env)",828-971,false,144,21,Create a complete Markpact contract from a natural language prompt.
+      _build_readme,function,"(intent, contract, crdt) -> str",974-1011,false,38,9,Assemble the full README.md content from CRDT blocks.
+      dashboard_cmd,function,"(host, port, contract, sync_server)",1019-1049,false,31,6,Start the graphical Dashboard for contract lifecycle management.
+      rollback_cmd,function,"(contract_path, snapshot, list_only)",1056-1102,false,47,8,Rollback a contract to a previous CRDT snapshot.
+      snapshot_cmd,function,"(contract_path, label)",1108-1128,false,21,3,Save a CRDT snapshot of the current contract state.
   marksync/__init__.py:
     functions[1]{name,kind,sig,loc,async,lines,cc,does}:
       __getattr__,function,"(name:str)",22-36,false,15,7,Lazy imports — heavy deps only loaded when actually accessed.
@@ -450,42 +485,75 @@ function_details:
       Settings.llm_config,method,(),137-161,false,25,4,Build LLMConfig for the active provider.
   marksync/dashboard/app.py:
     functions[6]{name,kind,sig,loc,async,lines,cc,does}:
-      create_dashboard_app,function,() -> FastAPI,73-396,false,324,1,creates dashboard app
-      _render_html,function,() -> str,401-403,false,3,1,formats html
-      _broadcast_sse,function,"(event:dict[str,Any])",408-414,true,7,3,Push an event to all active SSE subscribers.
-      _slugify,function,"(text:str) -> str",417-419,false,3,2,slugify
-      _render_contract_markdown,function,"(intent, contract, crdt) -> str",422-454,false,33,8,Build a complete README.md from all CRDT blocks.
-      _kind_to_lang,function,"(kind:str) -> str",457-465,false,9,1,kind to lang
+      create_dashboard_app,function,"(contract_path:str='README.md') -> FastAPI",73-524,false,452,2,creates dashboard app
+      _render_html,function,"(contract_path:str='README.md') -> str",529-532,false,4,1,formats html
+      _broadcast_sse,function,"(event:dict[str,Any])",537-543,true,7,3,Push an event to all active SSE subscribers.
+      _slugify,function,"(text:str) -> str",546-548,false,3,2,slugify
+      _render_contract_markdown,function,"(intent, contract, crdt) -> str",551-583,false,33,8,Build a complete README.md from all CRDT blocks.
+      _kind_to_lang,function,"(kind:str) -> str",586-594,false,9,1,kind to lang
+  marksync/sync/snapshots.py:
+    functions[8]{name,kind,sig,loc,async,lines,cc,does}:
+      SnapshotStore.__init__,method,"(project:str='default', root:Any=None)",26-29,false,4,2,creates
+      SnapshotStore.save,method,"(snap:dict, label:str='') -> str",33-46,false,14,3,Persist a snapshot dict.
+      SnapshotStore.list_snapshots,method,"() -> list[dict]",50-66,false,17,4,"Return all snapshots sorted newest-first, each as {id, ts, label, blocks}."
+      SnapshotStore.load,method,"(snapshot_id:str) -> dict",68-73,false,6,2,Load and return a snapshot dict by its id.
+      SnapshotStore.latest,method,() -> dict | None,75-80,false,6,2,"Return the most recent snapshot, or None if none exist."
+      SnapshotStore.restore,method,"(crdt_doc, snapshot_id:str) -> int",84-96,false,13,1,Restore a CRDTDocument from a snapshot.
+      SnapshotStore.delete,method,"(snapshot_id:str) -> bool",100-105,false,6,2,deletes
+      SnapshotStore.prune,method,"(keep:int=10) -> int",107-113,false,7,2,"Remove oldest snapshots, keeping only the most recent `keep`."
   marksync/sync/engine.py:
-    functions[16]{name,kind,sig,loc,async,lines,cc,does}:
-      _signal,function,"(type:str) -> str",38-39,false,2,1,signal
-      _parse,function,"(raw:str) -> dict",42-43,false,2,1,parses
-      SyncServer.__init__,method,"(readme:str='README.md', host='0.0.0.0', port=8765)",63-72,false,10,1,creates
-      SyncServer.on_deploy,method,(callback),74-76,false,3,1,"Register callback when blocks change: callback(changed_block_ids)."
-      SyncServer.load,method,(),78-85,false,8,3,retrieves
-      SyncServer.save,method,(),87-92,false,6,2,Persist current block state back to README.md.
-      SyncServer._manifest,method,"() -> dict[str, str]",94-98,false,5,2,manifest
-      SyncServer._handler,method,(ws),102-119,true,18,3,handler
-      SyncServer._dispatch,method,"(msg:dict, sender)",121-177,true,57,10,sends
-      SyncServer._broadcast,method,"(message:str, exclude=None)",179-185,true,7,5,broadcast
-      SyncServer.run,method,(),189-194,true,6,1,starts
-      SyncClient.__init__,method,"(readme:str='README.md', uri='ws://localhost:8765', name:str='client')",206-213,false,8,1,creates
-      SyncClient.on_update,method,(callback),215-217,false,3,1,"Register callback(block_id, new_content) for remote changes."
-      SyncClient.load,method,(),219-223,false,5,3,retrieves
-      SyncClient.push_changes,method,"(old_blocks:Any=None)",225-272,true,48,9,"One-shot: connect, push changed blocks, disconnect."
-      SyncClient.watch,method,(),274-303,true,30,7,"Long-running: connect, listen for remote changes,"
+    functions[32]{name,kind,sig,loc,async,lines,cc,does}:
+      _three_way_merge,function,"(base:str, local:str, remote:str) -> tuple[str, bool]",71-119,false,49,9,Line-level three-way merge.
+      _make_ssl_server_context,function,"(certfile:str, keyfile:str) -> ssl.SSLContext | None",122-128,false,7,3,Build an SSLContext for the server from PEM cert+key files.
+      _make_ssl_client_context,function,"(verify:bool=True, ca_cert:str='') -> ssl.SSLContext | None",131-147,false,17,3,Build an SSLContext for the client.
+      _signal,function,"(type:str) -> str",154-155,false,2,1,signal
+      _parse,function,"(raw:str) -> dict",158-159,false,2,1,parses
+      _RateLimiter.__init__,method,"(max_requests:int=60, window_seconds:float=10.0)",47-50,false,4,1,creates
+      _RateLimiter.is_allowed,method,"(key:str) -> bool",52-61,false,10,4,checks allowed
+      _RateLimiter.reset,method,"(key:str)",63-64,false,2,1,reset
+      SyncServer.__init__,method,"(readme:str='README.md', host='0.0.0.0', port=8765, rate_limit:int=60, rate_window:float=10.0, git_auto_commit:bool=False, ssl_certfile:str='')",179-200,false,22,1,creates
+      SyncServer.on_deploy,method,(callback),202-204,false,3,1,"Register callback when blocks change: callback(changed_block_ids)."
+      SyncServer.load,method,(),206-213,false,8,3,retrieves
+      SyncServer.save,method,(),215-222,false,8,3,Persist current block state back to README.md (and optionally git-commit).
+      SyncServer._git_commit,method,"(message:str='chore: auto-sync block update')",224-239,false,16,2,"Stage README.md and create a git commit (non-blocking, silent on failure)."
+      SyncServer._manifest,method,"() -> dict[str, str]",241-245,false,5,2,manifest
+      SyncServer._handler,method,(ws),249-273,true,25,4,handler
+      SyncServer._dispatch,method,"(msg:dict, sender)",275-360,true,86,11,sends
+      SyncServer._broadcast,method,"(message:str, exclude=None)",362-368,true,7,5,broadcast
+      SyncServer.health,method,() -> dict,370-381,false,12,1,Return a health status dict for monitoring.
+      SyncServer.metrics,method,() -> str,383-408,false,26,1,Return Prometheus text format metrics.
+      SyncServer.run,method,(),412-419,true,8,2,starts
+      MultiProjectServer.__init__,method,"(projects_dir:str='.', host:str='0.0.0.0', port:int=8765, rate_limit:int=60, git_auto_commit:bool=False)",440-450,false,11,1,creates
+      MultiProjectServer._get_project,method,"(name:str) -> dict",452-469,false,18,4,Get or create per-project state.
+      MultiProjectServer._save_project,method,"(name:str)",471-487,false,17,5,caches project
+      MultiProjectServer._handler,method,(ws),489-544,true,56,13,handler
+      MultiProjectServer.list_projects,method,"() -> list[str]",546-547,false,2,1,list projects
+      MultiProjectServer.health,method,() -> dict,549-557,false,9,2,health
+      MultiProjectServer.run,method,(),559-562,true,4,1,starts
+      SyncClient.__init__,method,"(readme:str='README.md', uri='ws://localhost:8765', name:str='client', ssl_verify:bool=True, ssl_ca_cert:str='')",574-588,false,15,2,creates
+      SyncClient.on_update,method,(callback),590-592,false,3,1,"Register callback(block_id, new_content) for remote changes."
+      SyncClient.load,method,(),594-598,false,5,3,retrieves
+      SyncClient.push_changes,method,"(old_blocks:Any=None)",600-647,true,48,9,"One-shot: connect, push changed blocks, disconnect."
+      SyncClient.watch,method,(),649-678,true,30,7,"Long-running: connect, listen for remote changes,"
   marksync/sync/crdt.py:
-    functions[10]{name,kind,sig,loc,async,lines,cc,does}:
-      CRDTDocument.__init__,method,"(project:str='default')",25-34,false,10,1,creates
-      CRDTDocument.load_markdown,method,"(markdown:str)",36-42,false,7,2,Parse markdown and populate CRDT types.
-      CRDTDocument.set_block,method,"(block_id:str, content:str)",44-48,false,5,2,Set block content.
-      CRDTDocument.get_block,method,"(block_id:str) -> str | None",50-54,false,5,2,retrieves block
-      CRDTDocument.get_all,method,"() -> dict[str, str]",56-63,false,8,3,retrieves all
-      CRDTDocument.manifest,method,"() -> dict[str, str]",65-69,false,5,2,manifest
-      CRDTDocument.get_state,method,() -> bytes,73-74,false,2,1,retrieves state
-      CRDTDocument.get_update,method,"(state_vector:Any=None) -> bytes",76-79,false,4,2,retrieves update
-      CRDTDocument.apply_update,method,"(update:bytes)",81-82,false,2,1,apply update
-      CRDTDocument._order_list,method,"() -> list[str]",86-87,false,2,2,sorts list
+    functions[17]{name,kind,sig,loc,async,lines,cc,does}:
+      CRDTDocument.__init__,method,"(project:str='default')",26-35,false,10,1,creates
+      CRDTDocument.load_markdown,method,"(markdown:str)",37-43,false,7,2,Parse markdown and populate CRDT types.
+      CRDTDocument.set_block,method,"(block_id:str, content:str)",45-49,false,5,2,Set block content.
+      CRDTDocument.get_block,method,"(block_id:str) -> str | None",51-55,false,5,2,retrieves block
+      CRDTDocument.get_all,method,"() -> dict[str, str]",57-64,false,8,3,retrieves all
+      CRDTDocument.manifest,method,"() -> dict[str, str]",66-70,false,5,2,manifest
+      CRDTDocument.get_state,method,() -> bytes,74-75,false,2,1,retrieves state
+      CRDTDocument.get_update,method,"(state_vector:Any=None) -> bytes",77-80,false,4,2,retrieves update
+      CRDTDocument.apply_update,method,"(update:bytes)",82-83,false,2,1,apply update
+      CRDTDocument.append_block,method,"(block_id:str, line:str) -> str",85-90,false,6,2,Append a line to an existing block (for append-only logs).
+      CRDTDocument.get_blocks_by_kind,method,"(kind:str) -> dict[str, str]",92-99,false,8,4,"Return all blocks whose id matches markpact:<kind>[=...]"
+      CRDTDocument.query_blocks,method,"(kinds:Any=None) -> dict[str, str]",101-108,false,8,3,Return blocks optionally filtered by a list of kinds.
+      CRDTDocument.snapshot,method,() -> dict,110-116,false,7,1,Capture the current state as a plain-dict snapshot.
+      CRDTDocument.rollback_to,method,"(snap:dict) -> int",118-126,false,9,4,Restore state from a snapshot dict.
+      CRDTDocument.compact_log,method,"(block_id:str='markpact:log', keep_lines:int=200) -> int",128-138,false,11,3,Trim a log block to the last keep_lines lines.
+      CRDTDocument.garbage_collect,method,"(remove_empty:bool=True, compact_log_blocks:bool=True, keep_log_lines:int=200, remove_block_ids:Any=None) -> dict[str, int]",140-181,false,42,13,Compact and clean up the CRDT document.
+      CRDTDocument._order_list,method,"() -> list[str]",185-186,false,2,2,sorts list
   marksync/sync/__init__.py:
     functions[5]{name,kind,sig,loc,async,lines,cc,does}:
       MarkpactBlock.__post_init__,method,(),26-31,false,6,3,creates init
@@ -493,6 +561,26 @@ function_details:
       BlockParser._make_id,method,"(kind:str, meta:str) -> str",86-95,false,10,4,creates id
       BlockParser.rebuild_markdown,method,"(original:str, blocks:dict[str,str]) -> str",98-113,false,16,6,Replace block contents in original markdown with updated versions.
       BlockParser.manifest,method,"(blocks:list[MarkpactBlock]) -> dict[str, str]",116-118,false,3,2,block_id -> sha256 map for delta detection.
+  marksync/transport/__init__.py:
+    functions[18]{name,kind,sig,loc,async,lines,cc,does}:
+      get_transport,function,"(name:str) -> TransportLayer",136-141,false,6,2,Instantiate a transport by name.
+      register_transport,function,"(name:str, cls:type[TransportLayer])",144-146,false,3,1,Register a custom transport implementation.
+      TransportLayer.__init__,method,"(host:str='0.0.0.0', port:int=8765)",34-38,false,5,1,creates
+      TransportLayer.on_message,method,"(handler:Callable)",40-42,false,3,1,"Register callback(client_id, message_dict) for incoming messages."
+      TransportLayer.start,method,(),45-46,true,2,1,Start the transport server.
+      TransportLayer.stop,method,(),49-50,true,2,1,Gracefully shut down the transport.
+      TransportLayer.broadcast,method,"(message:str, exclude:Any=None)",53-54,true,2,1,Send message to all connected clients (excluding `exclude`).
+      TransportLayer.send,method,"(client_id:Any, message:str)",57-58,true,2,1,Send message to a specific client.
+      TransportLayer.info,method,() -> dict,60-66,false,7,1,info
+      WebSocketTransport.start,method,(),77-78,true,2,1,starts
+      WebSocketTransport.stop,method,(),80-81,true,2,1,stops
+      WebSocketTransport.broadcast,method,"(message:str, exclude=None)",83-84,true,2,1,broadcast
+      WebSocketTransport.send,method,"(client_id, message:str)",86-87,true,2,1,sends
+      MQTTTransport.__init__,method,"(host:str='0.0.0.0', port:int=1883, topic_prefix:str='marksync')",99-103,false,5,1,creates
+      MQTTTransport.start,method,(),105-113,true,9,2,starts
+      MQTTTransport.stop,method,(),115-119,true,5,2,stops
+      MQTTTransport.broadcast,method,"(message:str, exclude=None)",121-123,true,3,2,broadcast
+      MQTTTransport.send,method,"(client_id, message:str)",125-127,true,3,2,sends
   marksync/intent/parser.py:
     functions[11]{name,kind,sig,loc,async,lines,cc,does}:
       slugify,function,"(text:str) -> str",67-69,false,3,2,Convert arbitrary text to a safe slug.
@@ -547,17 +635,18 @@ function_details:
       Channel.is_connected,method,() -> bool,526-528,false,3,1,Check if channel is currently connected.
       Channel.request,method,"(message:ChannelMessage, timeout:float=30.0) -> ChannelMessage",530-534,true,5,1,Send a request and wait for reply (request/reply pattern).
   marksync/plugins/registry.py:
-    functions[10]{name,kind,sig,loc,async,lines,cc,does}:
+    functions[11]{name,kind,sig,loc,async,lines,cc,does}:
       PluginRegistry.__init__,method,(),85-87,false,3,1,creates
       PluginRegistry.register,method,"(plugin:Any)",91-95,false,5,1,Register a plugin instance.
-      PluginRegistry.discover,method,"(include_builtins:bool=True)",97-110,false,14,5,Discover and register available plugins.
-      PluginRegistry._load_lazy,method,"(format_id:str) -> FormatPlugin | APIAdapter | Integration | None",112-133,false,22,4,Load a lazily-registered plugin module.
-      PluginRegistry.get,method,"(format_id:str) -> FormatPlugin | APIAdapter | Integration | None",137-142,false,6,2,Get a plugin by format ID.
-      PluginRegistry.list_plugins,method,"(plugin_type:Any=None) -> list[dict]",144-182,false,39,11,List all registered + available plugins.
-      PluginRegistry.available_formats,method,"() -> list[str]",184-186,false,3,1,List all available format IDs (loaded + lazy).
-      PluginRegistry.export,method,"(format_id:str, pipeline:PipelineSpec) -> ConversionResult",190-207,false,18,4,Export a pipeline to the specified format.
-      PluginRegistry.import_from,method,"(format_id:str, source:Any) -> PipelineSpec | None",209-220,false,12,4,Import a pipeline from the specified format.
-      PluginRegistry.pipeline_from_marksync,method,"(name:str, steps:list[dict], description:str='') -> PipelineSpec",225-246,false,22,2,Create a PipelineSpec from marksync internal format.
+      PluginRegistry.discover,method,"(include_builtins:bool=True, discover_external:bool=True)",97-126,false,30,6,Discover and register available plugins.
+      PluginRegistry._discover_entry_points,method,(),128-161,false,34,9,Load external plugins registered via Python package entry_points.
+      PluginRegistry._load_lazy,method,"(format_id:str) -> FormatPlugin | APIAdapter | Integration | None",163-184,false,22,4,Load a lazily-registered plugin module.
+      PluginRegistry.get,method,"(format_id:str) -> FormatPlugin | APIAdapter | Integration | None",188-193,false,6,2,Get a plugin by format ID.
+      PluginRegistry.list_plugins,method,"(plugin_type:Any=None) -> list[dict]",195-233,false,39,11,List all registered + available plugins.
+      PluginRegistry.available_formats,method,"() -> list[str]",235-237,false,3,1,List all available format IDs (loaded + lazy).
+      PluginRegistry.export,method,"(format_id:str, pipeline:PipelineSpec) -> ConversionResult",241-258,false,18,4,Export a pipeline to the specified format.
+      PluginRegistry.import_from,method,"(format_id:str, source:Any) -> PipelineSpec | None",260-271,false,12,4,Import a pipeline from the specified format.
+      PluginRegistry.pipeline_from_marksync,method,"(name:str, steps:list[dict], description:str='') -> PipelineSpec",276-297,false,22,2,Create a PipelineSpec from marksync internal format.
   marksync/conversation/engine.py:
     functions[9]{name,kind,sig,loc,async,lines,cc,does}:
       ConversationMessage.__post_init__,method,(),28-30,false,3,2,creates init
@@ -601,9 +690,11 @@ function_details:
       PatternLibrary.save_from_contract,method,"(contract_path:Any, intent:ProcessIntent, success:bool=True) -> Pattern",142-161,false,20,3,Create or update a pattern from a completed contract.
       PatternLibrary._score,method,"(intent:ProcessIntent, pattern:Pattern) -> int",165-173,false,9,4,score
   marksync/contract/block_types.py:
-    functions[2]{name,kind,sig,loc,async,lines,cc,does}:
-      block_id,function,"(kind:str, meta:str='') -> str",51-55,false,5,2,"Build a canonical markpact block ID, matching BlockParser._make_id()."
-      GeneratedContract.ok,method,() -> bool,71-72,false,2,1,ok
+    functions[4]{name,kind,sig,loc,async,lines,cc,does}:
+      block_id,function,"(kind:str, meta:str='') -> str",85-89,false,5,2,"Build a canonical markpact block ID, matching BlockParser._make_id()."
+      EnvProfile.to_yaml,method,() -> str,62-69,false,8,1,converts yaml
+      EnvProfile.from_yaml,method,"(text:str) -> \"EnvProfile\"",72-80,false,9,2,from yaml
+      GeneratedContract.ok,method,() -> bool,105-106,false,2,1,ok
   marksync/contract/generator.py:
     functions[7]{name,kind,sig,loc,async,lines,cc,does}:
       ContractGenerator.__init__,method,"(crdt_doc=None, llm_client=None)",28-30,false,3,1,creates
@@ -626,33 +717,64 @@ function_details:
     functions[2]{name,kind,sig,loc,async,lines,cc,does}:
       create_sandbox_app,function,() -> FastAPI,68-311,false,244,1,creates sandbox app
       _render_html,function,() -> str,316-318,false,3,1,formats html
+  marksync/auth/middleware.py:
+    functions[5]{name,kind,sig,loc,async,lines,cc,does}:
+      _extract_token,function,"(request:Request) -> str | None",74-79,false,6,3,parses token
+      get_current_user,function,"(request:Request) -> TokenPayload | None",82-99,true,18,5,"FastAPI dependency: returns the current TokenPayload if auth is enabled,"
+      require_role,function,"(action:str) -> Callable",102-120,false,19,1,"FastAPI dependency factory: requires the current user to have permission"
+      AuthMiddleware.__init__,method,"(app, skip_paths:Any=None)",44-46,false,3,2,creates
+      AuthMiddleware.dispatch,method,"(request:Request, call_next)",48-71,true,24,8,sends
+  marksync/auth/tokens.py:
+    functions[9]{name,kind,sig,loc,async,lines,cc,does}:
+      _try_jwt_encode,function,"(payload:dict) -> str | None",46-51,false,6,2,try jwt encode
+      _try_jwt_decode,function,"(token:str) -> dict | None",54-61,false,8,3,try jwt decode
+      _hmac_encode,function,"(payload:dict) -> str",66-70,false,5,1,hmac encode
+      _hmac_decode,function,"(token:str) -> dict | None",73-84,false,12,3,hmac decode
+      create_token,function,"(subject:str, role:str='viewer', ttl:Any=None) -> str",89-111,false,23,3,Create a signed token for the given subject and role.
+      verify_token,function,"(token:str) -> TokenPayload | None",114-138,false,25,5,Verify and decode a token.
+      TokenPayload.__post_init__,method,(),33-35,false,3,2,creates init
+      TokenPayload.is_expired,method,() -> bool,37-38,false,2,1,checks expired
+      TokenPayload.to_dict,method,() -> dict,40-41,false,2,1,converts dict
+  marksync/auth/roles.py:
+    functions[2]{name,kind,sig,loc,async,lines,cc,does}:
+      has_permission,function,"(role:Any, action:str) -> bool",26-32,false,7,2,Return True if the given role is allowed to perform action.
+      role_from_str,function,"(value:str) -> Role",35-40,false,6,2,"Parse a role string, defaulting to viewer on unknown values."
   marksync/pipeline/engine.py:
-    functions[25]{name,kind,sig,loc,async,lines,cc,does}:
-      Step.to_dict,method,() -> dict,72-79,false,8,1,converts dict
-      StepResult.duration_ms,method,() -> float,96-99,false,4,3,duration ms
-      StepResult.to_dict,method,() -> dict,101-111,false,11,2,converts dict
-      HumanTask.to_dict,method,() -> dict,139-154,false,16,4,converts dict
-      PipelineRun.current_step_name,method,() -> str,171-174,false,4,2,current step name
-      PipelineRun.to_dict,method,() -> dict,176-188,false,13,4,converts dict
-      PipelineEngine.__init__,method,(),205-214,false,10,1,creates
-      PipelineEngine.define,method,"(name:str, steps:list[Step])",218-221,false,4,1,Define a named pipeline.
-      PipelineEngine.define_from_yaml,method,"(pipeline_cfg:dict)",223-263,false,41,7,Define pipelines from YAML config (extended agents.yml format).
-      PipelineEngine.register_script,method,"(name:str, fn:Callable)",267-269,false,3,1,Register a script/algorithm handler.
-      PipelineEngine.set_llm_handler,method,"(handler:Callable)",271-273,false,3,1,"Set the LLM handler: async fn(step, input_data) -> output_data."
-      PipelineEngine.start,method,"(pipeline_name:str, input_data:Any=None) -> str",277-302,true,26,3,Start a pipeline run.
-      PipelineEngine._execute_run,method,"(run:PipelineRun)",304-383,true,80,12,Execute all steps in sequence.
-      PipelineEngine._execute_llm,method,"(step:Step, data:dict[str,Any]) -> dict[str, Any]",387-401,true,15,2,Execute an LLM step via the registered handler or simulation.
-      PipelineEngine._execute_script,method,"(step:Step, data:dict[str,Any]) -> dict[str, Any]",403-420,true,18,4,Execute a script/algorithm step.
-      PipelineEngine._execute_human,method,"(step:Step, data:dict[str,Any], run_id:str) -> dict[str, Any]",422-457,true,36,5,Create a HumanTask and wait for resolution via API endpoint.
-      PipelineEngine.resolve_task,method,"(task_id:str, action:str, response:Any=None, resolved_by:str='anonymous') -> HumanTask",459-496,false,38,7,Resolve a human task — called from API endpoint.
-      PipelineEngine._register_builtins,method,(),500-546,false,47,1,Register built-in script actors.
-      PipelineEngine.get_run,method,"(run_id:str) -> PipelineRun | None",550-551,false,2,1,retrieves run
-      PipelineEngine.get_pending_tasks,method,"() -> list[HumanTask]",553-554,false,2,3,retrieves pending tasks
-      PipelineEngine.list_definitions,method,"() -> dict[str, list[dict]]",556-558,false,3,3,list definitions
-      PipelineEngine.list_runs,method,"() -> list[dict]",560-561,false,2,2,list runs
-      PipelineEngine.snapshot,method,() -> dict,563-568,false,6,2,snapshot
-      PipelineEngine.on,method,"(event:str, handler:Callable)",572-573,false,2,1,handles
-      PipelineEngine._emit,method,"(event:str, data:Any=None)",575-580,false,6,3,sends
+    functions[34]{name,kind,sig,loc,async,lines,cc,does}:
+      RetryPolicy.wait_for,method,"(attempt:int) -> float",72-76,false,5,2,Return the wait time (seconds) before the given attempt (0-indexed).
+      Step.to_dict,method,() -> dict,89-101,false,13,1,converts dict
+      StepResult.duration_ms,method,() -> float,118-121,false,4,3,duration ms
+      StepResult.to_dict,method,() -> dict,123-133,false,11,2,converts dict
+      HumanTask.to_dict,method,() -> dict,161-176,false,16,4,converts dict
+      PipelineRun.current_step_name,method,() -> str,194-197,false,4,2,current step name
+      PipelineRun.to_dict,method,() -> dict,199-211,false,13,4,converts dict
+      PipelineEngine.__init__,method,(crdt_doc=None),229-245,false,17,2,creates
+      PipelineEngine.attach_to_sync_server,method,(server) -> None,249-267,false,19,1,Register this engine as the deploy callback for a SyncServer.
+      PipelineEngine.add_block_route,method,"(block_id_pattern:str, pipeline_name:str, input_key:str='block_id') -> None",269-280,false,12,1,Route updates to blocks matching ``block_id_pattern`` to a pipeline.
+      PipelineEngine._on_block_change,method,"(changed_block_ids:list[str]) -> None",282-307,false,26,7,Callback invoked by SyncServer when blocks are updated.
+      PipelineEngine.define,method,"(name:str, steps:list[Step])",311-314,false,4,1,Define a named pipeline.
+      PipelineEngine.define_from_yaml,method,"(pipeline_cfg:dict)",316-356,false,41,7,Define pipelines from YAML config (extended agents.yml format).
+      PipelineEngine.register_script,method,"(name:str, fn:Callable)",360-362,false,3,1,Register a script/algorithm handler.
+      PipelineEngine.set_llm_handler,method,"(handler:Callable)",364-366,false,3,1,"Set the LLM handler: async fn(step, input_data) -> output_data."
+      PipelineEngine.start,method,"(pipeline_name:str, input_data:Any=None, idempotency_key:Any=None) -> str",370-410,true,41,8,Start a pipeline run.
+      PipelineEngine._execute_run,method,"(run:PipelineRun)",412-483,true,72,9,Execute all steps in sequence.
+      PipelineEngine._execute_with_retry,method,"(step:Step, data:dict[str,Any], run_id:str) -> dict[str, Any]",487-529,true,43,12,Execute a step with retry/timeout logic from step.retry.
+      PipelineEngine._execute_llm,method,"(step:Step, data:dict[str,Any]) -> dict[str, Any]",533-547,true,15,2,Execute an LLM step via the registered handler or simulation.
+      PipelineEngine._execute_script,method,"(step:Step, data:dict[str,Any]) -> dict[str, Any]",549-566,true,18,4,Execute a script/algorithm step.
+      PipelineEngine._execute_human,method,"(step:Step, data:dict[str,Any], run_id:str) -> dict[str, Any]",568-614,true,47,8,Create a HumanTask and wait for resolution via API endpoint.
+      PipelineEngine.resolve_task,method,"(task_id:str, action:str, response:Any=None, resolved_by:str='anonymous') -> HumanTask",616-653,false,38,7,Resolve a human task — called from API endpoint.
+      PipelineEngine._register_builtins,method,(),657-749,false,93,1,Register built-in script actors.
+      PipelineEngine.register_autofix_pipeline,method,"(restart_fn:Any=None) -> None",753-776,false,24,2,Register the built-in 'pactown-autofix' pipeline.
+      PipelineEngine.get_run,method,"(run_id:str) -> PipelineRun | None",780-781,false,2,1,retrieves run
+      PipelineEngine.get_pending_tasks,method,"() -> list[HumanTask]",783-784,false,2,3,retrieves pending tasks
+      PipelineEngine.list_definitions,method,"() -> dict[str, list[dict]]",786-788,false,3,3,list definitions
+      PipelineEngine.list_runs,method,"() -> list[dict]",790-791,false,2,2,list runs
+      PipelineEngine.get_task,method,"(task_id:str) -> HumanTask | None",793-794,false,2,1,retrieves task
+      PipelineEngine.snapshot,method,() -> dict,796-801,false,6,2,snapshot
+      PipelineEngine._persist_run,method,"(run:PipelineRun)",805-818,false,14,4,"Write the run state to markpact:pipeline-runs in the CRDT document."
+      PipelineEngine._restore_from_crdt,method,(),820-843,false,24,6,Restore completed/failed run history from CRDT on startup.
+      PipelineEngine.on,method,"(event:str, handler:Callable)",847-848,false,2,1,handles
+      PipelineEngine._emit,method,"(event:str, data:Any=None)",850-855,false,6,3,sends
   marksync/pipeline/prompt_generator.py:
     functions[8]{name,kind,sig,loc,async,lines,cc,does}:
       write_generated,function,"(result:GeneratedService, output_dir:Any)",334-343,false,10,2,Write all generated files to disk.
@@ -684,93 +806,114 @@ function_details:
       _demo_content_moderation,function,"(engine:PipelineEngine) -> dict",397-434,true,38,1,"Demo: LLM scans content → Script scores risk → Human decides borderline → Script..."
       _demo_data_migration,function,"(engine:PipelineEngine) -> dict",437-481,true,45,1,"Demo: Script validates schema → LLM transforms → Human spot-checks → Script migr..."
   marksync/agents/__init__.py:
-    functions[25]{name,kind,sig,loc,async,lines,cc,does}:
-      _signal,function,"(type:str) -> str",26-27,false,2,1,signal
-      _parse,function,"(raw:str) -> dict",29-30,false,2,1,parses
-      OllamaClient.__init__,method,"(base_url:str='http://localhost:11434', model:str='qwen2.5-coder:7b')",40-44,false,5,1,creates
-      OllamaClient.generate,method,"(prompt:str, system:str='') -> str",46-54,true,9,2,creates
-      OllamaClient.chat,method,"(messages:list[dict]) -> str",56-63,true,8,1,chat
-      OllamaClient.health,method,() -> bool,65-70,true,6,2,health
-      AgentWorker.__init__,method,"(config:AgentConfig)",96-103,false,8,1,creates
-      AgentWorker.run,method,(),107-123,true,17,4,"Main agent loop: connect → sync → process → repeat."
-      AgentWorker._connect_and_run,method,(),125-149,true,25,5,registers and run
-      AgentWorker._on_message,method,"(msg:dict)",151-167,true,17,4,handles message
-      AgentWorker._process_update,method,"(block_id:str, content:str)",169-189,true,21,7,Dispatch to role-specific handler.
-      AgentWorker._edit_block,method,"(block_id:str, content:str)",193-213,true,21,5,"Editor agent: improve code using LLM."
-      AgentWorker._review_block,method,"(block_id:str, content:str)",217-235,true,19,2,"Reviewer agent: analyze code quality, log findings."
-      AgentWorker._deploy_block,method,"(block_id:str, content:str)",239-249,true,11,3,"Deployer agent: trigger markpact build on changes."
-      AgentWorker._monitor_block,method,"(block_id:str, content:str)",253-257,true,5,1,"Monitor agent: log all changes with stats."
-      AgentWorker._push_block,method,"(block_id:str, new_content:str)",261-281,true,21,4,Send updated block to sync server.
-      AgentWorker.status,method,() -> dict,285-292,false,8,1,status
-      AgentWorker.stop,method,(),294-295,false,2,1,stops
-      ConversationAgent.__init__,method,"(config:AgentConfig)",310-312,false,3,1,creates
-      ConversationAgent._process_update,method,"(block_id:str, content:str)",314-361,true,48,9,processes update
-      PactownMonitor.__init__,method,"(config:AgentConfig, poll_interval:float=10.0)",377-380,false,4,1,creates
-      PactownMonitor._connect_and_run,method,(),382-409,true,28,6,registers and run
-      PactownMonitor._extract_pactown_path,method,"(deploy_yaml:str)",411-420,false,10,3,parses pactown path
-      PactownMonitor._poll_loop,method,(),422-466,true,45,7,Periodically check Pactown health and write to contract blocks.
-      PactownMonitor._check_health,method,() -> dict,468-490,false,23,5,Check Pactown service health.
+    functions[34]{name,kind,sig,loc,async,lines,cc,does}:
+      _signal,function,"(type:str) -> str",78-79,false,2,1,signal
+      _parse,function,"(raw:str) -> dict",81-82,false,2,1,parses
+      AgentLLMClient.__init__,method,"(llm_client=None, ollama_fallback:Any=None)",37-39,false,3,1,creates
+      AgentLLMClient.generate,method,"(prompt:str, system:str='') -> str",41-57,true,17,6,creates
+      AgentLLMClient.chat,method,"(messages:list[dict]) -> str",59-70,true,12,5,chat
+      AgentLLMClient.health,method,() -> bool,72-75,true,4,2,health
+      OllamaClient.__init__,method,"(base_url:str='http://localhost:11434', model:str='qwen2.5-coder:7b')",92-96,false,5,1,creates
+      OllamaClient.pull,method,() -> bool,98-122,true,25,6,Pull the model via the Ollama API.
+      OllamaClient._ensure_model,method,(),124-135,true,12,6,Check if model exists; pull it automatically if missing.
+      OllamaClient.generate,method,"(prompt:str, system:str='') -> str",137-146,true,10,2,creates
+      OllamaClient.chat,method,"(messages:list[dict]) -> str",148-156,true,9,1,chat
+      OllamaClient.health,method,() -> bool,158-163,true,6,2,health
+      AgentWorker.__init__,method,"(config:AgentConfig)",190-201,false,12,1,creates
+      AgentWorker.run,method,(),205-221,true,17,4,"Main agent loop: connect → sync → process → repeat."
+      AgentWorker._connect_and_run,method,(),223-247,true,25,5,registers and run
+      AgentWorker._on_message,method,"(msg:dict)",249-265,true,17,4,handles message
+      AgentWorker._process_update,method,"(block_id:str, content:str)",267-287,true,21,7,Dispatch to role-specific handler.
+      AgentWorker._edit_block,method,"(block_id:str, content:str)",291-311,true,21,5,"Editor agent: improve code using LLM."
+      AgentWorker._review_block,method,"(block_id:str, content:str)",315-333,true,19,2,"Reviewer agent: analyze code quality, log findings."
+      AgentWorker._deploy_block,method,"(block_id:str, content:str)",337-347,true,11,3,"Deployer agent: trigger markpact build on changes."
+      AgentWorker._monitor_block,method,"(block_id:str, content:str)",351-355,true,5,1,"Monitor agent: log all changes with stats."
+      AgentWorker._push_block,method,"(block_id:str, new_content:str)",359-379,true,21,4,Send updated block to sync server.
+      AgentWorker.status,method,() -> dict,383-390,false,8,1,status
+      AgentWorker.stop,method,(),392-393,false,2,1,stops
+      ConversationAgent.__init__,method,"(config:AgentConfig)",408-410,false,3,1,creates
+      ConversationAgent._process_update,method,"(block_id:str, content:str)",412-459,true,48,9,processes update
+      PactownMonitor.__init__,method,"(config:AgentConfig, poll_interval:float=10.0)",479-483,false,5,1,creates
+      PactownMonitor.set_pipeline_engine,method,(engine) -> None,485-487,false,3,1,Inject a PipelineEngine for auto-fix pipeline triggers.
+      PactownMonitor._connect_and_run,method,(),489-516,true,28,6,registers and run
+      PactownMonitor._extract_pactown_path,method,"(deploy_yaml:str)",518-527,false,10,3,parses pactown path
+      PactownMonitor._poll_loop,method,(),529-576,true,48,8,Periodically check Pactown health and write to contract blocks.
+      PactownMonitor._check_health,method,() -> dict,578-600,false,23,5,Check Pactown service health.
+      PactownMonitor._trigger_autofix,method,"(pipeline_engine, status:dict, crdt_doc=None) -> str | None",602-636,true,35,4,Start a 'pactown-autofix' pipeline run when health is degraded.
+      PactownMonitor.watch,method,"(crdt_doc=None, pipeline_engine=None, stop_after:int=0) -> list[dict]",638-713,true,76,15,Standalone health-watch loop — no WebSocket sync server required.
   marksync/dsl/parser.py:
-    functions[8]{name,kind,sig,loc,async,lines,cc,does}:
-      _coerce,function,"(value:str) -> Any",204-218,false,15,5,Coerce string values to appropriate Python types.
-      DSLCommand.target,method,() -> str,52-53,false,2,2,target
-      DSLCommand.value,method,() -> str,56-57,false,2,2,value
-      DSLParser.parse,method,"(line:str) -> DSLCommand",80-127,false,48,13,Parse a single DSL command line.
-      DSLParser._parse_pipe,method,"(tokens:list[str], raw:str) -> DSLCommand",129-165,false,37,8,"Parse: PIPE <name> <src> -> <dst1> -> <dst2> [--option value]"
-      DSLParser._parse_route,method,"(tokens:list[str], raw:str) -> DSLCommand",167-177,false,11,4,"Parse: ROUTE <pattern> -> <agent>"
-      DSLParser._parse_options,method,"(tokens:list[str]) -> dict[str, Any]",179-192,false,14,5,parses options
-      DSLParser.parse_script,method,"(text:str) -> list[DSLCommand]",194-201,false,8,6,Parse multiple lines (script file).
+    functions[11]{name,kind,sig,loc,async,lines,cc,does}:
+      expand_braces,function,"(text:str) -> list[str]",22-50,false,29,8,Expand brace expressions in a token.
+      expand_command_line,function,"(line:str) -> list[str]",53-72,false,20,5,Expand brace expressions in a full DSL command line.
+      _coerce,function,"(value:str) -> Any",273-287,false,15,5,Coerce string values to appropriate Python types.
+      DSLCommand.target,method,() -> str,111-112,false,2,2,target
+      DSLCommand.value,method,() -> str,115-116,false,2,2,value
+      DSLParser.parse,method,"(line:str) -> DSLCommand",139-186,false,48,13,Parse a single DSL command line.
+      DSLParser._parse_pipe,method,"(tokens:list[str], raw:str) -> DSLCommand",188-224,false,37,8,"Parse: PIPE <name> <src> -> <dst1> -> <dst2> [--option value]"
+      DSLParser._parse_route,method,"(tokens:list[str], raw:str) -> DSLCommand",226-236,false,11,4,"Parse: ROUTE <pattern> -> <agent>"
+      DSLParser._parse_options,method,"(tokens:list[str]) -> dict[str, Any]",238-251,false,14,5,parses options
+      DSLParser.parse_script,method,"(text:str) -> list[DSLCommand]",253-264,false,12,6,Parse multiple lines (script file) with brace expansion.
+      DSLParser.parse_with_expansion,method,"(line:str) -> list[DSLCommand]",266-270,false,5,4,"Parse a single line, returning multiple commands if brace expansion applies."
   marksync/dsl/api.py:
     functions[2]{name,kind,sig,loc,async,lines,cc,does}:
       create_api_app,function,"(executor:Any=None) -> FastAPI",67-220,false,154,2,Create a FastAPI app wired to the given DSLExecutor.
       APIResponse.__init__,method,(),59-62,false,4,3,creates
   marksync/dsl/executor.py:
-    functions[31]{name,kind,sig,loc,async,lines,cc,does}:
-      AgentHandle.to_dict,method,() -> dict,34-42,false,9,1,converts dict
-      Pipeline.to_dict,method,() -> dict,52-53,false,2,1,converts dict
-      Route.to_dict,method,() -> dict,63-64,false,2,1,converts dict
-      DSLExecutor.__init__,method,"(server_uri:Any=None, ollama_url:Any=None, agent_factory:Any=None)",79-97,false,19,3,creates
-      DSLExecutor.execute,method,"(line:str) -> dict[str, Any]",101-104,true,4,1,Parse and execute a DSL command.
-      DSLExecutor.execute_command,method,"(cmd:DSLCommand) -> dict[str, Any]",106-145,true,40,4,Execute a parsed DSLCommand.
-      DSLExecutor.execute_script,method,"(text:str) -> list[dict[str, Any]]",147-154,true,8,2,Execute a multi-line DSL script.
-      DSLExecutor._cmd_agent,method,"(cmd:DSLCommand) -> dict",158-190,true,33,6,"AGENT <name> <role> [--model M] [--auto-edit] [--watch block1,block2]"
-      DSLExecutor._spawn_agent,method,"(handle:AgentHandle)",192-212,true,21,3,Spawn an actual AgentWorker via the factory.
-      DSLExecutor._cmd_kill,method,"(cmd:DSLCommand) -> dict",214-235,true,22,6,KILL <name> — stop an agent.
-      DSLExecutor._cmd_list,method,"(cmd:DSLCommand) -> dict",237-250,true,14,10,"LIST [agents|pipelines|routes|config]"
-      DSLExecutor._cmd_pipe,method,"(cmd:DSLCommand) -> dict",252-264,true,13,4,PIPE <name> <src> -> <dst1> -> <dst2>
-      DSLExecutor._cmd_send,method,"(cmd:DSLCommand) -> dict",266-280,true,15,5,SEND <agent> <message>
-      DSLExecutor._cmd_set,method,"(cmd:DSLCommand) -> dict",282-293,true,12,2,SET <key> <value>
-      DSLExecutor._cmd_status,method,"(cmd:DSLCommand) -> dict",295-312,true,18,5,"STATUS [<agent>]"
-      DSLExecutor._cmd_deploy,method,"(cmd:DSLCommand) -> dict",314-319,true,6,1,"DEPLOY [--force]"
-      DSLExecutor._cmd_sync,method,"(cmd:DSLCommand) -> dict",321-326,true,6,2,"SYNC [push|pull|status]"
-      DSLExecutor._cmd_route,method,"(cmd:DSLCommand) -> dict",328-340,true,13,3,ROUTE <pattern> -> <agent>
-      DSLExecutor._cmd_log,method,"(cmd:DSLCommand) -> dict",342-346,true,5,1,"LOG [<agent>] [--tail N]"
-      DSLExecutor._cmd_help,method,"(cmd:DSLCommand) -> dict",348-378,true,31,3,"HELP [<command>]"
-      DSLExecutor._cmd_connect,method,"(cmd:DSLCommand) -> dict",380-385,true,6,2,"CONNECT [<uri>]"
-      DSLExecutor._cmd_disconnect,method,"(cmd:DSLCommand) -> dict",387-390,true,4,1,DISCONNECT
-      DSLExecutor._cmd_load,method,"(cmd:DSLCommand) -> dict",392-405,true,14,3,LOAD <file.msdsl> — load and execute script.
-      DSLExecutor._cmd_create,method,"(cmd:DSLCommand) -> dict",407-465,true,59,7,"CREATE <prompt> [--output DIR] [--no-llm] [--deploy]"
-      DSLExecutor._cmd_dashboard,method,"(cmd:DSLCommand) -> dict",467-473,true,7,1,"DASHBOARD [--port N] [--host H]"
-      DSLExecutor._cmd_learn,method,"(cmd:DSLCommand) -> dict",475-507,true,33,6,"LEARN <contract_path> [--success true|false] — save contract as pattern."
-      DSLExecutor._cmd_patterns,method,"(cmd:DSLCommand) -> dict",509-515,true,7,2,PATTERNS — list all saved patterns.
-      DSLExecutor._cmd_save,method,"(cmd:DSLCommand) -> dict",517-547,true,31,7,SAVE <file.msdsl> — export current state as DSL script.
-      DSLExecutor.on,method,"(event:str, handler:Callable)",551-553,false,3,1,Register event handler.
-      DSLExecutor._emit,method,"(event:str, data:Any=None)",555-561,false,7,3,Emit event to all registered handlers.
-      DSLExecutor.snapshot,method,() -> dict,565-573,false,9,4,Full runtime state snapshot.
+    functions[38]{name,kind,sig,loc,async,lines,cc,does}:
+      AgentHandle.to_dict,method,() -> dict,35-43,false,9,1,converts dict
+      Pipeline.to_dict,method,() -> dict,53-54,false,2,1,converts dict
+      Route.to_dict,method,() -> dict,64-65,false,2,1,converts dict
+      DSLExecutor.__init__,method,"(server_uri:Any=None, ollama_url:Any=None, agent_factory:Any=None)",80-99,false,20,3,creates
+      DSLExecutor.execute,method,"(line:str) -> dict[str, Any]",103-122,true,20,4,Parse and execute a DSL command with brace expansion.
+      DSLExecutor._expand_macros,method,"(line:str) -> str",124-138,false,15,6,"Replace macro calls with their template, substituting $1/$2/..."
+      DSLExecutor.execute_command,method,"(cmd:DSLCommand) -> dict[str, Any]",140-180,true,41,4,Execute a parsed DSLCommand.
+      DSLExecutor.execute_script,method,"(text:str) -> list[dict[str, Any]]",182-189,true,8,2,Execute a multi-line DSL script.
+      DSLExecutor._cmd_agent,method,"(cmd:DSLCommand) -> dict",193-225,true,33,6,"AGENT <name> <role> [--model M] [--auto-edit] [--watch block1,block2]"
+      DSLExecutor._spawn_agent,method,"(handle:AgentHandle)",227-247,true,21,3,Spawn an actual AgentWorker via the factory.
+      DSLExecutor._cmd_kill,method,"(cmd:DSLCommand) -> dict",249-270,true,22,6,KILL <name> — stop an agent.
+      DSLExecutor._cmd_list,method,"(cmd:DSLCommand) -> dict",272-285,true,14,10,"LIST [agents|pipelines|routes|config]"
+      DSLExecutor._cmd_pipe,method,"(cmd:DSLCommand) -> dict",287-299,true,13,4,PIPE <name> <src> -> <dst1> -> <dst2>
+      DSLExecutor._cmd_send,method,"(cmd:DSLCommand) -> dict",301-315,true,15,5,SEND <agent> <message>
+      DSLExecutor._cmd_set,method,"(cmd:DSLCommand) -> dict",317-328,true,12,2,SET <key> <value>
+      DSLExecutor._cmd_status,method,"(cmd:DSLCommand) -> dict",330-347,true,18,5,"STATUS [<agent>]"
+      DSLExecutor._cmd_deploy,method,"(cmd:DSLCommand) -> dict",349-354,true,6,1,"DEPLOY [--force]"
+      DSLExecutor._cmd_sync,method,"(cmd:DSLCommand) -> dict",356-361,true,6,2,"SYNC [push|pull|status]"
+      DSLExecutor._cmd_route,method,"(cmd:DSLCommand) -> dict",363-375,true,13,3,ROUTE <pattern> -> <agent>
+      DSLExecutor._cmd_log,method,"(cmd:DSLCommand) -> dict",377-381,true,5,1,"LOG [<agent>] [--tail N]"
+      DSLExecutor._cmd_help,method,"(cmd:DSLCommand) -> dict",383-413,true,31,3,"HELP [<command>]"
+      DSLExecutor._cmd_connect,method,"(cmd:DSLCommand) -> dict",415-420,true,6,2,"CONNECT [<uri>]"
+      DSLExecutor._cmd_disconnect,method,"(cmd:DSLCommand) -> dict",422-425,true,4,1,DISCONNECT
+      DSLExecutor._cmd_load,method,"(cmd:DSLCommand) -> dict",427-445,true,19,6,"LOAD <file.msdsl|file.json> [--state] — load script or restore persisted state."
+      DSLExecutor._cmd_create,method,"(cmd:DSLCommand) -> dict",447-505,true,59,7,"CREATE <prompt> [--output DIR] [--no-llm] [--deploy]"
+      DSLExecutor._cmd_dashboard,method,"(cmd:DSLCommand) -> dict",507-513,true,7,1,"DASHBOARD [--port N] [--host H]"
+      DSLExecutor._cmd_learn,method,"(cmd:DSLCommand) -> dict",515-547,true,33,6,"LEARN <contract_path> [--success true|false] — save contract as pattern."
+      DSLExecutor._cmd_macro,method,"(cmd:DSLCommand) -> dict",549-590,true,42,8,MACRO <name> = <command template>  — define a reusable command alias.
+      DSLExecutor._cmd_patterns,method,"(cmd:DSLCommand) -> dict",592-598,true,7,2,PATTERNS — list all saved patterns.
+      DSLExecutor._cmd_save,method,"(cmd:DSLCommand) -> dict",600-630,true,31,7,SAVE <file.msdsl> — export current state as DSL script.
+      DSLExecutor.on,method,"(event:str, handler:Callable)",634-636,false,3,1,Register event handler.
+      DSLExecutor._emit,method,"(event:str, data:Any=None)",638-644,false,7,3,Emit event to all registered handlers.
+      DSLExecutor.snapshot,method,() -> dict,648-656,false,9,4,Full runtime state snapshot.
+      DSLExecutor.save_state,method,"(path:Any=None) -> Path",662-677,false,16,5,"Persist agents, pipelines, routes and config to a JSON file."
+      DSLExecutor.load_state,method,"(path:Any=None) -> dict",679-684,false,6,3,Load a previously saved state dict without applying it.
+      DSLExecutor.restore_state,method,"(path:Any=None) -> int",686-721,false,36,9,"Restore agents, pipelines, routes and config from a JSON file."
+      DSLExecutor.add_webhook,method,"(url:str, events:Any=None)",725-742,false,18,6,Register a webhook URL to be notified on agent events.
+      DSLExecutor._fire_webhook,method,"(url:str, event:str, data:Any)",744-757,false,14,1,Fire a webhook asynchronously (non-blocking).
   marksync/dsl/shell.py:
-    functions[12]{name,kind,sig,loc,async,lines,cc,does}:
-      _fmt_time,function,"(ts:float) -> str",192-196,false,5,2,fmt time
-      DSLShell.__init__,method,"(executor:Any=None)",41-43,false,3,2,creates
-      DSLShell.run,method,(),45-65,true,21,6,Start the interactive REPL.
-      DSLShell._render,method,"(result:dict)",67-104,false,38,21,Render a command result with rich formatting.
-      DSLShell._render_help,method,"(help_dict:dict)",106-112,false,7,2,formats help
-      DSLShell._render_agents,method,"(agents:list[dict])",114-136,false,23,3,formats agents
-      DSLShell._render_agent_detail,method,"(a:dict)",138-146,false,9,1,formats agent detail
-      DSLShell._render_pipelines,method,"(pipelines:list[dict])",148-155,false,8,4,formats pipelines
-      DSLShell._render_routes,method,"(routes:list[dict])",157-163,false,7,4,formats routes
-      DSLShell._render_config,method,"(config:dict)",165-171,false,7,2,formats config
-      DSLShell._render_log,method,"(entries:list[dict])",173-180,false,8,3,formats log
-      DSLShell._render_status,method,"(result:dict)",182-189,false,8,2,formats status
+    functions[14]{name,kind,sig,loc,async,lines,cc,does}:
+      _setup_readline,function,"(executor:Any=None) -> bool",39-73,false,35,3,Configure readline with tab completion and persistent history.
+      _fmt_time,function,"(ts:float) -> str",253-257,false,5,2,fmt time
+      DSLShell.__init__,method,"(executor:Any=None)",89-92,false,4,2,creates
+      DSLShell.run,method,(),94-117,true,24,7,Start the interactive REPL.
+      DSLShell._prompt,method,() -> str,119-126,false,8,3,"Read a line from stdin using readline if available, else Rich console.input."
+      DSLShell._render,method,"(result:dict)",128-165,false,38,21,Render a command result with rich formatting.
+      DSLShell._render_help,method,"(help_dict:dict)",167-173,false,7,2,formats help
+      DSLShell._render_agents,method,"(agents:list[dict])",175-197,false,23,3,formats agents
+      DSLShell._render_agent_detail,method,"(a:dict)",199-207,false,9,1,formats agent detail
+      DSLShell._render_pipelines,method,"(pipelines:list[dict])",209-216,false,8,4,formats pipelines
+      DSLShell._render_routes,method,"(routes:list[dict])",218-224,false,7,4,formats routes
+      DSLShell._render_config,method,"(config:dict)",226-232,false,7,2,formats config
+      DSLShell._render_log,method,"(entries:list[dict])",234-241,false,8,3,formats log
+      DSLShell._render_status,method,"(result:dict)",243-250,false,8,2,formats status
   marksync/plugins/channels/sse.py:
     functions[10]{name,kind,sig,loc,async,lines,cc,does}:
       Plugin.__init__,method,(),32-35,false,4,1,creates
@@ -947,15 +1090,16 @@ function_details:
       Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",44-106,false,63,6,export pipeline
       Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",108-129,false,22,7,import pipeline
   marksync/plugins/integrations/pactown.py:
-    functions[8]{name,kind,sig,loc,async,lines,cc,does}:
+    functions[9]{name,kind,sig,loc,async,lines,cc,does}:
       Plugin.__init__,method,(),35-36,false,2,1,creates
       Plugin.meta,method,() -> PluginMeta,38-50,false,13,1,meta
       Plugin.export_pipeline,method,"(pipeline:PipelineSpec) -> ConversionResult",54-61,false,8,2,Convert a PipelineSpec to a pactown.yaml string.
       Plugin.import_pipeline,method,"(source:Any) -> PipelineSpec",63-78,false,16,4,Parse a pactown.yaml back into a PipelineSpec (best-effort).
       Plugin.deploy,method,"(pipeline:PipelineSpec, crdt_doc=None) -> dict",82-133,false,52,11,Write pactown.yaml to a temp file and run `pactown up <config>`.
       Plugin.status,method,() -> dict,135-154,false,20,5,Run `pactown status <config>` and return parsed result.
-      Plugin._build_config,method,"(pipeline:PipelineSpec) -> dict",158-183,false,26,6,creates config
-      Plugin._write_config,method,"(name:str, content:str) -> str",185-189,false,5,1,logs config
+      Plugin.health_check,method,(crdt_doc=None) -> dict,156-211,false,56,10,Run a health check against the deployed config with latency measurement.
+      Plugin._build_config,method,"(pipeline:PipelineSpec) -> dict",215-240,false,26,6,creates config
+      Plugin._write_config,method,"(name:str, content:str) -> str",242-246,false,5,1,logs config
   marksync/plugins/integrations/n8n.py:
     functions[3]{name,kind,sig,loc,async,lines,cc,does}:
       Plugin.meta,method,() -> PluginMeta,31-43,false,13,1,meta
@@ -1009,17 +1153,17 @@ function_details:
       Plugin.import_schema,method,"(source:Any) -> PipelineSpec",194-211,false,18,4,import schema
   examples/channels/test_channels_e2e.py:
     functions[14]{name,kind,sig,loc,async,lines,cc,does}:
-      msg,function,"(sender:str='test', recipient:str='', payload:dict=None) -> ChannelMessage",42-50,false,9,2,msg
-      test_mqtt,function,(),87-114,true,28,4,checks mqtt
-      test_redis,function,(),119-147,true,29,4,checks redis
-      test_amqp,function,(),152-182,true,31,4,checks amqp
-      test_nats,function,(),187-214,true,28,4,checks nats
-      test_sse,function,(),219-246,true,28,2,checks sse
-      test_cli,function,(),251-265,true,15,2,checks cli
-      test_http_webhook,function,(),270-296,true,27,3,checks http webhook
-      main,function,(),301-321,true,21,2,main
-      Results.__init__,method,(),54-58,false,5,1,creates
-      Results.ok,method,"(name:str, info:str='')",60-63,false,4,1,ok
-      Results.fail,method,"(name:str, err:str)",65-68,false,4,1,fail
-      Results.skip,method,"(name:str, reason:str)",70-73,false,4,1,skip
-      Results.summary,method,(),75-79,false,5,1,summary
+      msg,function,"(sender:str='test', recipient:str='', payload:dict=None) -> ChannelMessage",44-52,false,9,2,msg
+      test_mqtt,function,(),90-117,true,28,4,checks mqtt
+      test_redis,function,(),123-151,true,29,4,checks redis
+      test_amqp,function,(),157-187,true,31,4,checks amqp
+      test_nats,function,(),193-220,true,28,4,checks nats
+      test_sse,function,(),226-253,true,28,2,checks sse
+      test_cli,function,(),259-273,true,15,2,checks cli
+      test_http_webhook,function,(),279-305,true,27,3,checks http webhook
+      main,function,(),310-330,true,21,2,main
+      Results.__init__,method,(),56-60,false,5,1,creates
+      Results.ok,method,"(name:str, info:str='')",62-65,false,4,1,ok
+      Results.fail,method,"(name:str, err:str)",67-70,false,4,1,fail
+      Results.skip,method,"(name:str, reason:str)",72-75,false,4,1,skip
+      Results.summary,method,(),77-81,false,5,1,summary
