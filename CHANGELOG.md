@@ -1,3 +1,35 @@
+## [0.2.14] - 2026-02-18
+
+### Summary
+
+refactor(config): configuration management system
+
+### Docs
+
+- docs: update README
+
+### Test
+
+- update tests/test_v2.py
+
+### Build
+
+- update pyproject.toml
+
+### Other
+
+- update marksync/agents/__init__.py
+- update marksync/dsl/executor.py
+- update marksync/dsl/parser.py
+- update marksync/intent/parser.py
+- update marksync/learning/patterns.py
+- update marksync/pipeline/api.py
+- update marksync/sandbox/app.py
+- update marksync/sync/__init__.py
+- update project.functions.toon
+- update project.toon
+
+
 ## [0.2.13] - 2026-02-18
 
 ### Summary

@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from marksync.dsl.parser import DSLParser, DSLCommand, CommandType
+from pathlib import Path
 from marksync.settings import settings
 
 log = logging.getLogger("marksync.dsl")
@@ -127,6 +128,10 @@ class DSLExecutor:
             CommandType.DISCONNECT: self._cmd_disconnect,
             CommandType.LOAD: self._cmd_load,
             CommandType.SAVE: self._cmd_save,
+            CommandType.CREATE: self._cmd_create,
+            CommandType.DASHBOARD: self._cmd_dashboard,
+            CommandType.LEARN: self._cmd_learn,
+            CommandType.PATTERNS: self._cmd_patterns,
         }
 
         handler = handlers.get(cmd.type)
@@ -361,6 +366,10 @@ class DSLExecutor:
             "load": "LOAD <file.msdsl> — load and execute DSL script",
             "save": "SAVE <file.msdsl> — save current config as script",
             "help": "HELP [<command>] — show this help",
+            "create": "CREATE <prompt> [--output DIR] [--deploy] [--no-llm] — create Markpact contract",
+            "dashboard": "DASHBOARD [--port N] [--host H] — start dashboard server",
+            "learn": "LEARN <contract_path> [--success true|false] — save contract as pattern",
+            "patterns": "PATTERNS — list all saved patterns",
         }
 
         if topic and topic in commands_help:
@@ -394,6 +403,116 @@ class DSLExecutor:
         text = p.read_text("utf-8")
         results = await self.execute_script(text)
         return {"ok": True, "file": path, "commands": len(results), "results": results}
+
+    async def _cmd_create(self, cmd: DSLCommand) -> dict:
+        """CREATE <prompt> [--output DIR] [--no-llm] [--deploy]"""
+        prompt = " ".join(cmd.args) if cmd.args else ""
+        if not prompt:
+            return {"ok": False, "error": "Usage: CREATE <prompt> [--output DIR] [--no-llm] [--deploy]"}
+
+        from marksync.intent.parser import IntentParser
+        from marksync.intent.yaml_generator import YAMLGenerator
+        from marksync.contract.generator import ContractGenerator
+        from marksync.sync.crdt import CRDTDocument
+        import json as _json, time as _time
+
+        output = cmd.options.get("output", None)
+        deploy = cmd.options.get("deploy", False)
+        no_llm = cmd.options.get("no_llm", False)
+
+        crdt = CRDTDocument(project="contract")
+        intent_parser = IntentParser(crdt_doc=crdt, llm_client=None)
+        yaml_gen = YAMLGenerator(crdt_doc=crdt)
+        contract_gen = ContractGenerator(crdt_doc=crdt)
+
+        intent = intent_parser.parse(prompt)
+        yaml_gen.generate(intent)
+        contract = contract_gen.generate(intent)
+
+        from marksync.intent.parser import slugify
+        project_name = intent.name or slugify(prompt)
+        output_dir = Path(output) if output else Path(f"./{project_name}")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        readme_path = output_dir / "README.md"
+
+        ts = _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime())
+        crdt.set_block("markpact:deploy", contract_gen.generate_deploy_block(intent))
+        crdt.set_block("markpact:state", contract_gen.generate_state_block("init"))
+        crdt.set_block("markpact:log", f"[{ts}] CONTRACT_CREATED: name={project_name}")
+        crdt.set_block("markpact:history", _json.dumps([{"ts": ts, "actor": "human", "action": "prompt", "data": prompt}]))
+
+        from marksync.cli import _build_readme
+        readme_path.write_text(_build_readme(intent, contract, crdt), encoding="utf-8")
+
+        result = {
+            "ok": True, "name": project_name,
+            "path": str(readme_path), "service_type": intent.service_type,
+            "actors": intent.actors, "blocks": list(crdt.get_all().keys()),
+        }
+
+        if deploy:
+            from marksync.plugins.integrations.pactown import Plugin as PactownPlugin
+            from marksync.plugins.base import PipelineSpec, StepSpec
+            plugin = PactownPlugin()
+            pipeline_spec = PipelineSpec(
+                name=project_name,
+                steps=[StepSpec(name=s, actor="script") for s in ["validate", "deploy"]],
+            )
+            result["deploy"] = plugin.deploy(pipeline_spec, crdt_doc=crdt)
+
+        self._emit("contract.created", result)
+        log.info(f"Contract created: {readme_path}")
+        return result
+
+    async def _cmd_dashboard(self, cmd: DSLCommand) -> dict:
+        """DASHBOARD [--port N] [--host H]"""
+        port = int(cmd.options.get("port", settings.DASHBOARD_PORT))
+        host = cmd.options.get("host", settings.DASHBOARD_HOST)
+        log.info(f"Dashboard starting on {host}:{port}")
+        self._emit("dashboard.start", {"host": host, "port": port})
+        return {"ok": True, "host": host, "port": port, "url": f"http://localhost:{port}"}
+
+    async def _cmd_learn(self, cmd: DSLCommand) -> dict:
+        """LEARN <contract_path> [--success true|false] — save contract as pattern."""
+        contract_path = cmd.target
+        if not contract_path:
+            return {"ok": False, "error": "Usage: LEARN <contract_path> [--success true|false]"}
+
+        success = cmd.options.get("success", True)
+        p = Path(contract_path)
+        if not p.exists():
+            return {"ok": False, "error": f"File not found: {contract_path}"}
+
+        from marksync.sync import BlockParser
+        from marksync.learning.patterns import PatternLibrary, Pattern
+        import json as _json
+
+        blocks = BlockParser.parse(p.read_text("utf-8"))
+        block_map = {b.kind: b.content for b in blocks}
+        intent_block = block_map.get("intent", "{}")
+        try:
+            import yaml
+            intent_data = yaml.safe_load(intent_block) or {}
+        except Exception:
+            intent_data = {}
+
+        class _FakeIntent:
+            name = Path(contract_path).parent.name
+            service_type = intent_data.get("service_type", "generic")
+            actors = intent_data.get("actors", ["script"])
+            prompt = intent_data.get("prompt", "")
+
+        library = PatternLibrary()
+        pattern = library.save_from_contract(p, _FakeIntent(), success=bool(success))
+        return {"ok": True, "pattern_id": pattern.id, "success_rate": pattern.success_rate}
+
+    async def _cmd_patterns(self, cmd: DSLCommand) -> dict:
+        """PATTERNS — list all saved patterns."""
+        from marksync.learning.patterns import PatternLibrary
+        import json as _json
+        library = PatternLibrary()
+        patterns = library.list_patterns()
+        return {"ok": True, "count": len(patterns), "patterns": [_json.loads(p.to_json()) for p in patterns]}
 
     async def _cmd_save(self, cmd: DSLCommand) -> dict:
         """SAVE <file.msdsl> — export current state as DSL script."""

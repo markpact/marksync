@@ -293,3 +293,198 @@ class AgentWorker:
 
     def stop(self):
         self._running = False
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONVERSATION AGENT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class ConversationAgent(AgentWorker):
+    """
+    Agent that watches markpact:history and responds to new messages
+    by running them through the ConversationEngine (LLM-backed).
+
+    Writes LLM replies back to markpact:history via the CRDT sync server.
+    """
+
+    def __init__(self, config: AgentConfig):
+        super().__init__(config)
+        self._last_history_len = 0
+
+    async def _process_update(self, block_id: str, content: str):
+        if block_id != "markpact:history":
+            return
+
+        try:
+            import json as _json
+            history = _json.loads(content)
+        except (ValueError, TypeError):
+            return
+
+        if len(history) <= self._last_history_len:
+            return
+
+        new_messages = history[self._last_history_len:]
+        self._last_history_len = len(history)
+
+        for msg in new_messages:
+            if msg.get("actor") != "human":
+                continue
+            data = msg.get("data", "")
+            if not isinstance(data, str):
+                continue
+
+            log.info(f"[{self.config.name}:conversation] Processing: {data[:80]}")
+            try:
+                reply = await self.llm.chat([
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are an intelligent contract assistant managing a Markpact project. "
+                            "Respond concisely to the user's request about the contract."
+                        ),
+                    },
+                    {"role": "user", "content": data},
+                ])
+                if reply:
+                    new_entry = {
+                        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        "actor": f"llm:{self.config.name}",
+                        "action": "message",
+                        "data": reply.strip(),
+                    }
+                    history.append(new_entry)
+                    self._last_history_len = len(history)
+                    await self._push_block("markpact:history", _json.dumps(history))
+                    log.info(f"[{self.config.name}:conversation] Reply sent ({len(reply)} chars)")
+            except Exception as e:
+                log.error(f"[{self.config.name}:conversation] Error: {e}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PACTOWN MONITOR
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class PactownMonitor(AgentWorker):
+    """
+    Agent that periodically polls Pactown service health and writes
+    results to markpact:state and markpact:log in the CRDT document.
+
+    On degraded health, it appends an auto-fix event to markpact:history
+    so the ConversationEngine or a human can take action.
+    """
+
+    def __init__(self, config: AgentConfig, poll_interval: float = 10.0):
+        super().__init__(config)
+        self._poll_interval = poll_interval
+        self._pactown_config_path: str = ""
+
+    async def _connect_and_run(self):
+        async with websockets.connect(self.config.server_uri) as ws:
+            self.ws = ws
+            log.info(f"[{self.config.name}] PactownMonitor connected to {self.config.server_uri}")
+
+            raw = await asyncio.wait_for(ws.recv(), timeout=15)
+            msg = _parse(raw)
+            if msg.get("type") == "manifest":
+                self.server_manifest = msg["blocks"]
+
+            await ws.send(_signal("get_snapshot"))
+            raw = await asyncio.wait_for(ws.recv(), timeout=15)
+            msg = _parse(raw)
+            if msg.get("type") == "snapshot":
+                parsed = BlockParser.parse(msg["markdown"])
+                self.blocks = {b.block_id: b.content for b in parsed}
+                deploy_block = self.blocks.get("markpact:deploy", "")
+                if deploy_block:
+                    self._extract_pactown_path(deploy_block)
+
+            monitor_task = asyncio.create_task(self._poll_loop())
+
+            try:
+                async for raw in ws:
+                    msg = _parse(raw)
+                    await self._on_message(msg)
+            finally:
+                monitor_task.cancel()
+
+    def _extract_pactown_path(self, deploy_yaml: str):
+        try:
+            import yaml
+            cfg = yaml.safe_load(deploy_yaml)
+            name = cfg.get("pactown", {}).get("name", "")
+            if name:
+                import tempfile, os
+                self._pactown_config_path = os.path.join(tempfile.gettempdir(), f"{name}.pactown.yaml")
+        except Exception:
+            pass
+
+    async def _poll_loop(self):
+        """Periodically check Pactown health and write to contract blocks."""
+        import json as _json
+
+        while True:
+            await asyncio.sleep(self._poll_interval)
+            try:
+                status = self._check_health()
+                ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+                state_raw = self.blocks.get("markpact:state", "{}")
+                try:
+                    state = _json.loads(state_raw)
+                except ValueError:
+                    state = {}
+
+                state["health"] = status["health"]
+                state["last_check"] = ts
+
+                await self._push_block("markpact:state", _json.dumps(state, indent=2))
+
+                log_line = (
+                    f"[{ts}] HEALTH_CHECK: status={status['health']}"
+                    + (f", latency={status.get('latency_ms', '?')}ms" if status.get("latency_ms") else "")
+                )
+                existing_log = self.blocks.get("markpact:log", "")
+                await self._push_block("markpact:log", (existing_log + "\n" + log_line).strip())
+
+                if status["health"] != "ok":
+                    history_raw = self.blocks.get("markpact:history", "[]")
+                    try:
+                        history = _json.loads(history_raw)
+                    except ValueError:
+                        history = []
+                    history.append({
+                        "ts": ts,
+                        "actor": f"monitor:{self.config.name}",
+                        "action": "health_degraded",
+                        "data": status,
+                    })
+                    await self._push_block("markpact:history", _json.dumps(history))
+                    log.warning(f"[{self.config.name}] Health degraded: {status}")
+
+            except Exception as e:
+                log.error(f"[{self.config.name}] Poll error: {e}")
+
+    def _check_health(self) -> dict:
+        """Check Pactown service health. Returns {health, latency_ms, ...}."""
+        if not self._pactown_config_path:
+            return {"health": "unknown", "error": "no config path"}
+
+        import subprocess, time as _time
+
+        try:
+            t0 = _time.monotonic()
+            proc = subprocess.run(
+                ["pactown", "status", self._pactown_config_path],
+                capture_output=True, text=True, timeout=10,
+            )
+            latency_ms = round((_time.monotonic() - t0) * 1000)
+            return {
+                "health": "ok" if proc.returncode == 0 else "error",
+                "latency_ms": latency_ms,
+                "output": proc.stdout[:200],
+            }
+        except FileNotFoundError:
+            return {"health": "unknown", "error": "pactown CLI not found"}
+        except subprocess.TimeoutExpired:
+            return {"health": "degraded", "error": "timeout"}

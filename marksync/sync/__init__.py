@@ -33,14 +33,14 @@ class MarkpactBlock:
 
 # Patterns for different markpact fenced-block styles
 _PATTERNS = [
-    # ```<lang> markpact:<kind> <meta>
+    # ```<lang> markpact:<kind>[=<path>] [<meta on same line>]
     re.compile(
-        r"^```(\w*)\s+markpact:(\w+)(?:\s+(.+?))?\s*\n(.*?)\n^```\s*$",
+        r"^```(\w*)[ \t]+markpact:(\w+(?:=[^\s`]+)?)(?:[ \t]+([^\n]+?))?\s*\n(.*?)\n^```\s*$",
         re.DOTALL | re.MULTILINE,
     ),
-    # ```markpact:<kind> <lang> <meta>
+    # ```markpact:<kind>[=<path>] [<lang>] [<meta on same line>]
     re.compile(
-        r"^```markpact:(\w+)(?:\s+(\w+))?(?:\s+(.+?))?\s*\n(.*?)\n^```\s*$",
+        r"^```markpact:(\w+(?:=[^\s`]+)?)(?:[ \t]+(\w+))?(?:[ \t]+([^\n]+?))?\s*\n(.*?)\n^```\s*$",
         re.DOTALL | re.MULTILINE,
     ),
 ]
@@ -64,6 +64,10 @@ class BlockParser:
                     lang = lang or "text"
 
                 meta = (meta or "").strip()
+                # Split embedded path from kind (e.g. "file=app/main.py" → kind="file", meta="app/main.py")
+                if "=" in (kind or ""):
+                    kind, _, embedded = kind.partition("=")
+                    meta = embedded if not meta else meta
                 bid = BlockParser._make_id(kind, meta)
                 if bid in seen:
                     continue
@@ -80,6 +84,9 @@ class BlockParser:
 
     @staticmethod
     def _make_id(kind: str, meta: str) -> str:
+        # kind may already embed the path (e.g. "file=app/main.py" from = notation)
+        if "=" in kind:
+            return f"markpact:{kind}"
         path_m = re.search(r"path=(\S+)", meta)
         if path_m:
             return f"markpact:{kind}={path_m.group(1)}"

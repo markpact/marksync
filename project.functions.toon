@@ -1,6 +1,6 @@
 project: marksync
-generated: "2026-02-18T22:47:15.017465"
-modules[88]{path,lang,items}:
+generated: "2026-02-18T23:01:59.671741"
+modules[89]{path,lang,items}:
   examples/bpmn_multiagent.py,python,6
   tests/test_settings.py,python,13
   tests/test_orchestrator.py,python,24
@@ -8,6 +8,7 @@ modules[88]{path,lang,items}:
   tests/test_pipeline_scenarios.py,python,32
   tests/test_dsl.py,python,38
   tests/test_marksync.py,python,2
+  tests/test_v2.py,python,77
   tests/test_examples.py,python,24
   tests/test_pipeline.py,python,24
   marksync/cli.py,python,24
@@ -47,11 +48,11 @@ modules[88]{path,lang,items}:
   marksync/pipeline/llm_client.py,python,8
   marksync/pipeline/api.py,python,8
   marksync/agents/base.py,python,0
-  marksync/agents/__init__.py,python,18
+  marksync/agents/__init__.py,python,25
   marksync/dsl/__init__.py,python,0
   marksync/dsl/parser.py,python,8
   marksync/dsl/api.py,python,2
-  marksync/dsl/executor.py,python,27
+  marksync/dsl/executor.py,python,31
   marksync/dsl/shell.py,python,12
   marksync/plugins/channels/sse.py,python,10
   marksync/plugins/channels/websocket.py,python,9
@@ -250,6 +251,85 @@ function_details:
     functions[2]{name,kind,sig,loc,async,lines,cc,does}:
       test_placeholder,function,(),4-6,false,3,1,Placeholder test to verify the test setup works.
       test_import,function,(),9-11,false,3,1,Verify the main package can be imported.
+  tests/test_v2.py:
+    functions[77]{name,kind,sig,loc,async,lines,cc,does}:
+      tmp_contract_dir,function,(tmp_path),16-26,false,11,1,tmp contract dir
+      TestBlockParserV2.test_plain_blocks_parse,method,(),33-40,false,8,1,checks plain blocks parse
+      TestBlockParserV2.test_json_block_no_meta_bleed,method,(),42-49,false,8,1,checks json block no meta bleed
+      TestBlockParserV2.test_file_block_equals_notation,method,(),51-58,false,8,1,checks file block equals notation
+      TestBlockParserV2.test_all_10_contract_blocks,method,(tmp_contract_dir),60-79,false,20,2,checks all 10 contract blocks
+      TestBlockParserV2.test_multiline_yaml_block,method,(),81-88,false,8,1,checks multiline yaml block
+      TestBlockParserV2.test_no_meta_bleed_between_blocks,method,(),90-99,false,10,3,checks no meta bleed between blocks
+      TestProcessIntent.test_rest_api_detected,method,(),106-109,false,4,1,checks rest api detected
+      TestProcessIntent.test_web_app_detected,method,(),111-114,false,4,1,checks web app detected
+      TestProcessIntent.test_cli_detected,method,(),116-119,false,4,1,checks cli detected
+      TestProcessIntent.test_worker_detected,method,(),121-124,false,4,1,checks worker detected
+      TestProcessIntent.test_human_approval_detected,method,(),126-130,false,5,1,checks human approval detected
+      TestProcessIntent.test_llm_actor_detected,method,(),132-135,false,4,1,checks llm actor detected
+      TestProcessIntent.test_fastapi_stack_inferred,method,(),137-140,false,4,1,checks fastapi stack inferred
+      TestProcessIntent.test_name_no_spaces,method,(),142-145,false,4,1,checks name no spaces
+      TestProcessIntent.test_to_yaml_roundtrip,method,(),147-151,false,5,1,checks to yaml roundtrip
+      TestProcessIntent.test_parser_writes_crdt,method,(),153-159,false,7,1,checks parser writes crdt
+      TestYAMLGenerator.test_generates_pipeline_and_orchestration,method,(),166-172,false,7,1,checks generates pipeline and orchestration
+      TestYAMLGenerator.test_pipeline_has_steps,method,(),174-180,false,7,1,checks pipeline has steps
+      TestYAMLGenerator.test_llm_actor_adds_ai_check,method,(),182-189,false,8,2,checks llm actor adds ai check
+      TestYAMLGenerator.test_human_actor_adds_approval,method,(),191-199,false,9,2,checks human actor adds approval
+      TestYAMLGenerator.test_writes_to_crdt,method,(),201-208,false,8,1,checks writes to crdt
+      TestBlockTypes.test_constants,method,(),215-219,false,5,1,checks constants
+      TestBlockTypes.test_block_id_plain,method,(),221-223,false,3,1,checks block id plain
+      TestBlockTypes.test_block_id_with_path,method,(),225-227,false,3,1,checks block id with path
+      TestBlockTypes.test_generated_contract_ok,method,(),229-232,false,4,1,checks generated contract ok
+      TestBlockTypes.test_generated_contract_errors,method,(),234-236,false,3,1,checks generated contract errors
+      TestServiceTemplates._intent,method,(stype),243-248,false,6,1,intent
+      TestServiceTemplates.test_rest_api,method,(),250-253,false,4,1,checks rest api
+      TestServiceTemplates.test_cli,method,(),255-258,false,4,1,checks cli
+      TestServiceTemplates.test_worker,method,(),260-263,false,4,1,checks worker
+      TestServiceTemplates.test_fallback_generic,method,(),265-267,false,3,1,checks fallback generic
+      TestContractGenerator.test_generate_returns_contract,method,(),274-278,false,5,1,checks generate returns contract
+      TestContractGenerator.test_generate_writes_deps_to_crdt,method,(),280-286,false,7,1,checks generate writes deps to crdt
+      TestContractGenerator.test_deploy_block_has_pactown,method,(),288-292,false,5,1,checks deploy block has pactown
+      TestContractGenerator.test_state_block_init_phase,method,(),294-297,false,4,1,checks state block init phase
+      TestContractGenerator.test_log_entry_format,method,(),299-302,false,4,2,checks log entry format
+      TestConversationEngine.test_append_stores_message,method,(),309-314,false,6,1,checks append stores message
+      TestConversationEngine.test_append_writes_to_crdt,method,(),316-322,false,7,1,checks append writes to crdt
+      TestConversationEngine.test_process_message_no_llm,method,(),324-329,false,6,1,checks process message no llm
+      TestConversationEngine.test_clear_empties_history,method,(),331-336,false,6,1,checks clear empties history
+      TestConversationEngine.test_multiple_messages_accumulate,method,(),338-343,false,6,2,checks multiple messages accumulate
+      TestPattern.test_from_intent,method,(),350-355,false,6,1,checks from intent
+      TestPattern.test_record_success,method,(),357-362,false,6,1,checks record success
+      TestPattern.test_record_failure,method,(),364-369,false,6,1,checks record failure
+      TestPattern.test_json_roundtrip,method,(),371-375,false,5,2,checks json roundtrip
+      TestPatternLibrary.test_empty,method,(tmp_path),380-382,false,3,1,checks empty
+      TestPatternLibrary.test_save_and_list,method,"(tmp_contract_dir, tmp_path)",384-390,false,7,1,checks save and list
+      TestFeedbackCollector.test_approve_recorded,method,(),397-402,false,6,2,checks approve recorded
+      TestFeedbackCollector.test_reject_with_reason,method,(),404-410,false,7,3,checks reject with reason
+      TestFeedbackCollector.test_complete_run_updates_state,method,(),412-421,false,10,1,checks complete run updates state
+      TestPactownPlugin.test_meta,method,(),428-433,false,6,1,checks meta
+      TestPactownPlugin.test_export_pipeline,method,(),435-446,false,12,1,checks export pipeline
+      TestPactownPlugin.test_import_pipeline_roundtrip,method,(),448-456,false,9,1,checks import pipeline roundtrip
+      TestPactownPlugin.test_deploy_no_cli,method,(),458-464,false,7,1,checks deploy no cli
+      TestPactownPlugin.test_status_no_config,method,(),466-468,false,3,1,checks status no config
+      TestPactownPlugin.test_registered_in_registry,method,(),470-476,false,7,1,checks registered in registry
+      TestDSLParserV2.setup_method,method,(),483-485,false,3,1,initializes method
+      TestDSLParserV2.test_create_command,method,(),487-491,false,5,1,checks create command
+      TestDSLParserV2.test_dashboard_command_with_port,method,(),493-497,false,5,1,checks dashboard command with port
+      TestDSLParserV2.test_learn_command,method,(),499-504,false,6,1,checks learn command
+      TestDSLParserV2.test_patterns_command,method,(),506-509,false,4,1,checks patterns command
+      TestDSLParserV2.test_all_v2_types_in_enum,method,(),511-517,false,7,2,checks all v2 types in enum
+      TestDSLExecutorV2.setup_method,method,(),524-526,false,3,1,initializes method
+      TestDSLExecutorV2._run,method,(coro),528-529,false,2,1,starts
+      TestDSLExecutorV2.test_dashboard_command,method,(),531-535,false,5,1,checks dashboard command
+      TestDSLExecutorV2.test_patterns_command_empty,method,(),537-540,false,4,1,checks patterns command empty
+      TestDSLExecutorV2.test_create_command,method,"(tmp_path, monkeypatch)",542-549,false,8,1,checks create command
+      TestDSLExecutorV2.test_learn_command,method,(tmp_contract_dir),551-556,false,6,1,checks learn command
+      TestDSLExecutorV2.test_help_includes_v2,method,(),558-564,false,7,1,checks help includes v2
+      TestAgentsV2.test_conversation_agent_importable,method,(),571-574,false,4,1,checks conversation agent importable
+      TestAgentsV2.test_pactown_monitor_importable,method,(),576-580,false,5,1,checks pactown monitor importable
+      TestAgentsV2.test_agent_status_fields,method,(),582-588,false,7,1,checks agent status fields
+      TestPipelineTasksPending.test_tasks_pending_endpoint_exists,method,(),595-607,false,13,1,checks tasks pending endpoint exists
+      TestPipelineTasksPending.test_tasks_pending_empty_by_default,method,(),609-618,false,10,1,checks tasks pending empty by default
+      TestE2ECreate.test_full_contract_10_blocks,method,(tmp_path),625-658,false,34,2,checks full contract 10 blocks
+      TestE2ECreate.test_create_cli_command,method,"(tmp_path, monkeypatch)",660-672,false,13,1,checks create cli command
   tests/test_examples.py:
     functions[24]{name,kind,sig,loc,async,lines,cc,does}:
       TestExample1.load,method,(),17-19,false,3,1,retrieves
@@ -409,10 +489,10 @@ function_details:
   marksync/sync/__init__.py:
     functions[5]{name,kind,sig,loc,async,lines,cc,does}:
       MarkpactBlock.__post_init__,method,(),26-31,false,6,3,creates init
-      BlockParser.parse,method,"(markdown:str) -> list[MarkpactBlock]",53-79,false,27,8,parses
-      BlockParser._make_id,method,"(kind:str, meta:str) -> str",82-88,false,7,3,creates id
-      BlockParser.rebuild_markdown,method,"(original:str, blocks:dict[str,str]) -> str",91-106,false,16,6,Replace block contents in original markdown with updated versions.
-      BlockParser.manifest,method,"(blocks:list[MarkpactBlock]) -> dict[str, str]",109-111,false,3,2,block_id -> sha256 map for delta detection.
+      BlockParser.parse,method,"(markdown:str) -> list[MarkpactBlock]",53-83,false,31,11,parses
+      BlockParser._make_id,method,"(kind:str, meta:str) -> str",86-95,false,10,4,creates id
+      BlockParser.rebuild_markdown,method,"(original:str, blocks:dict[str,str]) -> str",98-113,false,16,6,Replace block contents in original markdown with updated versions.
+      BlockParser.manifest,method,"(blocks:list[MarkpactBlock]) -> dict[str, str]",116-118,false,3,2,block_id -> sha256 map for delta detection.
   marksync/intent/parser.py:
     functions[11]{name,kind,sig,loc,async,lines,cc,does}:
       slugify,function,"(text:str) -> str",67-69,false,3,2,Convert arbitrary text to a safe slug.
@@ -507,8 +587,8 @@ function_details:
       PromptRefiner._patch_pipeline,method,"(pipeline_yaml:str, step_name:str, new_prompt:str) -> str",110-119,false,10,4,updates pipeline
   marksync/learning/patterns.py:
     functions[13]{name,kind,sig,loc,async,lines,cc,does}:
-      _now,function,() -> str,168-169,false,2,1,now
-      _keywords_from_intent,function,"(intent:ProcessIntent) -> list[str]",172-179,false,8,5,keywords from intent
+      _now,function,() -> str,176-177,false,2,1,now
+      _keywords_from_intent,function,"(intent:ProcessIntent) -> list[str]",180-187,false,8,5,keywords from intent
       Pattern.to_json,method,() -> str,32-42,false,11,2,converts json
       Pattern.from_block,method,"(body:str) -> \"Pattern\"",45-56,false,12,1,from block
       Pattern.from_intent,method,"(intent:ProcessIntent, pattern_id:str='') -> \"Pattern\"",59-66,false,8,2,from intent
@@ -517,9 +597,9 @@ function_details:
       PatternLibrary.__init__,method,"(patterns_dir:Any='~/.marksync/patterns/')",88-90,false,3,1,creates
       PatternLibrary.find_pattern,method,"(intent:ProcessIntent) -> Pattern | None",92-111,false,20,7,Find the best matching pattern for this intent.
       PatternLibrary.list_patterns,method,"() -> list[Pattern]",113-125,false,13,5,Return all stored patterns.
-      PatternLibrary.save_pattern,method,"(contract_path:Any, pattern:Pattern)",127-132,false,6,1,Copy contract README to patterns dir and write pattern metadata.
-      PatternLibrary.save_from_contract,method,"(contract_path:Any, intent:ProcessIntent, success:bool=True) -> Pattern",134-153,false,20,3,Create or update a pattern from a completed contract.
-      PatternLibrary._score,method,"(intent:ProcessIntent, pattern:Pattern) -> int",157-165,false,9,4,score
+      PatternLibrary.save_pattern,method,"(contract_path:Any, pattern:Pattern)",127-140,false,14,2,Copy contract README to patterns dir and write pattern metadata block.
+      PatternLibrary.save_from_contract,method,"(contract_path:Any, intent:ProcessIntent, success:bool=True) -> Pattern",142-161,false,20,3,Create or update a pattern from a completed contract.
+      PatternLibrary._score,method,"(intent:ProcessIntent, pattern:Pattern) -> int",165-173,false,9,4,score
   marksync/contract/block_types.py:
     functions[2]{name,kind,sig,loc,async,lines,cc,does}:
       block_id,function,"(kind:str, meta:str='') -> str",51-55,false,5,2,"Build a canonical markpact block ID, matching BlockParser._make_id()."
@@ -544,8 +624,8 @@ function_details:
       GenericTemplate.render,method,"(intent:ProcessIntent) -> GeneratedContract",159-184,false,26,4,formats
   marksync/sandbox/app.py:
     functions[2]{name,kind,sig,loc,async,lines,cc,does}:
-      create_sandbox_app,function,() -> FastAPI,68-304,false,237,1,creates sandbox app
-      _render_html,function,() -> str,309-311,false,3,1,formats html
+      create_sandbox_app,function,() -> FastAPI,68-311,false,244,1,creates sandbox app
+      _render_html,function,() -> str,316-318,false,3,1,formats html
   marksync/pipeline/engine.py:
     functions[25]{name,kind,sig,loc,async,lines,cc,does}:
       Step.to_dict,method,() -> dict,72-79,false,8,1,converts dict
@@ -595,16 +675,16 @@ function_details:
       LLMClient.generate_json,method,"(system_prompt:str, user_prompt:str, model:Any=None) -> LLMResponse",196-202,false,7,1,"Convenience: generate JSON output from system + user prompt."
   marksync/pipeline/api.py:
     functions[8]{name,kind,sig,loc,async,lines,cc,does}:
-      create_pipeline_router,function,"(engine:PipelineEngine) -> APIRouter",43-173,false,131,1,creates pipeline router
-      _demo_code_review,function,"(engine:PipelineEngine) -> dict",178-213,true,36,1,"Demo: LLM edit → Human review → Lint → Deploy"
-      _demo_account_creation,function,"(engine:PipelineEngine) -> dict",216-254,true,39,1,"Demo: Validate request → Human provides details → Create account → Human confirm..."
-      _demo_payment,function,"(engine:PipelineEngine) -> dict",257-295,true,39,1,"Demo: Fraud check → Human authorize → Process payment → Human confirm receipt..."
-      _demo_doc_generation,function,"(engine:PipelineEngine) -> dict",298-339,true,42,1,"Demo: Script scrapes code → LLM writes docs → Human reviews → LLM refines → Scri..."
-      _demo_incident_response,function,"(engine:PipelineEngine) -> dict",342-385,true,44,1,"Demo: Script detects → Human acknowledges → LLM analyses → Human resolves → Scri..."
-      _demo_content_moderation,function,"(engine:PipelineEngine) -> dict",388-425,true,38,1,"Demo: LLM scans content → Script scores risk → Human decides borderline → Script..."
-      _demo_data_migration,function,"(engine:PipelineEngine) -> dict",428-472,true,45,1,"Demo: Script validates schema → LLM transforms → Human spot-checks → Script migr..."
+      create_pipeline_router,function,"(engine:PipelineEngine) -> APIRouter",43-182,false,140,1,creates pipeline router
+      _demo_code_review,function,"(engine:PipelineEngine) -> dict",187-222,true,36,1,"Demo: LLM edit → Human review → Lint → Deploy"
+      _demo_account_creation,function,"(engine:PipelineEngine) -> dict",225-263,true,39,1,"Demo: Validate request → Human provides details → Create account → Human confirm..."
+      _demo_payment,function,"(engine:PipelineEngine) -> dict",266-304,true,39,1,"Demo: Fraud check → Human authorize → Process payment → Human confirm receipt..."
+      _demo_doc_generation,function,"(engine:PipelineEngine) -> dict",307-348,true,42,1,"Demo: Script scrapes code → LLM writes docs → Human reviews → LLM refines → Scri..."
+      _demo_incident_response,function,"(engine:PipelineEngine) -> dict",351-394,true,44,1,"Demo: Script detects → Human acknowledges → LLM analyses → Human resolves → Scri..."
+      _demo_content_moderation,function,"(engine:PipelineEngine) -> dict",397-434,true,38,1,"Demo: LLM scans content → Script scores risk → Human decides borderline → Script..."
+      _demo_data_migration,function,"(engine:PipelineEngine) -> dict",437-481,true,45,1,"Demo: Script validates schema → LLM transforms → Human spot-checks → Script migr..."
   marksync/agents/__init__.py:
-    functions[18]{name,kind,sig,loc,async,lines,cc,does}:
+    functions[25]{name,kind,sig,loc,async,lines,cc,does}:
       _signal,function,"(type:str) -> str",26-27,false,2,1,signal
       _parse,function,"(raw:str) -> dict",29-30,false,2,1,parses
       OllamaClient.__init__,method,"(base_url:str='http://localhost:11434', model:str='qwen2.5-coder:7b')",40-44,false,5,1,creates
@@ -623,49 +703,60 @@ function_details:
       AgentWorker._push_block,method,"(block_id:str, new_content:str)",261-281,true,21,4,Send updated block to sync server.
       AgentWorker.status,method,() -> dict,285-292,false,8,1,status
       AgentWorker.stop,method,(),294-295,false,2,1,stops
+      ConversationAgent.__init__,method,"(config:AgentConfig)",310-312,false,3,1,creates
+      ConversationAgent._process_update,method,"(block_id:str, content:str)",314-361,true,48,9,processes update
+      PactownMonitor.__init__,method,"(config:AgentConfig, poll_interval:float=10.0)",377-380,false,4,1,creates
+      PactownMonitor._connect_and_run,method,(),382-409,true,28,6,registers and run
+      PactownMonitor._extract_pactown_path,method,"(deploy_yaml:str)",411-420,false,10,3,parses pactown path
+      PactownMonitor._poll_loop,method,(),422-466,true,45,7,Periodically check Pactown health and write to contract blocks.
+      PactownMonitor._check_health,method,() -> dict,468-490,false,23,5,Check Pactown service health.
   marksync/dsl/parser.py:
     functions[8]{name,kind,sig,loc,async,lines,cc,does}:
-      _coerce,function,"(value:str) -> Any",199-213,false,15,5,Coerce string values to appropriate Python types.
-      DSLCommand.target,method,() -> str,47-48,false,2,2,target
-      DSLCommand.value,method,() -> str,51-52,false,2,2,value
-      DSLParser.parse,method,"(line:str) -> DSLCommand",75-122,false,48,13,Parse a single DSL command line.
-      DSLParser._parse_pipe,method,"(tokens:list[str], raw:str) -> DSLCommand",124-160,false,37,8,"Parse: PIPE <name> <src> -> <dst1> -> <dst2> [--option value]"
-      DSLParser._parse_route,method,"(tokens:list[str], raw:str) -> DSLCommand",162-172,false,11,4,"Parse: ROUTE <pattern> -> <agent>"
-      DSLParser._parse_options,method,"(tokens:list[str]) -> dict[str, Any]",174-187,false,14,5,parses options
-      DSLParser.parse_script,method,"(text:str) -> list[DSLCommand]",189-196,false,8,6,Parse multiple lines (script file).
+      _coerce,function,"(value:str) -> Any",204-218,false,15,5,Coerce string values to appropriate Python types.
+      DSLCommand.target,method,() -> str,52-53,false,2,2,target
+      DSLCommand.value,method,() -> str,56-57,false,2,2,value
+      DSLParser.parse,method,"(line:str) -> DSLCommand",80-127,false,48,13,Parse a single DSL command line.
+      DSLParser._parse_pipe,method,"(tokens:list[str], raw:str) -> DSLCommand",129-165,false,37,8,"Parse: PIPE <name> <src> -> <dst1> -> <dst2> [--option value]"
+      DSLParser._parse_route,method,"(tokens:list[str], raw:str) -> DSLCommand",167-177,false,11,4,"Parse: ROUTE <pattern> -> <agent>"
+      DSLParser._parse_options,method,"(tokens:list[str]) -> dict[str, Any]",179-192,false,14,5,parses options
+      DSLParser.parse_script,method,"(text:str) -> list[DSLCommand]",194-201,false,8,6,Parse multiple lines (script file).
   marksync/dsl/api.py:
     functions[2]{name,kind,sig,loc,async,lines,cc,does}:
       create_api_app,function,"(executor:Any=None) -> FastAPI",67-220,false,154,2,Create a FastAPI app wired to the given DSLExecutor.
       APIResponse.__init__,method,(),59-62,false,4,3,creates
   marksync/dsl/executor.py:
-    functions[27]{name,kind,sig,loc,async,lines,cc,does}:
-      AgentHandle.to_dict,method,() -> dict,33-41,false,9,1,converts dict
-      Pipeline.to_dict,method,() -> dict,51-52,false,2,1,converts dict
-      Route.to_dict,method,() -> dict,62-63,false,2,1,converts dict
-      DSLExecutor.__init__,method,"(server_uri:Any=None, ollama_url:Any=None, agent_factory:Any=None)",78-96,false,19,3,creates
-      DSLExecutor.execute,method,"(line:str) -> dict[str, Any]",100-103,true,4,1,Parse and execute a DSL command.
-      DSLExecutor.execute_command,method,"(cmd:DSLCommand) -> dict[str, Any]",105-140,true,36,4,Execute a parsed DSLCommand.
-      DSLExecutor.execute_script,method,"(text:str) -> list[dict[str, Any]]",142-149,true,8,2,Execute a multi-line DSL script.
-      DSLExecutor._cmd_agent,method,"(cmd:DSLCommand) -> dict",153-185,true,33,6,"AGENT <name> <role> [--model M] [--auto-edit] [--watch block1,block2]"
-      DSLExecutor._spawn_agent,method,"(handle:AgentHandle)",187-207,true,21,3,Spawn an actual AgentWorker via the factory.
-      DSLExecutor._cmd_kill,method,"(cmd:DSLCommand) -> dict",209-230,true,22,6,KILL <name> — stop an agent.
-      DSLExecutor._cmd_list,method,"(cmd:DSLCommand) -> dict",232-245,true,14,10,"LIST [agents|pipelines|routes|config]"
-      DSLExecutor._cmd_pipe,method,"(cmd:DSLCommand) -> dict",247-259,true,13,4,PIPE <name> <src> -> <dst1> -> <dst2>
-      DSLExecutor._cmd_send,method,"(cmd:DSLCommand) -> dict",261-275,true,15,5,SEND <agent> <message>
-      DSLExecutor._cmd_set,method,"(cmd:DSLCommand) -> dict",277-288,true,12,2,SET <key> <value>
-      DSLExecutor._cmd_status,method,"(cmd:DSLCommand) -> dict",290-307,true,18,5,"STATUS [<agent>]"
-      DSLExecutor._cmd_deploy,method,"(cmd:DSLCommand) -> dict",309-314,true,6,1,"DEPLOY [--force]"
-      DSLExecutor._cmd_sync,method,"(cmd:DSLCommand) -> dict",316-321,true,6,2,"SYNC [push|pull|status]"
-      DSLExecutor._cmd_route,method,"(cmd:DSLCommand) -> dict",323-335,true,13,3,ROUTE <pattern> -> <agent>
-      DSLExecutor._cmd_log,method,"(cmd:DSLCommand) -> dict",337-341,true,5,1,"LOG [<agent>] [--tail N]"
-      DSLExecutor._cmd_help,method,"(cmd:DSLCommand) -> dict",343-369,true,27,3,"HELP [<command>]"
-      DSLExecutor._cmd_connect,method,"(cmd:DSLCommand) -> dict",371-376,true,6,2,"CONNECT [<uri>]"
-      DSLExecutor._cmd_disconnect,method,"(cmd:DSLCommand) -> dict",378-381,true,4,1,DISCONNECT
-      DSLExecutor._cmd_load,method,"(cmd:DSLCommand) -> dict",383-396,true,14,3,LOAD <file.msdsl> — load and execute script.
-      DSLExecutor._cmd_save,method,"(cmd:DSLCommand) -> dict",398-428,true,31,7,SAVE <file.msdsl> — export current state as DSL script.
-      DSLExecutor.on,method,"(event:str, handler:Callable)",432-434,false,3,1,Register event handler.
-      DSLExecutor._emit,method,"(event:str, data:Any=None)",436-442,false,7,3,Emit event to all registered handlers.
-      DSLExecutor.snapshot,method,() -> dict,446-454,false,9,4,Full runtime state snapshot.
+    functions[31]{name,kind,sig,loc,async,lines,cc,does}:
+      AgentHandle.to_dict,method,() -> dict,34-42,false,9,1,converts dict
+      Pipeline.to_dict,method,() -> dict,52-53,false,2,1,converts dict
+      Route.to_dict,method,() -> dict,63-64,false,2,1,converts dict
+      DSLExecutor.__init__,method,"(server_uri:Any=None, ollama_url:Any=None, agent_factory:Any=None)",79-97,false,19,3,creates
+      DSLExecutor.execute,method,"(line:str) -> dict[str, Any]",101-104,true,4,1,Parse and execute a DSL command.
+      DSLExecutor.execute_command,method,"(cmd:DSLCommand) -> dict[str, Any]",106-145,true,40,4,Execute a parsed DSLCommand.
+      DSLExecutor.execute_script,method,"(text:str) -> list[dict[str, Any]]",147-154,true,8,2,Execute a multi-line DSL script.
+      DSLExecutor._cmd_agent,method,"(cmd:DSLCommand) -> dict",158-190,true,33,6,"AGENT <name> <role> [--model M] [--auto-edit] [--watch block1,block2]"
+      DSLExecutor._spawn_agent,method,"(handle:AgentHandle)",192-212,true,21,3,Spawn an actual AgentWorker via the factory.
+      DSLExecutor._cmd_kill,method,"(cmd:DSLCommand) -> dict",214-235,true,22,6,KILL <name> — stop an agent.
+      DSLExecutor._cmd_list,method,"(cmd:DSLCommand) -> dict",237-250,true,14,10,"LIST [agents|pipelines|routes|config]"
+      DSLExecutor._cmd_pipe,method,"(cmd:DSLCommand) -> dict",252-264,true,13,4,PIPE <name> <src> -> <dst1> -> <dst2>
+      DSLExecutor._cmd_send,method,"(cmd:DSLCommand) -> dict",266-280,true,15,5,SEND <agent> <message>
+      DSLExecutor._cmd_set,method,"(cmd:DSLCommand) -> dict",282-293,true,12,2,SET <key> <value>
+      DSLExecutor._cmd_status,method,"(cmd:DSLCommand) -> dict",295-312,true,18,5,"STATUS [<agent>]"
+      DSLExecutor._cmd_deploy,method,"(cmd:DSLCommand) -> dict",314-319,true,6,1,"DEPLOY [--force]"
+      DSLExecutor._cmd_sync,method,"(cmd:DSLCommand) -> dict",321-326,true,6,2,"SYNC [push|pull|status]"
+      DSLExecutor._cmd_route,method,"(cmd:DSLCommand) -> dict",328-340,true,13,3,ROUTE <pattern> -> <agent>
+      DSLExecutor._cmd_log,method,"(cmd:DSLCommand) -> dict",342-346,true,5,1,"LOG [<agent>] [--tail N]"
+      DSLExecutor._cmd_help,method,"(cmd:DSLCommand) -> dict",348-378,true,31,3,"HELP [<command>]"
+      DSLExecutor._cmd_connect,method,"(cmd:DSLCommand) -> dict",380-385,true,6,2,"CONNECT [<uri>]"
+      DSLExecutor._cmd_disconnect,method,"(cmd:DSLCommand) -> dict",387-390,true,4,1,DISCONNECT
+      DSLExecutor._cmd_load,method,"(cmd:DSLCommand) -> dict",392-405,true,14,3,LOAD <file.msdsl> — load and execute script.
+      DSLExecutor._cmd_create,method,"(cmd:DSLCommand) -> dict",407-465,true,59,7,"CREATE <prompt> [--output DIR] [--no-llm] [--deploy]"
+      DSLExecutor._cmd_dashboard,method,"(cmd:DSLCommand) -> dict",467-473,true,7,1,"DASHBOARD [--port N] [--host H]"
+      DSLExecutor._cmd_learn,method,"(cmd:DSLCommand) -> dict",475-507,true,33,6,"LEARN <contract_path> [--success true|false] — save contract as pattern."
+      DSLExecutor._cmd_patterns,method,"(cmd:DSLCommand) -> dict",509-515,true,7,2,PATTERNS — list all saved patterns.
+      DSLExecutor._cmd_save,method,"(cmd:DSLCommand) -> dict",517-547,true,31,7,SAVE <file.msdsl> — export current state as DSL script.
+      DSLExecutor.on,method,"(event:str, handler:Callable)",551-553,false,3,1,Register event handler.
+      DSLExecutor._emit,method,"(event:str, data:Any=None)",555-561,false,7,3,Emit event to all registered handlers.
+      DSLExecutor.snapshot,method,() -> dict,565-573,false,9,4,Full runtime state snapshot.
   marksync/dsl/shell.py:
     functions[12]{name,kind,sig,loc,async,lines,cc,does}:
       _fmt_time,function,"(ts:float) -> str",192-196,false,5,2,fmt time

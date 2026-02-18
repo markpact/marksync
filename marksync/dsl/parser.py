@@ -31,6 +31,11 @@ class CommandType(str, Enum):
     DISCONNECT = "disconnect"
     LOAD = "load"
     SAVE = "save"
+    # v2 commands
+    CREATE = "create"
+    DASHBOARD = "dashboard"
+    LEARN = "learn"
+    PATTERNS = "patterns"
     UNKNOWN = "unknown"
 
 

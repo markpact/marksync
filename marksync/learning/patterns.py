@@ -125,10 +125,18 @@ class PatternLibrary:
         return patterns
 
     def save_pattern(self, contract_path: str | Path, pattern: Pattern):
-        """Copy contract README to patterns dir and write pattern metadata."""
+        """Copy contract README to patterns dir and write pattern metadata block."""
         pattern_dir = self.patterns_dir / pattern.id
         pattern_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy(str(contract_path), str(pattern_dir / "README.md"))
+        readme_dst = pattern_dir / "README.md"
+        shutil.copy(str(contract_path), str(readme_dst))
+        # Append markpact:pattern block so list_patterns() can find it
+        existing = readme_dst.read_text(encoding="utf-8")
+        if "markpact:pattern" not in existing:
+            readme_dst.write_text(
+                existing.rstrip() + f"\n\n```json markpact:pattern\n{pattern.to_json()}\n```\n",
+                encoding="utf-8",
+            )
         (pattern_dir / "pattern.json").write_text(pattern.to_json())
 
     def save_from_contract(

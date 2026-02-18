@@ -77,7 +77,7 @@ def _infer_service_type(prompt: str) -> str:
     p = prompt.lower()
     if any(w in p for w in ["rest api", "rest-api", "fastapi", "flask", "django", "endpoint", "http"]):
         return "rest-api"
-    if any(w in p for w in ["web app", "webapp", "frontend", "ui", "dashboard", "react", "vue", "html"]):
+    if any(w in p for w in ["web app", "webapp", "frontend", " ui ", "dashboard", "react", "vue", "html"]):
         return "web-app"
     if any(w in p for w in [" cli", "command line", "command-line", "terminal tool", "argparse", "click"]):
         return "cli"

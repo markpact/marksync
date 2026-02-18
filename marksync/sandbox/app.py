@@ -100,6 +100,13 @@ def create_sandbox_app() -> FastAPI:
     def index():
         return _render_html()
 
+    @app.get("/dashboard", response_class=HTMLResponse)
+    def dashboard_redirect():
+        """Redirect to the full v2 Dashboard."""
+        from fastapi.responses import RedirectResponse
+        port = getattr(settings, "DASHBOARD_PORT", 8888)
+        return RedirectResponse(url=f"http://localhost:{port}", status_code=302)
+
     # ── Examples API ──────────────────────────────────────────────────
 
     @app.get("/api/examples")

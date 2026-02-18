@@ -79,6 +79,15 @@ def create_pipeline_router(engine: PipelineEngine) -> APIRouter:
             "count": len(engine.get_pending_tasks()),
         }
 
+    @router.get("/tasks/pending")
+    def list_pending_tasks():
+        """Alias for /tasks — returns only the pending human tasks list."""
+        tasks = engine.get_pending_tasks()
+        return {
+            "tasks": [t.to_dict() for t in tasks],
+            "count": len(tasks),
+        }
+
     @router.get("/tasks/{task_id}")
     def get_task(task_id: str):
         task = engine.human_tasks.get(task_id)
