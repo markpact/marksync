@@ -60,50 +60,189 @@ Reads `agents.yml` and spawns all agents as async tasks in a single process:
 Universal pipeline with **3 actor types** sharing one abstract `Step` interface:
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                    Pipeline Run                          │
-│                                                          │
-│  Step 1 (LLM)  →  Step 2 (HUMAN)  →  Step 3 (SCRIPT)     │
-│  auto-process      wait for input      deterministic     │
-│  via Ollama        via API endpoint    run function      │
-└──────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                       Pipeline Run                          │
+│                                                             │
+│  Step 1        Step 2         Step 3        Step 4          │
+│  SCRIPT   →    LLM      →     HUMAN    →    SCRIPT          │
+│  validate      generate       blocks        enforce         │
+│  (auto)        (auto)         until API     (auto)          │
+│                               resolve                       │
+│                                                             │
+│  Each step receives output_data of the previous step        │
+│  Human steps block the asyncio.Future until resolved        │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 | Actor Type | Execution | Examples |
 |------------|-----------|----------|
-| **LLM** | Async, automatic via Ollama | Code editing, review, summarization |
-| **SCRIPT** | Sync, deterministic callable | Lint, validate, format, deploy |
-| **HUMAN** | Async, blocks until API response | Approve changes, provide input, authorize payment |
+| **LLM** | Async, automatic via Ollama (or simulated) | Code editing, doc writing, root-cause analysis |
+| **SCRIPT** | Sync, deterministic Python callable | Lint, validate, format, deploy, fraud-check |
+| **HUMAN** | Async, blocks until REST API response | Approve changes, authorize payment, sign off |
 
-**Human-in-the-loop** works via `HumanTask` objects:
-1. Pipeline reaches a HUMAN step → creates a `HumanTask` with prompt + context
-2. Pipeline **blocks** (async `Future`) until resolved
-3. Human resolves via REST API: `POST /api/pipeline/tasks/{id}` with `approve`/`reject`/`provide_input`
-4. Pipeline **unblocks** and continues (or fails if rejected)
+#### Human-in-the-loop Flow
 
-Channels: `web` (sandbox UI), `email`, `chat`, `webhook` — extensible.
+```
+Pipeline engine            REST API                  Human
+      │                       │                        │
+      │──── HUMAN step ──────►│                        │
+      │     creates task      │◄── GET /tasks ─────────│
+      │     blocks Future     │                        │
+      │                       │──── task details ─────►│
+      │                       │                        │ review
+      │                       │◄── POST /tasks/{id} ───│ approve/reject
+      │                       │    action=approve      │
+      │◄── Future resolves ───│                        │
+      │                       │                        │
+      │──── next step ────────►                        │
+```
 
-Example pipeline definition in `agents.yml`:
+1. Pipeline reaches a HUMAN step → creates `HumanTask(prompt, task_type, channel)`
+2. Pipeline **blocks** on `asyncio.Future` — does not burn CPU
+3. Human sees the task in sandbox UI or polls `GET /api/pipeline/tasks`
+4. Human resolves via `POST /api/pipeline/tasks/{id}` → `{action: "approve"}`
+5. Future resolves → pipeline continues (or fails if rejected and `required=True`)
+
+**Actions:** `approve` · `reject` · `provide_input` · `complete`
+**Channels:** `web` · `email` · `chat` · `webhook` (extensible)
+
+#### 7 Built-in Demo Scenarios
+
+All scenarios are accessible from the sandbox UI (`#/1/pipeline`) or via API.
+
+| ID | Name | Actor sequence |
+|----|------|----------------|
+| `code-review` | Code Review | LLM → **Human** → Script → Script |
+| `account-creation` | Account Creation | Script → **Human** → Script → **Human** |
+| `payment` | Payment Authorization | Script → **Human** → Script → **Human** |
+| `doc-generation` | Documentation Generation | Script → LLM → **Human** → LLM → Script |
+| `incident-response` | Incident Response | Script → **Human** → LLM → **Human** → Script |
+| `content-moderation` | Content Moderation | LLM → Script → **Human** → Script |
+| `data-migration` | Data Migration | Script → LLM → **Human** → Script → **Human** |
+
+#### Pipeline definition in `agents.yml`
 
 ```yaml
 pipelines:
-  review-approve-deploy:
+  doc-generation:
     steps:
-      - name: llm-edit
-        actor: llm
-        config: {role: editor}
-      - name: human-review
-        actor: human
-        config: {prompt: "Approve changes?", task_type: approval}
-      - name: lint
+      - name: scrape-api
         actor: script
-        config: {script: lint}
-      - name: deploy
+        config: {script: validate}
+      - name: write-docs
+        actor: llm
+        config: {role: doc-writer, prompt: "Write API docs with examples"}
+      - name: human-review-docs
+        actor: human
+        config: {prompt: "Review the generated docs. Approve or comment.", task_type: approval, channel: web}
+      - name: refine-docs
+        actor: llm
+        config: {role: doc-refiner, prompt: "Incorporate human review comments"}
+      - name: publish-docs
         actor: script
         config: {script: deploy}
 ```
 
-Demo scenarios available in sandbox: code-review, account-creation, payment.
+#### How to Run Pipelines
+
+**1. Via sandbox UI** (recommended for demos):
+```bash
+marksync sandbox --port 8888
+# open http://localhost:8888/#/1/pipeline
+# click "Run Demo" on any scenario
+# pending human tasks appear automatically — click Approve/Reject
+```
+
+**2. Via REST API**:
+```bash
+# Start a demo
+curl -X POST http://localhost:8888/api/pipeline/demo \
+     -H "Content-Type: application/json" \
+     -d '{"scenario": "doc-generation"}'
+# → {"run_id": "run-abc123", "scenario": "doc-generation", "message": "..."}
+
+# Check status
+curl http://localhost:8888/api/pipeline/runs/run-abc123
+
+# List pending human tasks
+curl http://localhost:8888/api/pipeline/tasks
+
+# Resolve a task
+curl -X POST http://localhost:8888/api/pipeline/tasks/task-xyz789 \
+     -H "Content-Type: application/json" \
+     -d '{"action": "approve", "response": {"comment": "LGTM"}, "resolved_by": "alice"}'
+
+# Start any defined pipeline with custom input
+curl -X POST http://localhost:8888/api/pipeline/start \
+     -H "Content-Type: application/json" \
+     -d '{"pipeline": "data-migration", "input_data": {"block_id": "x", "content": "..."}}'
+```
+
+**3. Via Python**:
+```python
+import asyncio
+from marksync.pipeline.engine import PipelineEngine, Step, ActorType
+
+engine = PipelineEngine()
+engine.define("my-pipeline", [
+    Step("validate",     ActorType.SCRIPT, config={"script": "validate"}),
+    Step("llm-improve",  ActorType.LLM,    config={"role": "editor"}),
+    Step("human-review", ActorType.HUMAN,  config={
+        "prompt": "Approve the changes?",
+        "task_type": "approval",
+        "channel": "web",
+    }),
+    Step("deploy",       ActorType.SCRIPT, config={"script": "deploy"}),
+])
+
+async def main():
+    run_id = await engine.start("my-pipeline", {
+        "block_id": "my-file.py",
+        "content": "def hello(): pass",
+    })
+    print(f"Started: {run_id}")
+    # Poll tasks and resolve them...
+    await asyncio.sleep(0.5)
+    for task in engine.get_pending_tasks():
+        engine.resolve_task(task.id, "approve", {}, "me")
+    await asyncio.sleep(0.2)
+    print(engine.get_run(run_id).status)  # completed
+
+asyncio.run(main())
+```
+
+#### How to Test Pipelines
+
+```bash
+# All pipeline tests (23 original + 37 new scenario tests)
+pytest tests/test_pipeline.py tests/test_pipeline_scenarios.py -v
+
+# Only new scenario tests
+pytest tests/test_pipeline_scenarios.py -v
+
+# Single scenario class
+pytest tests/test_pipeline_scenarios.py::TestDocGenerationScenario -v
+pytest tests/test_pipeline_scenarios.py::TestIncidentResponseScenario -v
+pytest tests/test_pipeline_scenarios.py::TestContentModerationScenario -v
+pytest tests/test_pipeline_scenarios.py::TestDataMigrationScenario -v
+
+# Cross-scenario integration tests
+pytest tests/test_pipeline_scenarios.py::TestAllScenariosIntegration -v
+
+# Full test suite
+pytest tests/ -q
+```
+
+**What the tests cover per scenario:**
+- Pipeline starts without error and returns a `run_id`
+- Step sequence matches expected actor order (SCRIPT/LLM/HUMAN ordering)
+- Pipeline blocks at human steps (status = `"blocked"`)
+- Approving all tasks leads to `status = "completed"`
+- Rejecting a required human step leads to `status = "failed"`
+- Data flows between steps via `output_data` → next step's `input_data`
+- `agents.yml` definitions parse correctly via `engine.define_from_yaml()`
+
+Demo scenarios available in sandbox: code-review, account-creation, payment, doc-generation, incident-response, content-moderation, data-migration.
 
 ### 2. DSL Layer (`marksync.dsl`)
 

@@ -545,13 +545,31 @@ async function loadPipeline() {
     html += '</div>';
   }
 
+  // Save task input values before replacing DOM (prevents losing typed text)
+  var savedInputs = {};
+  el.querySelectorAll('input[id^="task-input-"]').forEach(function(inp) {
+    if (inp.value) savedInputs[inp.id] = inp.value;
+  });
+
   el.innerHTML = html;
+
+  // Restore saved input values
+  Object.keys(savedInputs).forEach(function(id) {
+    var inp = document.getElementById(id);
+    if (inp) inp.value = savedInputs[id];
+  });
 
   clearInterval(_pipelineTimer);
   var hasActive = runs.some(function(r) { return r.status==='running' || r.status==='blocked'; });
   if (hasActive || pending.length) {
     _pipelineTimer = setInterval(function() {
-      if (currentTab === 'pipeline') loadPipeline();
+      // Skip refresh while user is typing in a task input
+      if (currentTab !== 'pipeline') return;
+      if (document.querySelector('#panel-pipeline input:focus')) {
+        _log('debug', 'Pipeline refresh skipped: input focused');
+        return;
+      }
+      loadPipeline();
     }, 3000);
   }
   _log('info', 'Pipeline loaded:', runs.length, 'runs,', pending.length, 'pending tasks');

@@ -2,9 +2,9 @@
 # marksync agents — single source of truth
 #
 # Define agents once, use everywhere:
-#   marksync orchestrate              ← runs all agents in one process
+#   marksync orchestrate               ← runs all agents in one process
 #   marksync orchestrate --role editor ← run only editors
-#   docker compose up                 ← orchestrator reads this file
+#   docker compose up                  ← orchestrator reads this file
 #
 # Each agent inherits server_uri, ollama_url, model from .env
 # unless overridden here.
@@ -54,6 +54,79 @@ pipelines:
       - name: deploy
         actor: script
         config: {script: deploy}
+
+  # Documentation generation: scrape → LLM write → human review → LLM refine → publish
+  doc-generation:
+    steps:
+      - name: scrape-api
+        actor: script
+        config: {script: validate}
+      - name: write-docs
+        actor: llm
+        config: {role: doc-writer, prompt: "Write comprehensive API documentation with examples"}
+      - name: human-review-docs
+        actor: human
+        config: {prompt: "Review generated docs. Approve or add comments.", task_type: approval, channel: web}
+      - name: refine-docs
+        actor: llm
+        config: {role: doc-refiner, prompt: "Incorporate review comments and improve clarity"}
+      - name: publish-docs
+        actor: script
+        config: {script: deploy}
+
+  # Incident response: detect → human ack → LLM analyse → human resolve → close
+  incident-response:
+    steps:
+      - name: detect-anomaly
+        actor: script
+        config: {script: validate}
+      - name: human-acknowledge
+        actor: human
+        config: {prompt: "ALERT: Anomaly detected. Acknowledge this incident.", task_type: approval, channel: web}
+      - name: llm-analyse
+        actor: llm
+        config: {role: sre-analyst, prompt: "Analyse logs and identify root cause"}
+      - name: human-resolve
+        actor: human
+        config: {prompt: "Root cause identified. Confirm fix applied and resolve.", task_type: approval, channel: web}
+      - name: close-ticket
+        actor: script
+        config: {script: deploy}
+
+  # Content moderation: LLM scan → script score → human decide → enforce
+  content-moderation:
+    steps:
+      - name: llm-scan
+        actor: llm
+        config: {role: content-scanner, prompt: "Scan for policy violations and return verdict"}
+      - name: score-risk
+        actor: script
+        config: {script: validate}
+      - name: human-decide
+        actor: human
+        config: {prompt: "Borderline content flagged. Decide: allow / warn / remove.", task_type: input, channel: web}
+      - name: enforce-decision
+        actor: script
+        config: {script: deploy}
+
+  # Data migration: validate schema → LLM transform → human spot-check → migrate → sign-off
+  data-migration:
+    steps:
+      - name: validate-schema
+        actor: script
+        config: {script: validate}
+      - name: llm-transform
+        actor: llm
+        config: {role: data-engineer, prompt: "Generate field mappings from legacy to new schema"}
+      - name: human-spot-check
+        actor: human
+        config: {prompt: "Review 5 sample transformed records before full migration.", task_type: approval, channel: web}
+      - name: run-migration
+        actor: script
+        config: {script: deploy}
+      - name: human-sign-off
+        actor: human
+        config: {prompt: "Migration complete. Verify record counts and sign off.", task_type: approval, channel: web}
 
 # Routes: map block patterns to agents
 routes:

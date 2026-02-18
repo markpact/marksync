@@ -49,11 +49,15 @@ class TestPlanParsing:
 
     def test_pipelines(self):
         orch = Orchestrator.from_file(AGENTS_YML)
-        assert len(orch.plan.pipelines) == 3
+        assert len(orch.plan.pipelines) == 7
         names = [p.name for p in orch.plan.pipelines]
         assert "review-flow" in names
         assert "deploy-flow" in names
         assert "review-approve-deploy" in names
+        assert "doc-generation" in names
+        assert "incident-response" in names
+        assert "content-moderation" in names
+        assert "data-migration" in names
 
     def test_pipeline_stages(self):
         orch = Orchestrator.from_file(AGENTS_YML)

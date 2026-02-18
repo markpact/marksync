@@ -1,3 +1,25 @@
+## [0.2.7] - 2026-02-18
+
+### Summary
+
+feat(tests): configuration management system
+
+### Docs
+
+- docs: update architecture.md
+
+### Test
+
+- update tests/test_orchestrator.py
+- update tests/test_pipeline_scenarios.py
+
+### Other
+
+- config: update agents.yml
+- update marksync/pipeline/api.py
+- update marksync/sandbox/html.py
+
+
 ## [0.2.6] - 2026-02-18
 
 ### Summary

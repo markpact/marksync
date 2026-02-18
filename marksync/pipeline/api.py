@@ -33,7 +33,9 @@ class ResolveTaskRequest(BaseModel):
     resolved_by: str = "anonymous"
 
 class DemoRequest(BaseModel):
-    scenario: str = "code-review"   # code-review | account-creation | payment
+    scenario: str = "code-review"
+    # code-review | account-creation | payment |
+    # doc-generation | incident-response | content-moderation | data-migration
 
 
 # ── Factory ───────────────────────────────────────────────────────────────
@@ -100,9 +102,13 @@ def create_pipeline_router(engine: PipelineEngine) -> APIRouter:
     async def run_demo(req: DemoRequest):
         """Run a pre-built demo scenario showing the full pipeline flow."""
         scenarios = {
-            "code-review": _demo_code_review,
-            "account-creation": _demo_account_creation,
-            "payment": _demo_payment,
+            "code-review":          _demo_code_review,
+            "account-creation":     _demo_account_creation,
+            "payment":              _demo_payment,
+            "doc-generation":       _demo_doc_generation,
+            "incident-response":    _demo_incident_response,
+            "content-moderation":   _demo_content_moderation,
+            "data-migration":       _demo_data_migration,
         }
         builder = scenarios.get(req.scenario)
         if not builder:
@@ -129,8 +135,32 @@ def create_pipeline_router(engine: PipelineEngine) -> APIRouter:
             {
                 "id": "payment",
                 "name": "Payment Authorization",
-                "description": "Algorithm checks fraud → Human approves → Script processes → Human confirms receipt",
+                "description": "Fraud check → Human authorizes → Script processes → Human confirms receipt",
                 "steps": ["script:fraud-check", "human:authorize", "script:process", "human:confirm-receipt"],
+            },
+            {
+                "id": "doc-generation",
+                "name": "Documentation Generation",
+                "description": "Script scrapes code → LLM writes docs → Human reviews → LLM refines → Script publishes",
+                "steps": ["script:scrape", "llm:write-docs", "human:review-docs", "llm:refine", "script:publish"],
+            },
+            {
+                "id": "incident-response",
+                "name": "Incident Response",
+                "description": "Script detects anomaly → Human acknowledges → LLM analyses root cause → Human resolves → Script closes",
+                "steps": ["script:detect", "human:acknowledge", "llm:analyse", "human:resolve", "script:close-ticket"],
+            },
+            {
+                "id": "content-moderation",
+                "name": "Content Moderation",
+                "description": "LLM scans content → Script scores risk → Human decides borderline cases → Script enforces",
+                "steps": ["llm:scan", "script:score-risk", "human:decide", "script:enforce"],
+            },
+            {
+                "id": "data-migration",
+                "name": "Data Migration",
+                "description": "Script validates schema → LLM transforms records → Human spot-checks sample → Script migrates → Human sign-off",
+                "steps": ["script:validate-schema", "llm:transform", "human:spot-check", "script:migrate", "human:sign-off"],
             },
         ]}
 
@@ -262,4 +292,181 @@ async def _demo_payment(engine: PipelineEngine) -> dict:
         "run_id": run_id,
         "message": "Pipeline started. Fraud check will auto-complete, "
                    "then step 2 will wait for human authorization.",
+    }
+
+
+async def _demo_doc_generation(engine: PipelineEngine) -> dict:
+    """
+    Demo: Script scrapes code → LLM writes docs → Human reviews → LLM refines → Script publishes
+
+    Flow:
+      1. Script scrapes the module's public API surface (auto)
+      2. LLM generates initial documentation draft (auto)
+      3. Human reviews the draft and leaves comments (blocks)
+      4. LLM incorporates review comments and refines (auto)
+      5. Script publishes the final docs to a static site (auto)
+    """
+    name = "demo-doc-generation"
+    engine.define(name, [
+        Step("scrape-api", ActorType.SCRIPT, config={"script": "validate"}),
+        Step("write-docs", ActorType.LLM, config={
+            "role": "doc-writer",
+            "prompt": "Write comprehensive API documentation including examples",
+        }),
+        Step("human-review-docs", ActorType.HUMAN, config={
+            "prompt": "Review the generated documentation. Add comments, approve to proceed, or reject.",
+            "task_type": "approval",
+            "channel": "web",
+        }),
+        Step("refine-docs", ActorType.LLM, config={
+            "role": "doc-refiner",
+            "prompt": "Incorporate human review comments and improve clarity",
+        }),
+        Step("publish-docs", ActorType.SCRIPT, config={"script": "deploy"}),
+    ])
+
+    run_id = await engine.start(name, {
+        "block_id": "markpact:file=marksync/pipeline/engine.py",
+        "content": "class PipelineEngine:\n    def define(self, name, steps): ...\n    async def start(self, name, data): ...",
+        "module": "marksync.pipeline",
+        "version": "0.2.6",
+    })
+    return {
+        "scenario": "doc-generation",
+        "run_id": run_id,
+        "message": "Pipeline started. Step 1 (scrape) and step 2 (LLM write) "
+                   "will auto-complete, then step 3 will wait for human review.",
+    }
+
+
+async def _demo_incident_response(engine: PipelineEngine) -> dict:
+    """
+    Demo: Script detects → Human acknowledges → LLM analyses → Human resolves → Script closes
+
+    Flow:
+      1. Script detects anomaly in metrics / logs (auto)
+      2. Human on-call acknowledges the incident (blocks)
+      3. LLM analyses logs and proposes root cause (auto)
+      4. Human engineer confirms fix and marks resolved (blocks)
+      5. Script closes the ticket and sends post-mortem template (auto)
+    """
+    name = "demo-incident-response"
+    engine.define(name, [
+        Step("detect-anomaly", ActorType.SCRIPT, config={"script": "validate"}),
+        Step("human-acknowledge", ActorType.HUMAN, config={
+            "prompt": "ALERT: CPU >95% on prod-api-3 for 10min. Acknowledge this incident.",
+            "task_type": "approval",
+            "channel": "web",
+        }),
+        Step("llm-analyse", ActorType.LLM, config={
+            "role": "sre-analyst",
+            "prompt": "Analyse the incident logs and identify the root cause",
+        }),
+        Step("human-resolve", ActorType.HUMAN, config={
+            "prompt": "Root cause analysis complete. Confirm fix has been applied and incident is resolved.",
+            "task_type": "approval",
+            "channel": "web",
+        }),
+        Step("close-ticket", ActorType.SCRIPT, config={"script": "deploy"}),
+    ])
+
+    run_id = await engine.start(name, {
+        "block_id": "incident-20260218-001",
+        "content": "ERROR: OOMKilled container prod-api-3\nCPU: 97% for 12min\nMemory: 3.9GB/4GB",
+        "severity": "P1",
+        "service": "prod-api",
+        "triggered_at": "2026-02-18T19:47:00Z",
+    })
+    return {
+        "scenario": "incident-response",
+        "run_id": run_id,
+        "message": "Incident pipeline started. Detection will auto-complete, "
+                   "then step 2 will wait for human acknowledgement.",
+    }
+
+
+async def _demo_content_moderation(engine: PipelineEngine) -> dict:
+    """
+    Demo: LLM scans content → Script scores risk → Human decides borderline → Script enforces
+
+    Flow:
+      1. LLM scans submitted content for policy violations (auto)
+      2. Script calculates a numeric risk score 0-100 (auto)
+      3. Human moderator reviews borderline cases (score 30-70) (blocks)
+      4. Script enforces the final decision: allow / warn / remove (auto)
+    """
+    name = "demo-content-moderation"
+    engine.define(name, [
+        Step("llm-scan", ActorType.LLM, config={
+            "role": "content-scanner",
+            "prompt": "Scan for policy violations: hate speech, spam, misinformation. Return verdict.",
+        }),
+        Step("score-risk", ActorType.SCRIPT, config={"script": "validate"}),
+        Step("human-decide", ActorType.HUMAN, config={
+            "prompt": "Borderline content flagged (risk score 45/100). Review and decide: allow, warn, or remove.",
+            "task_type": "input",
+            "channel": "web",
+        }),
+        Step("enforce-decision", ActorType.SCRIPT, config={"script": "deploy"}),
+    ])
+
+    run_id = await engine.start(name, {
+        "block_id": "content-post-78234",
+        "content": "This product cured my illness! Doctors HATE this one trick.",
+        "author": "user_7823",
+        "platform": "forum",
+        "reported_by": 3,
+    })
+    return {
+        "scenario": "content-moderation",
+        "run_id": run_id,
+        "message": "Moderation pipeline started. LLM scan and risk scoring "
+                   "will auto-complete, then step 3 will wait for human moderator decision.",
+    }
+
+
+async def _demo_data_migration(engine: PipelineEngine) -> dict:
+    """
+    Demo: Script validates schema → LLM transforms → Human spot-checks → Script migrates → Human sign-off
+
+    Flow:
+      1. Script validates source schema compatibility (auto)
+      2. LLM generates the data transformation mappings (auto)
+      3. Human spot-checks 5 sample transformed records (blocks)
+      4. Script runs the full migration in a transaction (auto)
+      5. Human sign-off on migration completeness (blocks)
+    """
+    name = "demo-data-migration"
+    engine.define(name, [
+        Step("validate-schema", ActorType.SCRIPT, config={"script": "validate"}),
+        Step("llm-transform", ActorType.LLM, config={
+            "role": "data-engineer",
+            "prompt": "Generate field mapping from legacy schema to new schema. Handle nulls and type coercions.",
+        }),
+        Step("human-spot-check", ActorType.HUMAN, config={
+            "prompt": "Review 5 sample transformed records. Confirm mappings are correct before full migration.",
+            "task_type": "approval",
+            "channel": "web",
+        }),
+        Step("run-migration", ActorType.SCRIPT, config={"script": "deploy"}),
+        Step("human-sign-off", ActorType.HUMAN, config={
+            "prompt": "Migration complete: 48,293 records migrated. Verify counts and sign off.",
+            "task_type": "approval",
+            "channel": "web",
+        }),
+    ])
+
+    run_id = await engine.start(name, {
+        "block_id": "migration-users-v2",
+        "content": "SELECT id, first_name, last_name, email FROM users_legacy",
+        "source_table": "users_legacy",
+        "target_table": "users_v2",
+        "record_count": 48293,
+        "environment": "staging",
+    })
+    return {
+        "scenario": "data-migration",
+        "run_id": run_id,
+        "message": "Migration pipeline started. Schema validation and LLM transform "
+                   "will auto-complete, then step 3 will wait for human spot-check.",
     }
