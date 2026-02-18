@@ -13,7 +13,7 @@
 - [ ] **Agent persistence** — save/restore agent state across restarts
 - [ ] **DSL tab completion** — readline/prompt_toolkit integration in shell
 - [ ] **DSL command history** — persistent history file (~/.marksync_history)
-- [ ] **Agent health monitoring** — automatic restart on failure, health check endpoints
+- [x] **Agent health monitoring** — PactownMonitor.watch() loop, Plugin.health_check(), auto-fix pipeline trigger
 - [ ] **Block conflict resolution** — interactive merge UI for conflicting edits
 - [ ] **Metrics & telemetry** — Prometheus/OpenTelemetry integration
 - [ ] **Rate limiting** — prevent agents from flooding the sync server

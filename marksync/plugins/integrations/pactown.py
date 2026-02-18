@@ -45,7 +45,7 @@ class Plugin(Integration):
             file_extensions=[".pactown.yaml"],
             mime_types=["application/yaml"],
             spec_url="https://github.com/wronai/pactown",
-            capabilities=["export", "deploy", "status"],
+            capabilities=["export", "deploy", "status", "health_check"],
             author="marksync",
         )
 
