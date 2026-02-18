@@ -804,7 +804,10 @@ def generate(prompt, output, model, dry_run, build, up):
 @click.option("--no-llm", is_flag=True, help="Skip LLM analysis — use heuristic parsing only")
 @click.option("--deploy", is_flag=True, help="Deploy via Pactown after contract creation")
 @click.option("--dashboard", "open_dashboard", is_flag=True, help="Open dashboard after creation")
-def create(prompt, output, no_llm, deploy, open_dashboard):
+@click.option("--env", default="dev", show_default=True,
+              type=click.Choice(["dev", "staging", "prod"]),
+              help="Target environment profile")
+def create(prompt, output, no_llm, deploy, open_dashboard, env):
     """Create a complete Markpact contract from a natural language prompt.
 
     \b
@@ -878,10 +881,14 @@ def create(prompt, output, no_llm, deploy, open_dashboard):
     console.print("[bold]Step 5/8:[/] 📋 Writing initial state and history...")
     ts = _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime())
     crdt.set_block("markpact:state", contract_gen.generate_state_block("init"))
-    crdt.set_block("markpact:log", f"[{ts}] CONTRACT_CREATED: name={project_name}")
+    crdt.set_block("markpact:log", f"[{ts}] CONTRACT_CREATED: name={project_name} env={env}")
     crdt.set_block("markpact:history", _json.dumps([
         {"ts": ts, "actor": "human", "action": "prompt", "data": prompt},
     ], ensure_ascii=False))
+    from marksync.contract.block_types import EnvProfile
+    env_profile = EnvProfile(name=env)
+    crdt.set_block("markpact:env", env_profile.to_yaml())
+    console.print(f"  → [dim]markpact:env block created (env={env})[/]")
 
     # ── Step 6: Write README.md ───────────────────────────────────────
     console.print("[bold]Step 6/8:[/] 📄 Writing README.md contract...")
@@ -1017,6 +1024,85 @@ def dashboard_cmd(host, port, contract, sync_server):
     console.print(f"\n  Open in browser: [bold cyan]http://localhost:{_port}[/]\n")
 
     uvicorn.run(app, host=_host, port=_port, log_level="info")
+
+
+@main.command("rollback")
+@click.argument("contract_path", default="README.md")
+@click.option("--snapshot", default="", help="Snapshot ID to restore (default: latest)")
+@click.option("--list", "list_only", is_flag=True, help="List available snapshots without rolling back")
+def rollback_cmd(contract_path, snapshot, list_only):
+    """Rollback a contract to a previous CRDT snapshot.
+
+    \b
+    Examples:
+        marksync rollback README.md --list
+        marksync rollback README.md
+        marksync rollback README.md --snapshot 1708299600000_before-deploy
+    """
+    from marksync.sync.snapshots import SnapshotStore
+    from pathlib import Path as _Path
+
+    p = _Path(contract_path)
+    store = SnapshotStore(project=p.stem)
+
+    if list_only:
+        snaps = store.list_snapshots()
+        if not snaps:
+            console.print("[yellow]No snapshots found.[/]")
+            return
+        table = Table(title=f"Snapshots for {p.stem}")
+        table.add_column("ID", style="cyan")
+        table.add_column("Label")
+        table.add_column("Blocks", justify="right")
+        for s in snaps:
+            table.add_row(s["id"], s.get("label", ""), str(s.get("block_count", "?")))
+        console.print(table)
+        return
+
+    if not p.exists():
+        console.print(f"[red]Contract not found:[/] {contract_path}")
+        raise SystemExit(1)
+
+    snap = store.load(snapshot) if snapshot else store.latest()
+    if not snap:
+        console.print("[red]No snapshot found. Create one with:[/] marksync snapshot README.md")
+        raise SystemExit(1)
+
+    from marksync.sync.crdt import CRDTDocument
+    from marksync.sync import BlockParser
+
+    crdt = CRDTDocument(project=p.stem)
+    n = crdt.rollback_to(snap)
+    md = p.read_text("utf-8")
+    rebuilt = BlockParser.rebuild_markdown(md, crdt.get_all())
+    p.write_text(rebuilt, "utf-8")
+    console.print(f"[green]Rollback complete:[/] {n} blocks restored from snapshot {snapshot or '(latest)'}.")
+
+
+@main.command("snapshot")
+@click.argument("contract_path", default="README.md")
+@click.option("--label", default="", help="Optional label for the snapshot")
+def snapshot_cmd(contract_path, label):
+    """Save a CRDT snapshot of the current contract state.
+
+    \b
+    Example:
+        marksync snapshot README.md --label before-deploy
+    """
+    from marksync.sync.crdt import CRDTDocument
+    from marksync.sync.snapshots import SnapshotStore
+    from pathlib import Path as _Path
+
+    p = _Path(contract_path)
+    if not p.exists():
+        console.print(f"[red]Contract not found:[/] {contract_path}")
+        raise SystemExit(1)
+
+    crdt = CRDTDocument(project=p.stem)
+    crdt.load_markdown(p.read_text("utf-8"))
+    store = SnapshotStore(project=p.stem)
+    snap_id = store.save(crdt.snapshot(), label=label or "manual")
+    console.print(f"[green]Snapshot saved:[/] {snap_id}")
 
 
 if __name__ == "__main__":
