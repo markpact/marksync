@@ -20,6 +20,12 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+try:
+    from getv import EnvStore
+    _HAS_GETV = True
+except ImportError:
+    _HAS_GETV = False
+
 
 def _find_dotenv() -> Path | None:
     """Walk up from CWD and package dir to find .env."""
@@ -34,7 +40,9 @@ def _find_dotenv() -> Path | None:
 
 
 def _load_dotenv(path: Path) -> dict[str, str]:
-    """Minimal .env parser — no external dependency required."""
+    """Minimal .env parser — delegates to getv.EnvStore when available."""
+    if _HAS_GETV:
+        return EnvStore(path, auto_create=False).as_dict()
     env: dict[str, str] = {}
     for line in path.read_text("utf-8").splitlines():
         line = line.strip()
@@ -45,7 +53,6 @@ def _load_dotenv(path: Path) -> dict[str, str]:
         key, _, value = line.partition("=")
         key = key.strip()
         value = value.strip()
-        # Strip surrounding quotes
         if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
             value = value[1:-1]
         env[key] = value
