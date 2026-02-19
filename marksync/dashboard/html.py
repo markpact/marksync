@@ -219,22 +219,129 @@ function PipelinePanel() {
     </div>`}
     ${loading&&runs.length===0&&html`<div style="color:var(--muted);text-align:center;padding:32px;">Loading…</div>`}
     ${!loading&&runs.length===0&&html`<div style="color:var(--muted);text-align:center;padding:32px;">No pipeline runs yet. Use <code>marksync create</code> to start.</div>`}
-    ${runs.map(run=>html`<div key=${run.id} class="card">
-      <div class="card-header">
+    ${runs.map(run=>html`<div key=${run.id} class="card" style=${run.status==='failed'?'border-color:var(--red);':''}>
+      <div class="card-header" style=${run.status==='failed'?'background:rgba(248,81,73,.06);':''}>
         <span style="font-weight:600;">${run.pipeline_name}</span>
         <span class="badge">#${(run.id||'').slice(0,8)}</span>
-        <span style="font-size:12px;color:${run.status==='completed'?'var(--green)':run.status==='failed'?'var(--red)':'var(--yellow)'};">${run.status}</span>
+        <span style="font-size:12px;color:${run.status==='completed'?'var(--green)':run.status==='failed'?'var(--red)':run.status==='blocked'?'var(--yellow)':'var(--blue)'};">${run.status}</span>
+        <span class="spacer"></span>
+        ${run.status==='failed'&&html`<span style="font-size:11px;color:var(--red);">pipeline stopped</span>`}
+        ${run.status==='blocked'&&html`<span style="font-size:11px;color:var(--yellow);">waiting for human</span>`}
       </div>
       <div class="card-body">
-        ${(run.results||[]).map((res,i)=>html`<div key=${i} class="step-row">
+        ${(run.results||[]).map((res,i)=>html`<div key=${i} class="step-row" style=${res.status==='failed'?'background:rgba(248,81,73,.04);border-radius:6px;margin:0 -8px;padding:10px 8px;':''}>
           <div class="step-icon">${si[res.status]||'⬚'}</div>
           <div class="step-info">
             <div class="step-name">${res.step_name}</div>
             <div class="step-actor">${ai[res.actor]||'●'} ${res.actor} ${res.duration_ms?'· '+res.duration_ms.toFixed(0)+'ms':''}</div>
+            ${res.error&&html`<div style="color:var(--red);font-size:12px;margin-top:4px;font-family:var(--mono);">${res.error}</div>`}
+            ${res.human_task_id&&html`<div style="color:var(--yellow);font-size:11px;margin-top:2px;">task: ${res.human_task_id}</div>`}
           </div>
         </div>`)}
       </div>
     </div>`)}
+  </div>`;
+}
+
+function SnapshotsPanel({contractPath}) {
+  const [snaps, setSnaps] = useState([]);
+  const [diff, setDiff] = useState(null);
+  const [label, setLabel] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [selFrom, setSelFrom] = useState('');
+  const [selTo, setSelTo] = useState('');
+  const cp = contractPath||'README.md';
+  async function load() {
+    const d = await api.get('/api/snapshots?contract_path='+encodeURIComponent(cp));
+    setSnaps(d.snapshots||[]);
+  }
+  useEffect(()=>{load();},[contractPath]);
+  async function create() {
+    if(busy) return; setBusy(true);
+    await api.post('/api/snapshots?contract_path='+encodeURIComponent(cp)+'&label='+encodeURIComponent(label||'manual'));
+    setLabel(''); await load(); setBusy(false);
+  }
+  async function doRollback(id) {
+    if(!confirm('Rollback to snapshot '+id+'?')) return;
+    await api.post('/api/rollback?contract_path='+encodeURIComponent(cp)+'&snapshot_id='+encodeURIComponent(id));
+    load();
+  }
+  async function loadDiff() {
+    const q = new URLSearchParams({contract_path:cp});
+    if(selFrom) q.set('from_snapshot',selFrom);
+    if(selTo) q.set('to_snapshot',selTo);
+    const d = await api.get('/api/contract/diff?'+q.toString());
+    setDiff(d);
+  }
+  const dc = {added:'var(--green)',removed:'var(--red)',changed:'var(--yellow)'};
+  const di = {added:'+',removed:'-',changed:'~'};
+  return html`<div>
+    <div class="two-col" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="card-header"><span>📸 Create Snapshot</span></div>
+        <div class="card-body" style="display:flex;gap:8px;">
+          <input type="text" placeholder="label (optional)" value=${label} onInput=${e=>setLabel(e.target.value)} style="flex:1;" />
+          <button class="btn btn-primary" onClick=${create} disabled=${busy}>${busy?'…':'Save'}</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span>🔍 Compare Snapshots</span></div>
+        <div class="card-body" style="display:flex;gap:8px;align-items:center;">
+          <select style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);padding:6px;" onChange=${e=>setSelFrom(e.target.value)}>
+            <option value="">From (oldest)</option>
+            ${snaps.map(s=>html`<option key=${s.id} value=${s.id}>${s.label||s.id} (${s.block_count} blocks)</option>`)}
+          </select>
+          <span style="color:var(--muted);">→</span>
+          <select style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);padding:6px;" onChange=${e=>setSelTo(e.target.value)}>
+            <option value="">(current file)</option>
+            ${snaps.map(s=>html`<option key=${s.id} value=${s.id}>${s.label||s.id} (${s.block_count} blocks)</option>`)}
+          </select>
+          <button class="btn btn-muted" onClick=${loadDiff}>Diff</button>
+        </div>
+      </div>
+    </div>
+    ${diff&&diff.ok&&html`<div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <span>📊 Diff: ${diff.from} → ${diff.to}</span>
+        <span class="spacer"></span>
+        <span class="badge">${diff.changed} changed</span>
+        <span class="badge">${diff.unchanged} unchanged</span>
+      </div>
+      <div class="card-body">
+        ${diff.changes.length===0&&html`<div style="color:var(--muted);text-align:center;padding:16px;">No changes</div>`}
+        ${diff.changes.map(c=>html`<div key=${c.block_id} style="padding:8px 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="color:${dc[c.type]};font-weight:700;font-family:var(--mono);width:20px;">${di[c.type]}</span>
+            <span style="font-family:var(--mono);font-size:12px;">${c.block_id}</span>
+            <span class="badge" style="color:${dc[c.type]};">${c.type}</span>
+          </div>
+          ${c.type==='changed'&&html`<div style="margin-top:6px;font-size:12px;">
+            <div style="background:rgba(248,81,73,.06);padding:4px 8px;border-radius:4px;margin:2px 0;font-family:var(--mono);border-left:3px solid var(--red);"><span style="color:var(--red);">-</span> ${(c.old||'').slice(0,120)}${(c.old||'').length>120?'…':''}</div>
+            <div style="background:rgba(63,185,80,.06);padding:4px 8px;border-radius:4px;margin:2px 0;font-family:var(--mono);border-left:3px solid var(--green);"><span style="color:var(--green);">+</span> ${(c.new||'').slice(0,120)}${(c.new||'').length>120?'…':''}</div>
+          </div>`}
+          ${c.type==='added'&&html`<div style="margin-top:4px;font-size:12px;color:var(--green);font-family:var(--mono);">+ ${(c.content||'').slice(0,120)}</div>`}
+          ${c.type==='removed'&&html`<div style="margin-top:4px;font-size:12px;color:var(--red);font-family:var(--mono);">- ${(c.content||'').slice(0,120)}</div>`}
+        </div>`)}
+      </div>
+    </div>`}
+    ${diff&&!diff.ok&&html`<div class="card" style="border-color:var(--yellow);margin-bottom:16px;"><div class="card-body" style="color:var(--yellow);">${diff.error}</div></div>`}
+    <div class="card">
+      <div class="card-header"><span>📋 Snapshots (${snaps.length})</span></div>
+      <div class="card-body">
+        ${snaps.length===0&&html`<div style="color:var(--muted);text-align:center;padding:16px;">No snapshots. Create one above or use: <code>marksync snapshot README.md</code></div>`}
+        <table>
+          ${snaps.length>0&&html`<thead><tr><th>ID</th><th>Label</th><th>Blocks</th><th></th></tr></thead>`}
+          <tbody>
+            ${snaps.map(s=>html`<tr key=${s.id}>
+              <td style="font-family:var(--mono);font-size:11px;">${s.id}</td>
+              <td>${s.label||'—'}</td>
+              <td>${s.block_count}</td>
+              <td><button class="btn btn-muted" style="padding:2px 8px;font-size:11px;" onClick=${()=>doRollback(s.id)}>↩ Rollback</button></td>
+            </tr>`)}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -363,6 +470,7 @@ function App() {
     {id:'contract',label:'📄 Contract'},
     {id:'conversation',label:'💬 Conversation'},
     {id:'pipeline',label:'📊 Pipeline'},
+    {id:'snapshots',label:'📸 Snapshots'},
     {id:'deploy',label:'🚀 Deploy'},
     {id:'create',label:'✨ Create'},
   ];
@@ -383,6 +491,7 @@ function App() {
       ${tab==='contract'&&html`<${ContractPanel} contractPath=${contractPath} />`}
       ${tab==='conversation'&&html`<${ConversationPanel} contractPath=${contractPath} />`}
       ${tab==='pipeline'&&html`<${PipelinePanel} />`}
+      ${tab==='snapshots'&&html`<${SnapshotsPanel} contractPath=${contractPath} />`}
       ${tab==='deploy'&&html`<${DeployPanel} contractPath=${contractPath} />`}
       ${tab==='create'&&html`<${CreatePanel} onCreated=${p=>{ setContractPath(p); setTab('contract'); }} />`}
     </div>

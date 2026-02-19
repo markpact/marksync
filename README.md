@@ -11,12 +11,14 @@ pip install marksync[all]
 **Version:** 0.2.23
 
 
-
-
 ## Przykład
 
 Wyobraź sobie, że piszesz jedno zdanie ("zbuduj mi API do zamówień z ludzkim zatwierdzaniem płatności"), a system generuje z tego jeden plik Markdown, w którym jest wszystko: konfiguracja pipeline'u, kod aplikacji, komendy uruchomienia, konfiguracja deploymentu, aktualny stan procesu i historia zdarzeń. Potem ten sam plik jest czytany przez silnik, który krok po kroku wykonuje pipeline — część robią skrypty, część AI, a przy krytycznych decyzjach czeka na człowieka. Na końcu wzorzec sukcesu jest zapisywany, żeby następnym razem było szybciej.
 Kluczowa idea: jeden plik = kontrakt + kod + stan + logi + deployment.
+
+```bash
+source venv/bin/activate && python -m marksync.cli create "Build a chat API with WebSocket"
+```
 
 + [marksync_flow.pdf](marksync_flow.pdf)
 
@@ -55,8 +57,6 @@ MarkSync jest hybrydą kilku koncepcji, ale najbliżej mu do tych systemów:
 
 
 
-
-
 ## What it does
 
 Multiple AI agents work simultaneously on a single Markpact `README.md` — editing code, reviewing quality, deploying changes — all synchronized in real-time through delta patches (only changed code blocks are transmitted, not the entire file).
@@ -67,10 +67,10 @@ A built-in **DSL** (Domain-Specific Language) lets you orchestrate agents, defin
 ┌─────────────────────────────────────────────────────────────────┐
 │                      marksync Runtime                           │
 │                                                                 │
-│  .env ─────────► settings.py ◄── hardware_detect.py            │
+│  .env ─────────► settings.py ◄── hardware_detect.py             │
 │                       │                                         │
-│  agents.yml ──► Orchestrator ──┬──► editor · reviewer          │
-│  (define once)  (1 process)    ├──► deployer · monitor         │
+│  agents.yml ──► Orchestrator ──┬──► editor · reviewer           │
+│  (define once)  (1 process)    ├──► deployer · monitor          │
 │                                └──► ConversationAgent           │
 │                                       │                         │
 │  ┌──────────────┐    ┌────────────────┼────────────────────┐    │
@@ -81,14 +81,14 @@ A built-in **DSL** (Domain-Specific Language) lets you orchestrate agents, defin
 │  │  Sandbox UI  │───►│                                     │    │
 │  └──────────────┘    └────────────────┬────────────────────┘    │
 │                                       │                         │
-│  ┌──────────────┐    ┌────────────────┴───────────────────┐     │
+│  ┌───────────────┐   ┌────────────────┴───────────────────┐     │
 │  │ PipelineEngine│──►│        SyncServer (WS:8765)        │     │
-│  │ LLM·Script·  │   │  CRDT doc · delta patches · persist│     │
-│  │ Human steps  │   └────────────────┬───────────────────┘     │
-│  └──────────────┘                    ▼                          │
+│  │ LLM·Script·   │   │  CRDT doc · delta patches · persist│     │
+│  │ Human steps   │   └────────────────┬───────────────────┘     │
+│  └───────────────┘                    ▼                         │
 │                                README.md (disk)                 │
 │                                                                 │
-│  Plugin System: BPMN · n8n · Airflow · K8s · GitHub · Ansible  │
+│  Plugin System: BPMN · n8n · Airflow · K8s · GitHub · Ansible   │
 │  Channels: SSE · WebSocket · MQTT · Redis · AMQP · NATS · Slack │
 └─────────────────────────────────────────────────────────────────┘
 ```

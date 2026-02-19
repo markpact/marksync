@@ -521,6 +521,85 @@ def create_dashboard_app(contract_path: str = "README.md") -> FastAPI:
         except Exception as e:
             raise HTTPException(500, str(e))
 
+    # ── Contract Diff ──────────────────────────────────────────────
+
+    @app.get("/api/contract/diff")
+    def contract_diff(
+        contract_path: str = "README.md",
+        from_snapshot: str = "",
+        to_snapshot: str = "",
+    ):
+        """
+        Compare two snapshots block-by-block.
+
+        If ``to_snapshot`` is empty, compares against the current contract on disk.
+        If ``from_snapshot`` is also empty, compares the two most recent snapshots.
+        """
+        try:
+            from marksync.sync.snapshots import SnapshotStore
+
+            store = SnapshotStore(project=Path(contract_path).stem)
+            snaps = store.list_snapshots()
+
+            # Resolve "from" snapshot
+            if from_snapshot:
+                from_data = store.load(from_snapshot)
+            elif len(snaps) >= 2:
+                from_data = store.load(snaps[-1]["id"])  # oldest of last two
+                from_snapshot = snaps[-1]["id"]
+            else:
+                return {"ok": False, "error": "Need at least 2 snapshots for diff"}
+
+            # Resolve "to" snapshot (or current disk state)
+            if to_snapshot:
+                to_data = store.load(to_snapshot)
+            elif len(snaps) >= 1 and not from_snapshot:
+                to_data = store.load(snaps[0]["id"])
+                to_snapshot = snaps[0]["id"]
+            else:
+                # Compare against current file on disk
+                p = Path(contract_path)
+                if not p.exists():
+                    raise HTTPException(404, f"Contract not found: {contract_path}")
+                blocks = BlockParser.parse(p.read_text("utf-8"))
+                to_data = {"blocks": {b.block_id: b.content for b in blocks}}
+                to_snapshot = "(current)"
+
+            from_blocks = from_data.get("blocks", {})
+            to_blocks = to_data.get("blocks", {})
+            all_ids = sorted(set(from_blocks) | set(to_blocks))
+
+            changes = []
+            for bid in all_ids:
+                old = from_blocks.get(bid)
+                new = to_blocks.get(bid)
+                if old is None:
+                    changes.append({"block_id": bid, "type": "added", "content": new})
+                elif new is None:
+                    changes.append({"block_id": bid, "type": "removed", "content": old})
+                elif old != new:
+                    changes.append({
+                        "block_id": bid, "type": "changed",
+                        "old": old, "new": new,
+                        "old_lines": len(old.splitlines()),
+                        "new_lines": len(new.splitlines()),
+                    })
+                # else: unchanged — skip
+
+            return {
+                "ok": True,
+                "from": from_snapshot,
+                "to": to_snapshot,
+                "total_blocks": len(all_ids),
+                "changed": len(changes),
+                "unchanged": len(all_ids) - len(changes),
+                "changes": changes,
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     return app
 
 

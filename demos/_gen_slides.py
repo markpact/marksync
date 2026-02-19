@@ -90,6 +90,10 @@ LOG = {
     "blocked": ["[T+0s] CONTRACT_CREATED", "[T+1s] PIPELINE_STARTED", "[T+1s] STEP_OK: parse_order", "[T+2s] STEP_OK: check_inventory", "[T+2s] STEP_OK: fraud_detection", "[T+3s] STEP_BLOCKED: human_payment_approval"],
     "approved": ["[T+0s] CONTRACT_CREATED", "[T+1s] PIPELINE_STARTED", "[T+1s] STEP_OK: parse_order", "[T+2s] STEP_OK: check_inventory", "[T+2s] STEP_OK: fraud_detection", "[T+3s] STEP_BLOCKED: human_payment_approval", "[T+48s] STEP_OK: human_payment_approval (APPROVED)"],
     "deployed": ["[T+0s] CONTRACT_CREATED", "[T+1s] PIPELINE_STARTED", "[T+1s] STEP_OK: parse_order", "[T+2s] STEP_OK: check_inventory", "[T+2s] STEP_OK: fraud_detection", "[T+3s] STEP_BLOCKED: human_payment_approval", "[T+48s] STEP_OK: human_payment_approval", "[T+49s] STEP_OK: process_payment", "[T+50s] STEP_OK: deploy_update", "[T+50s] PIPELINE_COMPLETED: 6/6"],
+    # ── Failure paths ──────────────────────────────────────────────────
+    "rejected": ["[T+0s] CONTRACT_CREATED", "[T+1s] PIPELINE_STARTED", "[T+1s] STEP_OK: parse_order", "[T+2s] STEP_OK: check_inventory", "[T+2s] STEP_OK: fraud_detection", "[T+3s] STEP_BLOCKED: human_payment_approval", "[T+60s] STEP_REJECTED: human_payment_approval (reason: suspicious order)", "[T+60s] PIPELINE_FAILED: step required=true"],
+    "retry_timeout": ["[T+0s] CONTRACT_CREATED", "[T+1s] PIPELINE_STARTED", "[T+1s] STEP_OK: parse_order", "[T+2s] STEP_FAILED: check_inventory (timeout 30s)", "[T+4s] RETRY 1/3: check_inventory (wait 2.0s)", "[T+7s] STEP_FAILED: check_inventory (timeout 30s)", "[T+11s] RETRY 2/3: check_inventory (wait 4.0s)", "[T+42s] STEP_OK: check_inventory (retry 3, 850ms)"],
+    "rollback": ["[T+0s] CONTRACT_CREATED", "[T+1s] PIPELINE_STARTED", "[T+1s] STEP_OK: parse_order", "[T+2s] STEP_OK: check_inventory", "[T+2s] STEP_OK: fraud_detection", "[T+3s] STEP_BLOCKED: human_payment_approval", "[T+60s] STEP_REJECTED: human_payment_approval", "[T+60s] PIPELINE_FAILED", "[T+61s] SNAPSHOT_CREATED: before-failure", "[T+62s] ROLLBACK_TO: pre-deploy (7 blocks restored)"],
 }
 
 RS = {
@@ -101,6 +105,10 @@ RS = {
     "readme_blocked":  "\n\n".join(CORE + [st("blocked", "waiting_human"), lg(LOG["blocked"])]),
     "readme_approved": "\n\n".join(CORE + [st("running"), lg(LOG["approved"])]),
     "readme_deployed": "\n\n".join(CORE + [st("deployed", "ok", 1, 0), lg(LOG["deployed"])]),
+    # ── Failure paths ──────────────────────────────────────────────────
+    "readme_rejected":     "\n\n".join(CORE + [st("failed", "error", 0, 1), lg(LOG["rejected"])]),
+    "readme_retry":        "\n\n".join(CORE + [st("running", "retry"), lg(LOG["retry_timeout"])]),
+    "readme_rollback":     "\n\n".join(CORE + [st("rolled_back", "restored", 0, 1), lg(LOG["rollback"])]),
 }
 
 # ---- Slide definitions -----------------------------------------------------
@@ -288,27 +296,221 @@ slides = [
          chk("markpact:log -- 10 wpisow", detail="Pelna historia pipeline"),
      ]},
 
-    # 10: Learning
-    {"title": "10. Self-Learning", "subtitle": "Pattern zapisany -> kolejny projekt lepszy", "layout": "split",
+    # ── FAILURE PATHS ─────────────────────────────────────────────────────────
+
+    # 10: Human REJECTS
+    {"title": "10. Failure: Human Rejection", "subtitle": "actor: human -> REJECT -- pipeline FAILED", "layout": "split",
+     "left_label": "README.md -- markpact:state = failed", "left": "readme_rejected", "left_highlight": "state",
+     "right_label": "Co sie dzieje przy odrzuceniu",
+     "right": "<div class='expect blocked-expect' style='border-color:rgba(248,81,73,.3);background:rgba(248,81,73,.03);'>"
+              "<h3 style='color:#f85149;'>actor: human -> REJECTED</h3>"
+              "<p>Manager odrzucil platnosc -- powod: podejrzane zamowienie.</p>"
+              "<div class='step-detail'>"
+              "<div class='sd-row'><span class='sd-label'>Decyzja:</span> <span style='color:#f85149;font-weight:700'>REJECTED</span></div>"
+              "<div class='sd-row'><span class='sd-label'>Powod:</span> suspicious order pattern</div>"
+              "<div class='sd-row'><span class='sd-label'>Przez:</span> security@company.com</div>"
+              "<div class='sd-row'><span class='sd-label'>Czas:</span> 57 sekund</div></div>"
+              "<h3 style='margin-top:16px'>Kaskada bledow:</h3>"
+              "<div class='mini-steps'>"
+              "<div class='ms' style='background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.2);color:#f85149;'>step.required=true -> pipeline STOPS</div>"
+              "<div class='ms' style='background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.2);color:#f85149;'>emit(&quot;pipeline.failed&quot;) -> webhooks notified</div>"
+              "<div class='ms' style='background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.2);color:#d29922;'>markpact:state.phase = failed</div>"
+              "<div class='ms' style='background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.2);color:#d29922;'>markpact:state.error_count += 1</div></div>"
+              "<div class='state-change'><div class='state-old' style='color:#f87171'>phase: blocked</div>"
+              "<div class='state-arrow'>-></div>"
+              "<div class='state-new' style='background:#4c1d1d;color:#f85149;'>phase: failed</div></div></div>",
+     "checks": [
+         chk("Human rejection received", detail="REJECTED by security@company.com (57s)"),
+         chk("Pipeline stopped (required=true)", "fail", detail="Non-optional step failed -> abort"),
+         chk("Event emitted: pipeline.failed", detail="Webhooks + SSE notified"),
+         chk("markpact:state.phase = failed", "fail", detail="error_count: 0 -> 1"),
+         chk("markpact:log: STEP_REJECTED", detail="Audit trail preserved"),
+     ]},
+
+    # 11: Retry with timeout
+    {"title": "11. Failure: Retry + Timeout", "subtitle": "RetryPolicy -- exponential backoff z limitem", "layout": "split",
+     "left_label": "README.md -- markpact:log = retry sequence", "left": "readme_retry", "left_highlight": "log",
+     "right_label": "Mechanizm retry w PipelineEngine",
+     "right": "<div class='expect'>"
+              "<h3>RetryPolicy w akcji</h3>"
+              "<p>Step <code>check_inventory</code> timeout po 30s. System automatycznie ponawia.</p>"
+              "<div class='step-detail' style='margin:12px 0;'>"
+              "<div class='sd-row'><span class='sd-label'>max_attempts:</span> <code>3</code></div>"
+              "<div class='sd-row'><span class='sd-label'>delay:</span> <code>2.0s</code></div>"
+              "<div class='sd-row'><span class='sd-label'>backoff:</span> <code>2.0x</code> (exponential)</div>"
+              "<div class='sd-row'><span class='sd-label'>timeout:</span> <code>30s</code> per attempt</div></div>"
+              "<h3 style='margin-top:12px'>Timeline retry:</h3>"
+              "<div class='mini-steps'>"
+              "<div class='ms' style='background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.2);color:#f85149;'>Attempt 1: TIMEOUT po 30s</div>"
+              "<div class='ms' style='background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.2);color:#d29922;'>Wait 2.0s (delay * backoff^0)</div>"
+              "<div class='ms' style='background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.2);color:#f85149;'>Attempt 2: TIMEOUT po 30s</div>"
+              "<div class='ms' style='background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.2);color:#d29922;'>Wait 4.0s (delay * backoff^1)</div>"
+              "<div class='ms pass'>Attempt 3: OK (850ms) -- LLM recovered</div></div>"
+              "<div class='validation-box pass' style='margin-top:12px'>Step succeeded on retry 3/3 -- pipeline continues</div>"
+              "<h3 style='margin-top:12px'>Kod:</h3>"
+              "<div class='api-box'>Step(name='check_inventory', actor='llm',<br>"
+              "     timeout=30.0,<br>"
+              "     retry=RetryPolicy(max_attempts=3, delay_seconds=2.0, backoff=2.0))</div></div>",
+     "checks": [
+         chk("Attempt 1: TimeoutError (30s)", "fail", detail="_execute_with_retry catches asyncio.TimeoutError"),
+         chk("Backoff: 2.0s wait", detail="policy.wait_for(1) = 2.0 * 2.0^0 = 2.0s"),
+         chk("Attempt 2: TimeoutError (30s)", "fail", detail="LLM still slow"),
+         chk("Backoff: 4.0s wait", detail="policy.wait_for(2) = 2.0 * 2.0^1 = 4.0s"),
+         chk("Attempt 3: SUCCESS (850ms)", detail="LLM recovered, pipeline continues"),
+     ]},
+
+    # 12: Rollback
+    {"title": "12. Rollback", "subtitle": "SnapshotStore -- powrot do poprzedniego stanu", "layout": "split",
+     "left_label": "README.md -- markpact:state = rolled_back", "left": "readme_rollback", "left_highlight": "state",
+     "right_label": "Mechanizm snapshot + rollback",
+     "right": "<div class='expect'>"
+              "<h3>Po PIPELINE_FAILED -- rollback</h3>"
+              "<p>System robi automatyczny snapshot przed kazdym deploy, wiec mozna wrocic.</p>"
+              "<div class='step-detail' style='margin:12px 0;'>"
+              "<div class='sd-row'><span class='sd-label'>Trigger:</span> pipeline.failed event</div>"
+              "<div class='sd-row'><span class='sd-label'>Snapshot:</span> SnapshotStore.save()</div>"
+              "<div class='sd-row'><span class='sd-label'>Restore:</span> CRDTDocument.rollback_to(snap)</div>"
+              "<div class='sd-row'><span class='sd-label'>Bloki:</span> 7 bloków przywroconych</div></div>"
+              "<h3 style='margin-top:12px'>Przeplyw:</h3>"
+              "<div class='mini-steps'>"
+              "<div class='ms' style='background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.2);color:#f85149;'>Pipeline FAILED at step 4</div>"
+              "<div class='ms' style='background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.2);color:#58a6ff;'>SnapshotStore.save(crdt.snapshot(), label=&quot;before-failure&quot;)</div>"
+              "<div class='ms' style='background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.2);color:#58a6ff;'>marksync rollback README.md --snapshot pre-deploy</div>"
+              "<div class='ms pass'>7 blokow przywroconych z snapshot</div>"
+              "<div class='ms pass'>README.md na dysku nadpisany starym stanem</div></div>"
+              "<h3 style='margin-top:12px'>CLI:</h3>"
+              "<div class='api-box'>marksync snapshot README.md --label before-deploy<br>"
+              "marksync rollback README.md --list<br>"
+              "marksync rollback README.md --snapshot pre-deploy</div></div>",
+     "checks": [
+         chk("Snapshot saved: before-failure", detail="SnapshotStore -> ~/.marksync/snapshots/README/"),
+         chk("CRDTDocument.rollback_to(snap)", detail="7 blocks restored from snapshot"),
+         chk("BlockParser.rebuild_markdown()", detail="README.md on disk overwritten"),
+         chk("markpact:state.phase = rolled_back", detail="Previous good state restored"),
+         chk("SSE broadcast: rollback event", detail="Dashboard updated in real-time"),
+     ]},
+
+    # ── CRDT MULTI-AGENT ──────────────────────────────────────────────────────
+
+    # 13: CRDT multi-agent
+    {"title": "13. CRDT Multi-Agent", "subtitle": "3 agenci edytuja jednoczesnie -- zero konfliktow", "layout": "split",
+     "left_label": "Y.Doc -- rownoczesne edycje (3 agenci)",
+     "left": "readme_deployed",
+     "right_label": "CRDT gwarantuje spojnosc",
+     "right": "<div class='expect'>"
+              "<h3>Wielu agentow, jeden README.md</h3>"
+              "<p>Kazdy blok to niezalezny <code>Y.Text</code> w <code>Y.Map</code>. Edycje roznych blokow = zero konfliktow.</p>"
+              "<div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0;'>"
+              "<div style='background:#0c2d1a;border:1px solid rgba(63,185,80,.3);border-radius:8px;padding:10px;text-align:center;'>"
+              "<div style='font-size:20px;'>&#x1f916;</div><div style='font-weight:600;color:#3fb950;'>editor-1</div>"
+              "<div style='font-size:11px;color:#8b949e;margin-top:4px;'>edits markpact:file</div></div>"
+              "<div style='background:#1a1a2e;border:1px solid rgba(88,166,255,.3);border-radius:8px;padding:10px;text-align:center;'>"
+              "<div style='font-size:20px;'>&#x1f50d;</div><div style='font-weight:600;color:#58a6ff;'>reviewer-1</div>"
+              "<div style='font-size:11px;color:#8b949e;margin-top:4px;'>reads all blocks</div></div>"
+              "<div style='background:#2d1a0c;border:1px solid rgba(255,166,87,.3);border-radius:8px;padding:10px;text-align:center;'>"
+              "<div style='font-size:20px;'>&#x1f680;</div><div style='font-weight:600;color:#ffa657;'>deployer-1</div>"
+              "<div style='font-size:11px;color:#8b949e;margin-top:4px;'>watches markpact:run</div></div></div>"
+              "<h3 style='margin-top:12px;'>Delta sync protocol:</h3>"
+              "<div class='mini-steps'>"
+              "<div class='ms pass'>editor-1: PATCH markpact:file=app/main.py (sha:a1b2..)</div>"
+              "<div class='ms pass'>deployer-1: PATCH markpact:run (sha:c3d4..)</div>"
+              "<div class='ms pass'>SyncServer: broadcast to other clients</div>"
+              "<div class='ms pass'>reviewer-1: receives both patches, no conflict</div></div>"
+              "<h3 style='margin-top:12px;'>Gdy JEST konflikt (ten sam blok):</h3>"
+              "<div class='mini-steps'>"
+              "<div class='ms' style='background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.2);color:#d29922;'>editor-1 + editor-2 -> ten sam blok</div>"
+              "<div class='ms' style='background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.2);color:#58a6ff;'>SyncServer: _three_way_merge(base, local, remote)</div>"
+              "<div class='ms pass'>Merged result broadcast -- spójnosc zachowana</div></div>"
+              "<div class='api-box' style='margin-top:12px;'>Y.Doc<br>"
+              " +-- Y.Map(&quot;blocks&quot;) -> {block_id: Y.Text}<br>"
+              " +-- Y.Array(&quot;order&quot;) -> [block_id, ...]<br>"
+              "Rozne bloki = zero conflicts (niezalezne Y.Text)</div></div>",
+     "checks": [
+         chk("3 agenci polaczeni jednoczesnie", detail="editor-1, reviewer-1, deployer-1"),
+         chk("Delta patches (nie full content)", detail="diff-match-patch + SHA-256 verify"),
+         chk("Rozne bloki: zero conflicts", detail="Y.Text per block_id -- niezalezne"),
+         chk("Ten sam blok: three-way merge", detail="_three_way_merge() -> conflict resolution"),
+         chk("Eventual consistency", detail="CRDT gwarantuje spojnosc bez koordynacji"),
+     ]},
+
+    # ── PATTERN ROUND-TRIP ────────────────────────────────────────────────────
+
+    # 14: Self-Learning + Round-Trip
+    {"title": "14. Self-Learning", "subtitle": "Pattern zapisany -> kolejny prompt -> reuse", "layout": "split",
      "left_label": "README.md -- finalny stan", "left": "readme_deployed",
-     "right_label": "Ewolucja na bazie danych",
-     "right": "<div class='expect'><h3>Pattern Library -- wzorzec:</h3>"
+     "right_label": "Pattern Library round-trip",
+     "right": "<div class='expect'><h3>Iteracja 1: Pattern zapisany</h3>"
               "<div class='pattern-card'>"
               "<div class='pf'><span>id:</span> <strong>api-rest-orders</strong></div>"
               "<div class='pf'><span>keywords:</span> rest, api, orders, payment</div>"
               "<div class='pf'><span>success_rate:</span> <strong class='rate-good'>1.00</strong></div>"
               "<div class='pf'><span>usage_count:</span> 1</div></div>"
-              "<h3 style='margin-top:16px'>Nastepny prompt:</h3>"
-              "<p>System znajdzie ten pattern i uzyje jako template. Rate rosnie z kazdym sukcesem.</p></div>",
+              "<h3 style='margin-top:16px;'>Iteracja 2: Nowy prompt</h3>"
+              "<div class='prompt-input' style='font-size:16px;padding:14px;margin:8px 0;'>"
+              "Build a REST API for product catalog with inventory check</div>"
+              "<div class='mini-steps' style='margin-top:8px;'>"
+              "<div class='ms' style='background:rgba(188,140,255,.08);border:1px solid rgba(188,140,255,.2);color:#bc8cff;'>"
+              "PatternLibrary.find_pattern(intent) -> match: api-rest-orders (score: 6)</div>"
+              "<div class='ms' style='background:rgba(188,140,255,.08);border:1px solid rgba(188,140,255,.2);color:#bc8cff;'>"
+              "_score(): 'rest'(+1) + 'api'(+1) + 'orders'-like(+1) + service_type=api(+3)</div>"
+              "<div class='ms pass'>Template reused: markpact:orchestration + markpact:file</div>"
+              "<div class='ms pass'>PromptRefiner._heuristic_refine() -> lepszy prompt</div></div>"
+              "<h3 style='margin-top:16px;'>Po sukcesie iteracji 2:</h3>"
+              "<div class='pattern-card'>"
+              "<div class='pf'><span>id:</span> <strong>api-rest-orders</strong></div>"
+              "<div class='pf'><span>success_rate:</span> <strong class='rate-good'>1.00</strong> (bez zmian)</div>"
+              "<div class='pf'><span>usage_count:</span> <strong style='color:#58a6ff;'>2</strong> (+1)</div></div>"
+              "<div class='validation-box pass' style='margin-top:10px'>Round-trip: prompt -> pattern match -> template reuse -> szybszy output -> pattern updated</div></div>",
      "checks": [
-         chk("PatternLibrary.save_from_contract()", detail="Pattern api-rest-orders zapisany"),
-         chk("success_rate = 1.00", detail="Pierwszy run -> 100%"),
-         chk("Pattern reusable", detail="Kolejny 'REST API + orders' -> match"),
+         chk("PatternLibrary.save_from_contract()", detail="Pattern api-rest-orders zapisany po iteracji 1"),
+         chk("Nowy prompt -> find_pattern() match", detail="_score() = 6 (keywords + service_type)"),
+         chk("Template reused", detail="orchestration + file blocks z poprzedniego kontraktu"),
+         chk("PromptRefiner improves prompt", detail="_heuristic_refine() + _llm_refine()"),
+         chk("Pattern updated: usage_count=2", detail="record_success() -> rate utrzymany"),
      ]},
 
-    # 11: Summary
-    {"title": "Podsumowanie", "subtitle": "Caly przeplyw w jednym README.md",
-     "layout": "title", "idx": 11, "left": "", "right": "", "checks": []},
+    # ── CONTRACT VERSIONING ───────────────────────────────────────────────────
+
+    # 15: Contract Diff
+    {"title": "15. Contract Versioning", "subtitle": "Ewolucja README.md -- diff miedzy iteracjami", "layout": "split",
+     "left_label": "Iteracja 1: init", "left": "readme_initial",
+     "right_label": "Diff: init -> deployed",
+     "right": "<div class='expect'>"
+              "<h3>Ewolucja kontraktu</h3>"
+              "<p>Kazda zmiana w README.md jest trackowana przez CRDT + snapshots.</p>"
+              "<div style='margin:12px 0;'>"
+              "<div style='background:#1a0f0f;border:1px solid rgba(248,81,73,.2);border-radius:6px;padding:8px 12px;margin:4px 0;font-family:monospace;font-size:12px;'>"
+              "<span style='color:#f85149;'>- </span><span style='color:#8b949e;'>markpact:state: {&quot;phase&quot;:&quot;init&quot;}</span></div>"
+              "<div style='background:#0f1a0f;border:1px solid rgba(63,185,80,.2);border-radius:6px;padding:8px 12px;margin:4px 0;font-family:monospace;font-size:12px;'>"
+              "<span style='color:#3fb950;'>+ </span><span style='color:#e6edf3;'>markpact:state: {&quot;phase&quot;:&quot;deployed&quot;,&quot;health&quot;:&quot;ok&quot;,&quot;success_count&quot;:1}</span></div>"
+              "<div style='background:#1a0f0f;border:1px solid rgba(248,81,73,.2);border-radius:6px;padding:8px 12px;margin:4px 0;font-family:monospace;font-size:12px;'>"
+              "<span style='color:#f85149;'>- </span><span style='color:#8b949e;'>markpact:log: 1 entry</span></div>"
+              "<div style='background:#0f1a0f;border:1px solid rgba(63,185,80,.2);border-radius:6px;padding:8px 12px;margin:4px 0;font-family:monospace;font-size:12px;'>"
+              "<span style='color:#3fb950;'>+ </span><span style='color:#e6edf3;'>markpact:log: 10 entries (full pipeline trace)</span></div></div>"
+              "<h3 style='margin-top:12px;'>Snapshot timeline:</h3>"
+              "<div class='mini-steps'>"
+              "<div class='ms' style='background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.2);color:#58a6ff;'>"
+              "&#x1f4f8; snap-001: &quot;initial&quot; (7 blocks, T+0s)</div>"
+              "<div class='ms' style='background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.2);color:#58a6ff;'>"
+              "&#x1f4f8; snap-002: &quot;before-deploy&quot; (7 blocks, T+48s)</div>"
+              "<div class='ms pass'>"
+              "&#x1f4f8; snap-003: &quot;deployed&quot; (7 blocks, T+50s)</div></div>"
+              "<div class='api-box' style='margin-top:12px;'>marksync snapshot README.md --label initial<br>"
+              "marksync snapshot README.md --label before-deploy<br>"
+              "marksync rollback README.md --list<br>"
+              "<br>GET /api/snapshots -> [{id, ts, label, block_count}, ...]<br>"
+              "GET /api/contract/diff?from=snap-001&amp;to=snap-003</div></div>",
+     "checks": [
+         chk("3 snapshots captured", detail="init -> before-deploy -> deployed"),
+         chk("markpact:state diff visible", detail="init -> deployed, health: null -> ok"),
+         chk("markpact:log grew: 1 -> 10 entries", detail="Full pipeline trace preserved"),
+         chk("Rollback mozliwy do dowolnego snapshot", detail="marksync rollback --snapshot snap-001"),
+         chk("SnapshotStore.prune(keep=10)", detail="Auto-cleanup starych snapshotow"),
+     ]},
+
+    # 16: Summary
+    {"title": "Podsumowanie", "subtitle": "Caly przeplyw w jednym README.md -- happy path + failure paths",
+     "layout": "title", "idx": 16, "left": "", "right": "", "checks": []},
 ]
 
 # ---- CSS --------------------------------------------------------------------
@@ -394,7 +596,7 @@ const sl=document.createElement('div');sl.className='slide'+(i===0?' active':'')
 function bld(s,i){
 if(s.layout==='title'){
 if(i===0) return '<div class="title-slide"><h1>'+s.title+'</h1><div class="ts">'+s.subtitle+'</div><div style="color:#64748b;font-size:13px">Arrow keys to navigate | Space = auto-play</div></div>';
-return '<div class="title-slide"><h2 style="font-size:32px;color:#f1f5f9">'+s.title+'</h2><div class="ts">'+s.subtitle+'</div><div class="summary-grid"><div class="sg-item"><div class="ic">1</div><div class="vl">prompt</div><div class="lb">Wejscie</div></div><div class="sg-item"><div class="ic">1</div><div class="vl">README.md</div><div class="lb">Kontrakt</div></div><div class="sg-item"><div class="ic">7</div><div class="vl">blokow</div><div class="lb">markpact:*</div></div><div class="sg-item"><div class="ic">3</div><div class="vl">script</div><div class="lb">Deterministyczne</div></div><div class="sg-item"><div class="ic">2</div><div class="vl">llm</div><div class="lb">AI processing</div></div><div class="sg-item"><div class="ic">1</div><div class="vl">human</div><div class="lb">Approval</div></div></div><div class="final-msg">Jeden plik. Jeden kontrakt. Wszystko walidowalne.</div></div>';}
+return '<div class="title-slide"><h2 style="font-size:32px;color:#f1f5f9">'+s.title+'</h2><div class="ts">'+s.subtitle+'</div><div class="summary-grid"><div class="sg-item"><div class="ic">1</div><div class="vl">prompt</div><div class="lb">Wejscie</div></div><div class="sg-item"><div class="ic">1</div><div class="vl">README.md</div><div class="lb">Kontrakt</div></div><div class="sg-item"><div class="ic">7</div><div class="vl">blokow</div><div class="lb">markpact:*</div></div><div class="sg-item"><div class="ic">3</div><div class="vl">failure paths</div><div class="lb">reject / retry / rollback</div></div><div class="sg-item"><div class="ic">3</div><div class="vl">agenci CRDT</div><div class="lb">zero conflicts</div></div><div class="sg-item"><div class="ic">1</div><div class="vl">pattern reuse</div><div class="lb">self-learning</div></div></div><div class="final-msg">Jeden plik. Happy path + failure paths. Wszystko walidowalne.</div></div>';}
 let h='<div class="slide-header"><h2>'+s.title+'</h2><span class="sub">'+(s.subtitle||'')+'</span></div><div class="split">';
 h+='<div class="panel panel-left"><div class="panel-label">'+(s.left_label||'README.md')+'</div><div class="panel-body">'+fmtL(s.left,s.left_highlight)+'</div></div>';
 h+='<div class="panel panel-right"><div class="panel-label">'+(s.right_label||'OCZEKIWANIA')+'</div><div class="panel-body">'+(s.right||'')+'</div>';

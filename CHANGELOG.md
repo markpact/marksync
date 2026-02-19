@@ -1,3 +1,25 @@
+## [0.2.25] - 2026-02-19
+
+### Summary
+
+feat(examples): configuration management system
+
+### Docs
+
+- docs: update README
+
+### Other
+
+- update .env.example
+- update demos/_gen_slides.py
+- update demos/demo_live.py
+- update marksync/dashboard/app.py
+- update marksync/dashboard/html.py
+- update marksync/report/__init__.py
+- update marksync/report/collector.py
+- update marksync/report/renderer_pdf.py
+
+
 ## [0.2.24] - 2026-02-19
 
 ### Summary
