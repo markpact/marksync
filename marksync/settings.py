@@ -169,7 +169,23 @@ class Settings:
 
 
 def load_settings() -> Settings:
-    """Load settings from environment + .env file."""
+    """Load settings from environment + .env file.
+
+    When getv is available, also loads the user's default LLM profile
+    (set via ``getv use marksync llm PROFILE``).
+    """
+    # Load getv app defaults first (if configured)
+    if _HAS_GETV:
+        try:
+            from getv import AppDefaults
+            from getv.integrations.pydantic_env import load_profile_into_env
+            defaults = AppDefaults("marksync")
+            llm_profile = defaults.get("llm")
+            if llm_profile:
+                load_profile_into_env("llm", llm_profile)
+        except Exception:
+            pass
+
     dotenv_path = _find_dotenv()
     dotenv = _load_dotenv(dotenv_path) if dotenv_path else {}
 
