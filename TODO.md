@@ -1,34 +1,13 @@
 # TODO — marksync
 
-## High Priority
+## Open
 
-- [x] **Pipeline execution engine** — `PipelineEngine.attach_to_sync_server()` + `add_block_route(pattern, pipeline)` routes block changes to pipelines
-- [x] **Authentication** — token-based auth for REST/WS API and sync server (`marksync/auth/`)
-- [x] **TLS/WSS support** — `SyncServer(ssl_certfile, ssl_keyfile)`, `SyncClient(ssl_verify, ssl_ca_cert)`, `marksync server --ssl-cert --ssl-key`
-- [ ] **MQTT transport** — implement `marksync.transport.mqtt` for IoT/edge agent communication
-- [ ] **gRPC transport** — high-performance binary transport for large-scale deployments
-
-## Medium Priority
-
-- [x] **Agent persistence** — save/restore agent state across restarts (`DSLExecutor.save_state/restore_state`)
-- [x] **DSL tab completion** — readline tab completion in shell (`dsl/shell.py`)
-- [x] **DSL command history** — persistent history file `~/.marksync_history`
-- [x] **Agent health monitoring** — PactownMonitor.watch() loop, Plugin.health_check(), auto-fix pipeline trigger
-- [x] **Block conflict resolution** — `_three_way_merge()` + `conflict`/`merge` WebSocket message types in `SyncServer`
-- [x] **Metrics & telemetry** — Prometheus `/metrics` endpoint in dashboard + `SyncServer.metrics()`
-- [x] **Rate limiting** — sliding-window rate limiter per client in SyncServer
-- [x] **Batch operations** — brace expansion `AGENT coder-{1..5} editor` in `dsl/parser.py`
-
-## Low Priority
-
-- [x] **Plugin system** — `PluginRegistry._discover_entry_points()` loads external plugins via `marksync.plugins` entry_points group
-- [x] **Multi-project support** — `MultiProjectServer` routes by `?project=<name>` query param
-- [x] **Git integration** — `SyncServer(git_auto_commit=True)` auto-commits on save
-- [x] **Ollama model auto-pull** — `OllamaClient._ensure_model()` pulls missing models automatically
-- [x] **CRDT garbage collection** — `CRDTDocument.garbage_collect()` compacts logs + removes empty blocks
-- [x] **DSL macros** — `MACRO NAME = template $1 $2` with argument substitution
-- [x] **Webhook notifications** — `DSLExecutor.add_webhook(url, events)` fires on agent events
-- [x] **Docker Swarm / K8s** — `deploy/docker-compose.swarm.yml` + `deploy/k8s/` (kustomize: namespace, configmap, PVC, sync-server, dashboard, orchestrator, ingress)
+- [ ] **MQTT transport (full)** — implement `marksync.transport.MQTTTransport` as a full SyncServer transport backend (currently only a Channel plugin exists)
+- [ ] **gRPC transport (full)** — high-performance binary SyncServer transport for large-scale deployments
+- [ ] **Channel E2E tests in CI** — `examples/channels/test_channels_e2e.py` requires running MQTT/Redis/AMQP/NATS brokers; add docker-compose for CI
+- [ ] **Pattern matching improvements** — `PatternLibrary._score()` is keyword-based; consider embedding-based similarity
+- [ ] **LLM streaming** — stream LLM responses to dashboard SSE in real-time
+- [ ] **Agent auto-scaling** — scale agent count based on queue depth
 
 ## Completed
 
@@ -36,17 +15,57 @@
 - [x] CRDT document with pycrdt (Yjs-compatible)
 - [x] Block parser for markpact:* code blocks
 - [x] Agent worker with 4 roles (editor, reviewer, deployer, monitor)
-- [x] Ollama LLM integration
+- [x] ConversationAgent — LLM conversation engine with CRDT history
+- [x] PactownMonitor — health polling, auto-fix pipeline trigger
+- [x] Ollama LLM integration (OllamaClient, auto-pull missing models)
+- [x] LLM client (LiteLLM) — `marksync.pipeline.llm_client` (OpenRouter, OpenAI, Anthropic, custom)
 - [x] CLI with Click (server, agent, push, blocks, shell, api, orchestrate, sandbox)
-- [x] Docker Compose setup (simplified: 4 services with orchestrator)
+- [x] **`marksync init`** — first-run wizard: GPU/RAM detection, LLM provider setup, connection test
+- [x] **`marksync generate`** — Docker service generation from YAML prompt via LLM
+- [x] **`marksync create`** — full Markpact contract from natural language
+- [x] **`marksync dashboard`** — graphical contract lifecycle UI (FastAPI + SSE)
+- [x] **`marksync snapshot`** — save named CRDT snapshot
+- [x] **`marksync rollback`** — restore contract to previous snapshot
+- [x] Docker Compose setup (4 services: server, orchestrator, api, init)
+- [x] Docker Swarm + Kubernetes — `deploy/docker-compose.swarm.yml` + `deploy/k8s/` (kustomize)
 - [x] DSL parser and executor
-- [x] DSL interactive shell (REPL)
+- [x] DSL interactive shell (REPL with readline tab completion + persistent history)
+- [x] DSL v2 commands — `CREATE`, `DASHBOARD`, `LEARN`, `PATTERNS`, `MACRO`, `SAVE`/`LOAD` state
+- [x] DSL brace expansion — `AGENT coder-{1..5} editor`
+- [x] DSL macros — `MACRO NAME = template $1 $2`
+- [x] Webhook notifications — `DSLExecutor.add_webhook(url, events)`
+- [x] Agent persistence — `DSLExecutor.save_state/restore_state`
 - [x] REST/WS API for remote orchestration
+- [x] Pipeline Engine — LLM/SCRIPT/HUMAN actor types, retry/timeout, idempotency, events
+- [x] Human-in-the-loop — `HumanTask` blocks until resolved via REST API
+- [x] 7 built-in demo pipelines (code-review, account-creation, payment, doc-generation, incident-response, content-moderation, data-migration)
+- [x] Built-in autofix pipeline — `pactown-autofix` (diagnose → restart → verify)
+- [x] Plugin system — `PluginRegistry` with lazy loading + entry_points discovery
+- [x] Process formats — BPMN 2.0, XPDL, Petri Net, DMN, CMMN, EPC, UML Activity, BPEL
+- [x] Integrations — Kubernetes, GitLab CI, GitHub Actions, Airflow, Ansible, n8n, Terraform, Pactown
+- [x] API adapters — OpenAPI 3.0, AsyncAPI, GraphQL, gRPC, JSON Schema
+- [x] Channels — SSE, WebSocket, MQTT, Redis, AMQP, NATS, gRPC, Slack, HTTP Webhook, CLI stdio
+- [x] Contract generation — `ContractGenerator` (intent → 10 blocks); templates for REST API/Web App/CLI/Worker
+- [x] Intent parsing — `IntentParser` (heuristic + LLM), `YAMLGenerator`
+- [x] Conversation engine — `ConversationEngine` with CRDT-persisted history
+- [x] Pattern learning — `PatternLibrary`, `FeedbackCollector`, `PromptRefiner`
+- [x] Authentication — token auth (JWT + HMAC fallback), `Role` enum, `AuthMiddleware`, `require_role`
+- [x] TLS/WSS — `SyncServer(ssl_certfile, ssl_keyfile)`, `SyncClient(ssl_verify, ssl_ca_cert)`
+- [x] Hardware detection — NVIDIA/AMD GPU, RAM, Ollama status, model suggestion by VRAM
+- [x] CRDT enhancements — snapshot/rollback, garbage_collect, get_blocks_by_kind, append_block
+- [x] SnapshotStore — persist/list/load/restore/prune CRDT snapshots
+- [x] MultiProjectServer — routes by `?project=<name>`
+- [x] Block conflict resolution — `_three_way_merge()` + conflict/merge WS message types
+- [x] Prometheus metrics — `SyncServer.metrics()` + dashboard `/metrics`
+- [x] Rate limiting — sliding-window per client in SyncServer
+- [x] Git auto-commit — `SyncServer(git_auto_commit=True)`
 - [x] Delta sync with diff-match-patch + SHA-256 verification
 - [x] Centralized `.env` configuration (`marksync.settings`)
 - [x] `agents.yml` — declarative agent definitions (single source of truth)
-- [x] Orchestrator — reads agents.yml, spawns all agents in 1 process
+- [x] Orchestrator — reads agents.yml, spawns all agents in 1 process; `to_dsl()`, `to_msdsl()`, `summary()`
 - [x] Web sandbox — browser-based UI for editing examples and testing
+- [x] Dashboard UI — contract lifecycle management, pipeline task approval, CRDT history
 - [x] 3 example projects (Task Manager API, Chat WebSocket, Data Pipeline CLI)
-- [x] 96 tests (DSL, examples, orchestrator, settings)
-- [x] Full documentation (architecture, DSL reference, API, example guides)
+- [x] BPMN multi-agent examples (parallel review, async notification, approval gateway, full collaboration)
+- [x] 286+ tests across 8 test files
+- [x] Full documentation (architecture, DSL reference, API, pipelines, plugins, channels, formats, integrations, comparison)

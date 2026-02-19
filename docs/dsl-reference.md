@@ -127,11 +127,13 @@ CONNECT [ws://host:port]
 DISCONNECT
 ```
 
-### LOAD / SAVE — Script Files
+### LOAD / SAVE — Script Files & State
 
 ```
-LOAD setup.msdsl           # execute script
-SAVE current-state.msdsl   # export current config
+LOAD setup.msdsl           # execute script file
+LOAD state.json --state    # restore persisted executor state
+SAVE current-state.msdsl   # export current config as DSL script
+SAVE state.json --state    # persist agents/pipelines/routes/config to JSON
 ```
 
 ### LOG — Command History
@@ -145,6 +147,71 @@ LOG [--tail N]
 ```
 HELP              # all commands
 HELP agent        # specific command
+```
+
+## DSL v2 Commands
+
+### CREATE — Generate Contract
+
+```
+CREATE <prompt> [--output DIR] [--no-llm] [--deploy] [--open-dashboard]
+```
+
+Generate a full Markpact contract from a natural language prompt.
+
+```
+CREATE "REST API for task management" --output ./my-service
+CREATE "payment service with approval" --deploy
+```
+
+### DASHBOARD — Open Dashboard UI
+
+```
+DASHBOARD [--port N] [--host H]
+```
+
+### LEARN — Save Contract as Pattern
+
+```
+LEARN <contract_path> [--success true|false]
+```
+
+Save a completed contract to the pattern library for future reuse.
+
+```
+LEARN ./my-service --success true
+LEARN ./failed-attempt --success false
+```
+
+### PATTERNS — List Saved Patterns
+
+```
+PATTERNS
+```
+
+### MACRO — Define Command Alias
+
+```
+MACRO <name> = <command template with $1 $2 ...>
+```
+
+Define a reusable command alias with positional argument substitution.
+
+```
+MACRO review-chain = PIPE $1 editor-1 -> reviewer-1 -> deployer-1
+review-chain my-flow
+```
+
+## Brace Expansion
+
+Brace expressions in agent names are expanded automatically:
+
+```
+AGENT coder-{1..3} editor --auto-edit
+# expands to: AGENT coder-1 editor, AGENT coder-2 editor, AGENT coder-3 editor
+
+AGENT {editor,reviewer}-1 {editor,reviewer}
+# expands to: AGENT editor-1 editor, AGENT reviewer-1 reviewer
 ```
 
 ## Type Coercion
@@ -169,7 +236,9 @@ Values in `--options` are automatically coerced:
 | Pipelines | ✓ | ✓ |
 | Routes | ✓ | ✓ |
 | SET/SEND/DEPLOY/SYNC | ✓ | ✗ |
+| CREATE/LEARN/PATTERNS | ✓ | ✗ |
+| MACRO/brace expansion | ✓ | ✗ |
 | Best for | Interactive, runtime changes | Static config, Docker |
 
 For most use cases, `agents.yml` + `marksync orchestrate` is simpler.
-The DSL shell is for interactive exploration and runtime changes.
+The DSL shell is for interactive exploration, runtime changes, and contract generation.

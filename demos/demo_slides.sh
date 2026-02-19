@@ -23,10 +23,12 @@ echo "║  DEMO: Slideshow — LEFT: Live README / RIGHT: Oczekiwania + Walidacj
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 echo -e "  ${YELLOW}→${NC} Generuję prezentację HTML..."
-
 python3 "$SCRIPT_DIR/_gen_slides.py" "$SLIDES_DIR"
-
 echo -e "  ${GREEN}✓${NC} HTML: $SLIDES_DIR/index.html"
+
+echo -e "  ${YELLOW}→${NC} Generuję PDF..."
+python3 "$SCRIPT_DIR/_gen_slides_pdf.py" "$SLIDES_DIR"
+echo -e "  ${GREEN}✓${NC} PDF: $SLIDES_DIR/marksync_flow.pdf"
 
 # Start server
 fuser -k "$BROWSER_PORT/tcp" 2>/dev/null || true

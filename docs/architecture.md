@@ -248,44 +248,103 @@ Demo scenarios available in sandbox: code-review, account-creation, payment, doc
 
 Imperative command interface for interactive/runtime control:
 
-- **Parser** (`dsl/parser.py`) — tokenizes text commands into `DSLCommand` objects
-- **Executor** (`dsl/executor.py`) — executes commands, manages agent lifecycle
-- **Shell** (`dsl/shell.py`) — interactive REPL with rich terminal output
+- **Parser** (`dsl/parser.py`) — tokenizes text commands into `DSLCommand` objects; brace expansion (`{1..5}`, `{a,b}`)
+- **Executor** (`dsl/executor.py`) — executes commands, manages agent lifecycle, macros, webhooks, state persistence
+- **Shell** (`dsl/shell.py`) — interactive REPL with readline tab completion + persistent history
 - **API** (`dsl/api.py`) — REST/WebSocket endpoints
+
+DSL v2 commands: `CREATE`, `DASHBOARD`, `LEARN`, `PATTERNS`, `MACRO`, `SAVE`/`LOAD` state.
 
 ### 3. Agent Layer (`marksync.agents`)
 
 AI-powered workers that connect to the SyncServer and process block updates:
 
-| Role | Behavior |
-|------|----------|
-| **Editor** | Sends code to Ollama LLM for improvement, pushes edits back |
-| **Reviewer** | Analyzes code quality, logs findings (read-only) |
-| **Deployer** | Watches for `markpact:run`/`markpact:deps` changes, triggers builds |
-| **Monitor** | Logs all block changes with size and hash |
+| Role | Class | Behavior |
+|------|-------|----------|
+| **editor** | `AgentWorker` | Sends code to LLM for improvement, pushes edits back |
+| **reviewer** | `AgentWorker` | Analyzes code quality, logs findings (read-only) |
+| **deployer** | `AgentWorker` | Watches `markpact:run`/`markpact:deps`, triggers builds |
+| **monitor** | `AgentWorker` | Logs all block changes with size and hash |
+| **conversation** | `ConversationAgent` | Processes conversation blocks via LLM, persists history |
+| **pactown-monitor** | `PactownMonitor` | Polls Pactown health, writes state/log blocks, triggers autofix |
+
+LLM access via `AgentLLMClient` — wraps `LLMClient` (LiteLLM) with Ollama fallback.
 
 ### 4. Sync Layer (`marksync.sync`)
 
 Real-time synchronization via CRDT and delta patches:
 
-- **CRDTDocument** (`sync/crdt.py`) — pycrdt-backed document with per-block Y.Text
-- **SyncServer** (`sync/engine.py`) — WebSocket hub, persists to disk, broadcasts
-- **SyncClient** (`sync/engine.py`) — connects to server, pushes/pulls changes
+- **CRDTDocument** (`sync/crdt.py`) — pycrdt-backed document with per-block Y.Text; `snapshot`/`rollback_to`, `garbage_collect`, `get_blocks_by_kind`, `append_block`
+- **SyncServer** (`sync/engine.py`) — WebSocket hub, persists to disk, broadcasts; TLS, rate limiting, git auto-commit, Prometheus metrics, three-way merge
+- **SyncClient** (`sync/engine.py`) — connects to server, pushes/pulls changes; TLS client
+- **MultiProjectServer** (`sync/engine.py`) — routes by `?project=<name>` query param
 - **BlockParser** (`sync/__init__.py`) — extracts `markpact:*` blocks from Markdown
+- **SnapshotStore** (`sync/snapshots.py`) — persist/list/load/restore/prune CRDT snapshots
 
-### 5. Sandbox Layer (`marksync.sandbox`)
+### 5. Contract & Intent Layer (`marksync.contract`, `marksync.intent`)
+
+Generate complete Markpact contracts from natural language:
+
+- **IntentParser** (`intent/parser.py`) — heuristic + LLM parsing of natural language → `ProcessIntent`
+- **YAMLGenerator** (`intent/yaml_generator.py`) — `ProcessIntent` → pipeline + orchestration YAML
+- **ContractGenerator** (`contract/generator.py`) — generates 10 contract blocks from intent
+- **Templates** (`contract/templates.py`) — `RestAPITemplate`, `WebAppTemplate`, `CLITemplate`, `WorkerTemplate`, `GenericTemplate`
+- **BlockTypes** (`contract/block_types.py`) — block ID constants, `EnvProfile`, `GeneratedContract`
+
+### 6. Conversation Layer (`marksync.conversation`)
+
+- **ConversationEngine** — appends messages to CRDT history, processes via LLM, supports multi-turn context
+
+### 7. Learning Layer (`marksync.learning`)
+
+Feedback loop for continuous improvement:
+
+- **FeedbackCollector** — records approve/reject/comment events; `complete_run()` saves pattern on success
+- **PatternLibrary** — stores/finds/scores patterns by keyword matching; `save_from_contract()`
+- **PromptRefiner** — analyzes rejection history, generates refined prompts via LLM or heuristic
+
+### 8. Auth Layer (`marksync.auth`)
+
+- **Tokens** (`auth/tokens.py`) — `create_token`/`verify_token` with JWT (PyJWT) or HMAC fallback
+- **Roles** (`auth/roles.py`) — `Role` enum (admin/editor/viewer), `has_permission`
+- **Middleware** (`auth/middleware.py`) — `AuthMiddleware` (Starlette), `get_current_user`, `require_role` FastAPI dependency
+
+### 9. Dashboard Layer (`marksync.dashboard`)
+
+- **Dashboard app** (`dashboard/app.py`) — FastAPI app with SSE push; contract lifecycle UI; `GET /api/config`, `GET /api/pipeline/tasks`, `POST /api/pipeline/tasks/{id}/resolve`; `_broadcast_sse` for real-time updates
+
+### 10. Sandbox Layer (`marksync.sandbox`)
 
 Web-based testing UI:
 
 - Browse/edit example README.md files
 - View and edit individual code blocks
 - Push changes to sync server
-- View orchestration plans
+- Run pipeline demos, approve/reject human tasks
 - Monitor server status
 
-### 6. Transport Layer (`marksync.transport`)
+### 11. Plugin Layer (`marksync.plugins`)
 
-Extensible transport backends (currently WebSocket, planned: MQTT, gRPC).
+Extensible export/import system with lazy loading and entry_points discovery:
+
+- **Formats**: BPMN 2.0 (full collaboration/pools/lanes), XPDL, Petri Net, DMN, CMMN, EPC, UML Activity, BPEL
+- **Integrations**: Kubernetes, GitLab CI, GitHub Actions, Airflow, Ansible, n8n, Terraform, Pactown
+- **API Adapters**: OpenAPI 3.0, AsyncAPI, GraphQL, gRPC (.proto), JSON Schema
+- **Channels**: SSE, WebSocket, MQTT, Redis Pub/Sub, AMQP, NATS, gRPC streaming, Slack, HTTP Webhook, CLI stdio
+
+### 12. Transport Layer (`marksync.transport`)
+
+Extensible transport backends for SyncServer: WebSocket (implemented), MQTT (planned), gRPC (planned).
+
+### 13. Hardware Detection (`marksync.hardware_detect`)
+
+Used by `marksync init` wizard:
+
+- `detect_nvidia_gpu()` / `detect_amd_gpu()` — query nvidia-smi / rocm-smi
+- `detect_ram()` — parse `free` or `/proc/meminfo`
+- `is_ollama_installed()` / `is_ollama_running()` / `list_ollama_models()`
+- `suggest_model(gpu_vram_gb, ram_gb)` — returns `(model_name, recommend_api_instead)`
+- `detect(ollama_url)` — full system scan → `SystemInfo`
 
 ## Data Flow
 

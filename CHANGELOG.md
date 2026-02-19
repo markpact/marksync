@@ -1,16 +1,87 @@
+## [0.2.24] - 2026-02-19
+
+### Summary
+
+feat(docs): configuration management system
+
+### Docs
+
+- docs: update README
+- docs: update TODO.md
+- docs: update architecture.md
+- docs: update dsl-reference.md
+- docs: update README
+
+### Other
+
+- update demos/_gen_slides.py
+- update demos/_gen_slides_pdf.py
+- scripts: update demo_slides.sh
+- update marksync_flow.pdf
+- update project.functions.toon
+
+
 ## [0.2.23] - 2026-02-19
 
 ### Summary
 
-feat(examples): configuration management system
+Full-featured release: pipeline engine with human-in-the-loop, plugin system (BPMN/n8n/Airflow/K8s/GitHub/Ansible/Terraform), 10 channel transports, contract generation from natural language, pattern learning, auth layer, hardware detection, dashboard UI, snapshots/rollback, and `marksync init` wizard.
+
+### Features
+
+- **`marksync init`** — first-run wizard: detects GPU/RAM via `hardware_detect`, suggests model, configures LLM provider (Ollama/OpenRouter/OpenAI/Anthropic/LiteLLM), tests connection, saves `.env`
+- **`marksync generate`** — generate a Docker service from a YAML prompt via LLM (LiteLLM/OpenRouter); supports `--build`, `--up`, `--dry-run`
+- **`marksync create`** — create a full Markpact contract from natural language; supports `--no-llm`, `--deploy`, `--open-dashboard`
+- **`marksync dashboard`** — graphical contract lifecycle UI (FastAPI + SSE); wired to `--contract` arg; `GET /api/config` exposes contract path
+- **`marksync snapshot`** — save a named CRDT snapshot of a contract
+- **`marksync rollback`** — restore a contract to a previous snapshot (`--list` or `--snapshot ID`)
+- **Pipeline Engine** (`marksync.pipeline.engine`) — `PipelineEngine` with LLM/SCRIPT/HUMAN actor types, retry/timeout per step, idempotency keys, CRDT-persisted run history, event hooks (`on`/`_emit`), `attach_to_sync_server`, `add_block_route`
+- **Human-in-the-loop** — `HumanTask` blocks asyncio.Future until resolved via REST API; `resolve_task(action, response, resolved_by)`
+- **Built-in demo pipelines** — `code-review`, `account-creation`, `payment`, `doc-generation`, `incident-response`, `content-moderation`, `data-migration` (7 scenarios, 32 tests)
+- **Built-in autofix pipeline** — `pactown-autofix` (diagnose → pactown-restart → verify); triggered by `PactownMonitor` on degraded health
+- **Plugin System** (`marksync.plugins`) — `PluginRegistry` with lazy loading and entry_points discovery
+  - **Formats**: BPMN 2.0 (full collaboration/pools/lanes), XPDL, Petri Net, DMN, CMMN, EPC, UML Activity, BPEL
+  - **Integrations**: Kubernetes, GitLab CI, GitHub Actions, Apache Airflow, Ansible, n8n, Terraform, Pactown
+  - **API Adapters**: OpenAPI 3.0, AsyncAPI, GraphQL, gRPC (.proto), JSON Schema
+  - **Channels**: SSE, WebSocket, MQTT, Redis Pub/Sub, AMQP, NATS, gRPC streaming, Slack, HTTP Webhook, CLI stdio
+- **Contract generation** (`marksync.contract`) — `ContractGenerator` produces 10 contract blocks from `ProcessIntent`; templates for REST API, Web App, CLI, Worker
+- **Intent parsing** (`marksync.intent`) — `IntentParser` (heuristic + LLM), `YAMLGenerator` (intent → pipeline + orchestration YAML)
+- **Conversation engine** (`marksync.conversation`) — `ConversationEngine` with CRDT-persisted history and LLM processing
+- **Pattern learning** (`marksync.learning`) — `PatternLibrary` (save/find/score patterns), `FeedbackCollector` (approve/reject/complete_run), `PromptRefiner` (analyze history, refine prompts via LLM)
+- **Auth layer** (`marksync.auth`) — `create_token`/`verify_token` (JWT with HMAC fallback), `Role` enum, `AuthMiddleware`, `get_current_user`, `require_role`
+- **Hardware detection** (`marksync.hardware_detect`) — NVIDIA/AMD GPU detection, RAM detection, Ollama install/running check, model suggestion by VRAM
+- **CRDT enhancements** — `snapshot`/`rollback_to`, `garbage_collect` (compact logs, remove empty blocks), `get_blocks_by_kind`, `query_blocks`, `append_block`
+- **SnapshotStore** (`marksync.sync.snapshots`) — persist/list/load/restore/prune CRDT snapshots
+- **MultiProjectServer** — routes by `?project=<name>` query param
+- **DSL v2 commands** — `CREATE`, `DASHBOARD`, `LEARN`, `PATTERNS`, `MACRO` (with `$1/$2` substitution), `SAVE`/`LOAD` state, `add_webhook`
+- **DSL brace expansion** — `AGENT coder-{1..5} editor` spawns 5 agents
+- **Orchestrator DSL export** — `to_dsl()`, `to_msdsl(path)`, `summary()`
+- **TLS/WSS** — `SyncServer(ssl_certfile, ssl_keyfile)`, `SyncClient(ssl_verify, ssl_ca_cert)`
+- **Rate limiting** — sliding-window per client in `SyncServer`
+- **Git auto-commit** — `SyncServer(git_auto_commit=True)`
+- **Prometheus metrics** — `SyncServer.metrics()` and dashboard `/metrics` endpoint
+- **Block conflict resolution** — `_three_way_merge()` + `conflict`/`merge` WebSocket message types
+- **LLM client** (`marksync.pipeline.llm_client`) — `LLMClient` (LiteLLM), `LLMConfig.from_settings()`, `LLMResponse.json_block()`
+- **Prompt generator** (`marksync.pipeline.prompt_generator`) — `PromptGenerator`, `PromptSpec`, `GeneratedService`, `write_generated()`
+- **BPMN multi-agent** (`examples/bpmn_multiagent.py`) — 4 scenarios: parallel review, async notification, approval gateway, full collaboration
+
+### Bug Fixes
+
+- `dashboard/app.py` — `create_dashboard_app()` accepts `contract_path` arg; exposed via `GET /api/config`; injected into HTML as `__INITIAL_CONTRACT_PATH__`
+- `cli.py` — deploy step error message: falls back to `output[:200]` then `rc=N` (was always empty)
+- `cli.py` — `dashboard_cmd` passes `contract or settings.PROJECT_README` to `create_dashboard_app()`
+
+### Tests
+
+- 286 tests total across 8 test files
+- `test_pipeline_scenarios.py` — 7 end-to-end scenarios (32 tests)
+- `test_v2.py` — contract, pipeline, agents v2 (101 tests)
+- `test_hardware_detect.py` — GPU/RAM detection (30 tests)
+- `test_pipeline.py` — pipeline engine (24 tests)
 
 ### Other
 
-- scripts: update demo_browser.sh
-- scripts: update demo_contract.sh
-- scripts: update demo_integrations.sh
-- scripts: update demo_slides.sh
-- scripts: update run.sh
+- scripts: update demo_browser.sh, demo_contract.sh, demo_integrations.sh, demo_slides.sh, run.sh
 - update project.functions.toon
 
 
