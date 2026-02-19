@@ -468,12 +468,26 @@ class ReportCollector:
 
         # Derive endpoints from generated code
         endpoints: list[dict[str, str]] = []
+        import re as _re
         for fpath, code in contract.files.items():
             for line in code.splitlines():
+                stripped = line.strip()
+                # FastAPI: @app.get("/path"), @app.post("/path")
                 for method in ["get", "post", "put", "delete", "patch"]:
-                    if f"@app.{method}(" in line or f'.{method}("/' in line:
-                        route = line.split('"')[1] if '"' in line else "/"
+                    if f"@app.{method}(" in stripped:
+                        m = _re.search(r'["\'](/[^"\']*)["\']', stripped)
+                        route = m.group(1) if m else "/"
                         endpoints.append({"method": method.upper(), "path": route, "file": fpath})
+                # Flask: @app.route("/path") or @app.route("/path", methods=["GET"])
+                rm = _re.search(r'@app\.route\(["\'](/[^"\']*)["\']', stripped)
+                if rm:
+                    route = rm.group(1)
+                    mm = _re.search(r'methods\s*=\s*\[([^\]]+)\]', stripped)
+                    if mm:
+                        for mv in _re.findall(r'["\'](\w+)["\']', mm.group(1)):
+                            endpoints.append({"method": mv.upper(), "path": route, "file": fpath})
+                    else:
+                        endpoints.append({"method": "GET", "path": route, "file": fpath})
 
         steps.append(StepSnapshot(
             name="deployed",

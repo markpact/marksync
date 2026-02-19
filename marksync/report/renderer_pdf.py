@@ -14,10 +14,11 @@ from pathlib import Path
 from marksync.report.collector import ReportData, StepSnapshot
 
 try:
-    from fpdf import FPDF, XPos, YPos
+    from fpdf import FPDF as _FPDF, XPos, YPos
     HAS_FPDF = True
 except ImportError:
     HAS_FPDF = False
+    _FPDF = object  # type: ignore[assignment,misc]
 
 # ── Colors ───────────────────────────────────────────────────────────────
 
@@ -55,7 +56,7 @@ def _ascii(text: str) -> str:
 # ── PDF class ────────────────────────────────────────────────────────────
 
 
-class ReportPDF(FPDF):
+class ReportPDF(_FPDF):
     """Landscape A4 PDF with dark theme, optimized column split."""
 
     def __init__(self, report: ReportData):
@@ -328,7 +329,7 @@ class ReportPDF(FPDF):
         # Footer
         self.set_font("Helvetica", "B", 14)
         self.set_text_color(*C_ACCENT)
-        msg = "marksync — Contract-Based AI-Human-Algorithm Deployment"
+        msg = _ascii("marksync -- Contract-Based AI-Human-Algorithm Deployment")
         mw = self.get_string_width(msg)
         self.set_xy((self.W - mw) / 2, by + 48)
         self.cell(mw, 8, msg)
@@ -442,10 +443,10 @@ class ReportPDF(FPDF):
         # Final message
         self.set_font("Helvetica", "B", 16)
         self.set_text_color(*C_ACCENT)
-        msg = f"Contract: {r.project_name}/README.md — fully generated, fully controllable."
+        msg = _ascii(f"Contract: {r.project_name}/README.md -- fully generated, fully controllable.")
         mw = self.get_string_width(msg)
         self.set_xy((self.W - mw) / 2, self.H - 30)
-        self.cell(mw, 8, _ascii(msg))
+        self.cell(mw, 8, msg)
 
         self._page_number(len(r.steps) + 2)
 

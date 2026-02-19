@@ -1128,5 +1128,69 @@ def snapshot_cmd(contract_path, label):
     console.print(f"[green]Snapshot saved:[/] {snap_id}")
 
 
+@main.command("report")
+@click.argument("prompt")
+@click.option("--output", "-o", default="generated/report", help="Output directory")
+@click.option("--no-llm", is_flag=True, help="Skip LLM — use heuristic only")
+@click.option("--pdf/--no-pdf", default=True, help="Generate PDF report")
+@click.option("--html/--no-html", "gen_html", default=True, help="Generate HTML slideshow")
+@click.option("--env", default="dev", show_default=True,
+              type=click.Choice(["dev", "staging", "prod"]),
+              help="Target environment")
+def report_cmd(prompt, output, no_llm, pdf, gen_html, env):
+    """Generate a contract report (PDF + HTML) from a natural language prompt.
+
+    \b
+    Runs the real marksync pipeline (IntentParser → YAMLGenerator →
+    ContractGenerator) and captures each step to produce a professional
+    report showing the full contract lifecycle.
+
+    \b
+    Examples:
+        marksync report "REST API for order management with human approval"
+        marksync report "Todo CLI app" --no-llm --output ./reports
+    """
+    from marksync.report import generate_report
+
+    console.print(f"\n[bold cyan]marksync report[/] — Generating contract report\n")
+    console.print(f"  Prompt: [italic]{prompt}[/]\n")
+
+    report = generate_report(prompt, use_llm=not no_llm, env=env)
+
+    out = Path(output)
+    out.mkdir(parents=True, exist_ok=True)
+
+    console.print(f"  Project:      [cyan]{report.project_name}[/]")
+    console.print(f"  Service type: {report.service_type}")
+    console.print(f"  Actors:       {', '.join(report.actors)}")
+    console.print(f"  Steps:        {len(report.steps)}")
+    console.print(f"  Endpoints:    {len(report.endpoints)}\n")
+
+    # Write README.md
+    readme_path = out / "README.md"
+    readme_path.write_text(report.final_readme, encoding="utf-8")
+    console.print(f"  [green]README.md[/]  → {readme_path}")
+
+    if pdf:
+        try:
+            pdf_path = report.to_pdf(str(out / f"{report.project_name}_report.pdf"))
+            console.print(f"  [green]PDF[/]        → {pdf_path} ({pdf_path.stat().st_size // 1024} KB)")
+        except ImportError as e:
+            console.print(f"  [yellow]PDF skipped:[/] {e}")
+
+    if gen_html:
+        html_path = report.to_html(str(out / f"{report.project_name}_report.html"))
+        console.print(f"  [green]HTML[/]       → {html_path}")
+
+    console.print(f"\n  [bold]Open report:[/]")
+    if gen_html:
+        console.print(f"    xdg-open {out / f'{report.project_name}_report.html'}")
+    if pdf:
+        console.print(f"    xdg-open {out / f'{report.project_name}_report.pdf'}")
+    console.print(f"\n  [bold]Start service:[/]")
+    console.print(f"    marksync dashboard --contract {readme_path}")
+    console.print()
+
+
 if __name__ == "__main__":
     main()

@@ -17,10 +17,12 @@ Wyobraź sobie, że piszesz jedno zdanie ("zbuduj mi API do zamówień z ludzkim
 Kluczowa idea: jeden plik = kontrakt + kod + stan + logi + deployment.
 
 ```bash
+python demos/demo_live_marksync.py --prompt "Build a todo API"
 source venv/bin/activate && python -m marksync.cli create "Build a chat API with WebSocket"
 ```
 
 + [marksync_flow.pdf](marksync_flow.pdf)
++ [marksync_live_custom.pdf](generated/live/marksync_live_custom.pdf)
 
 ```yaml markpact:orchestration
 pipeline:

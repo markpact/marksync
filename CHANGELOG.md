@@ -1,3 +1,24 @@
+## [0.2.26] - 2026-02-19
+
+### Summary
+
+feat(examples): CLI interface improvements
+
+### Docs
+
+- docs: update README
+
+### Other
+
+- update demos/demo_live_markpact.py
+- update demos/demo_live_marksync.py
+- update marksync/cli.py
+- update marksync/report/collector.py
+- update marksync/report/renderer_html.py
+- update marksync/report/renderer_pdf.py
+- update marksync_live_custom.pdf
+
+
 ## [0.2.25] - 2026-02-19
 
 ### Summary
