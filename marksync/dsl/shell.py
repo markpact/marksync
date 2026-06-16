@@ -7,10 +7,8 @@ and colorized output for controlling agent orchestration.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
-import sys
 from pathlib import Path
 
 from rich.console import Console
@@ -20,7 +18,6 @@ from rich.table import Table
 from rich.text import Text
 
 from marksync.dsl.executor import DSLExecutor
-from marksync.dsl.parser import CommandType
 
 log = logging.getLogger("marksync.shell")
 console = Console()

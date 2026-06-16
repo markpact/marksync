@@ -185,7 +185,7 @@ class Plugin(Integration):
                 'output "pipeline_steps" {',
                 '  value = local.steps',
                 '}',
-            ]
+            ])
 
             content = "\n".join(lines) + "\n"
             return ConversionResult(

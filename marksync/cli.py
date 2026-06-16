@@ -11,7 +11,6 @@ Usage:
 import asyncio
 import logging
 import os
-import sys
 from pathlib import Path
 
 import click
@@ -20,6 +19,17 @@ from rich.table import Table
 from rich.logging import RichHandler
 
 from marksync.settings import settings
+
+CONSTANT_4 = 4
+CONSTANT_8 = 8
+CONSTANT_12 = 12
+MAX_60 = 60
+CONSTANT_130 = 130
+CONSTANT_200 = 200
+PORT_1024 = 1024
+CONSTANT_8000 = 8000
+PORT_8888 = 8888
+
 
 console = Console()
 

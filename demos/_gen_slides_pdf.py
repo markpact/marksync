@@ -10,7 +10,9 @@ from pathlib import Path
 from fpdf import FPDF, XPos, YPos
 
 out = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("generated/slides")
-out.mkdir(parents=True, exist_ok=True)
+
+if __name__ == "__main__":
+    out.mkdir(parents=True, exist_ok=True)
 
 # ---- Colors ----------------------------------------------------------------
 
@@ -718,8 +720,8 @@ class SlidesPDF(FPDF):
 # ---- Generate ---------------------------------------------------------------
 
 pdf = SlidesPDF()
-pdf.set_title("marksync - Contract Flow Presentation")
-pdf.set_author("marksync")
+    pdf.set_title("marksync - Contract Flow Presentation")
+    pdf.set_author("marksync")
 
 for slide in slides:
     if slide["layout"] == "title":
@@ -728,5 +730,5 @@ for slide in slides:
         pdf.add_split_slide(slide)
 
 pdf_path = out / "marksync_flow.pdf"
-pdf.output(str(pdf_path))
-print(f"  PDF: {pdf_path} ({pdf_path.stat().st_size // 1024} KB, {len(slides)} stron)")
+    pdf.output(str(pdf_path))
+    print(f"  PDF: {pdf_path} ({pdf_path.stat().st_size // 1024} KB, {len(slides)} stron)")

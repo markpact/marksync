@@ -1,3 +1,18 @@
+## [Unreleased]
+
+## [0.2.27] - 2026-06-16
+
+### Docs
+- Update README.md
+
+### Other
+- Update demos/_gen_slides_pdf.py
+- Update marksync/cli.py
+- Update marksync/dsl/shell.py
+- Update marksync/plugins/integrations/terraform.py
+- Update pyqual.yaml
+- Update uv.lock
+
 ## [0.2.26] - 2026-02-19
 
 ### Summary
