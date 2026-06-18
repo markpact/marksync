@@ -1,4 +1,5 @@
 .idea
+.urisys/
 screenshots/
 !generated/live
 /logs

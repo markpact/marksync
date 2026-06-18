@@ -68,6 +68,7 @@ _BUILTIN_INTEGRATIONS = {
     "airflow": "marksync.plugins.integrations.airflow",
     "n8n": "marksync.plugins.integrations.n8n",
     "pactown": "marksync.plugins.integrations.pactown",
+    "urisys": "marksync.plugins.integrations.urisys",
 }
 
 

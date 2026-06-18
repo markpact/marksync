@@ -1,0 +1,10 @@
+tests:
+- id: machine_cycle.requires_approval
+  uri: process://machine-cycle/command/run
+  context:
+    approved: false
+    dry_run: true
+    environment: mock
+  payload: {}
+  expect:
+    ok: false

@@ -1,0 +1,8 @@
+{
+  "kind": "CompiledUriPackMarkpact",
+  "source_path": "/home/tom/github/tellmesh/markpact-contracts/packs/machine-cycle-process.markpact.md",
+  "source_hash": "ed694e836bdbf98d09de00a7ebf64bd60a1376fd91fd578f582f9c8bd72ba681",
+  "package_id": "machine-cycle-process",
+  "module_name": "urisys_markpact_machine_cycle_process_ed694e836b",
+  "manifest_path": ".urisys/cache/markpacts/machine_cycle_process/ed694e836bdbf98d/manifest.yaml"
+}

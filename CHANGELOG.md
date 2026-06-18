@@ -1,5 +1,27 @@
 ## [Unreleased]
 
+## [0.2.28] - 2026-06-18
+
+### Docs
+- Update .urisys/cache/markpacts/machine_cycle_process/ed694e836bdbf98d/README.generated.md
+- Update .urisys/cache/markpacts/machine_cycle_process/ed694e836bdbf98d/source.markpact.md
+- Update README.md
+- Update docs/integrations.md
+- Update docs/plugins.md
+
+### Test
+- Update tests/test_urisys_integration.py
+
+### Other
+- Update .gitignore
+- Update .urisys/cache/markpacts/machine_cycle_process/ed694e836bdbf98d/flows/machine_cycle.uri.flow.yaml
+- Update .urisys/cache/markpacts/machine_cycle_process/ed694e836bdbf98d/manifest.yaml
+- Update .urisys/cache/markpacts/machine_cycle_process/ed694e836bdbf98d/markpact.json
+- Update .urisys/cache/markpacts/machine_cycle_process/ed694e836bdbf98d/tests.yaml
+- Update .urisys/cache/markpacts/machine_cycle_process/ed694e836bdbf98d/urisys_markpact_machine_cycle_process_ed694e836b/__init__.py
+- Update marksync/plugins/integrations/urisys.py
+- Update marksync/plugins/registry.py
+
 ## [0.2.27] - 2026-06-16
 
 ### Docs

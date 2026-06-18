@@ -41,7 +41,8 @@ marksync/plugins/
     ├── terraform.py         # Terraform HCL
     ├── ansible.py           # Ansible Playbooks
     ├── airflow.py           # Apache Airflow DAGs
-    └── n8n.py               # n8n workflow JSON
+    ├── n8n.py               # n8n workflow JSON
+    └── urisys.py            # UriProcess → generated/{platform}/urisys.runtime.yaml
 ```
 
 ### Trzy typy pluginów
@@ -346,6 +347,22 @@ Generuje infrastrukturę Docker:
 | Step (HUMAN) | → | Wait node (webhook approval) |
 | Step sequence | → | Node connections |
 
+### urisys (UriProcess)
+
+**Repozytorium:** tellmesh/urisys  
+**Pliki:** `urisys.runtime.yaml`, `uri_routes.h`, `docker-compose.snippet.yml`
+
+| marksync / metadata | → | urisys export |
+|----------|---|----------------|
+| `metadata.urisys.markpact_path` | → | źródło UriProcess `*.markpact.md` |
+| `platforms: [linux, server, esp32]` | → | `generated/{platform}/urisys.runtime.yaml` |
+| — | → | `generated/esp32/uri_routes.h` |
+| — | → | `generated/server/docker-compose.snippet.yml` |
+
+Plugin wywołuje `urisys.managers.platform_export.export_platform_artifacts`.  
+Edge: `URISYS_RESOLVER_CONFIG=generated/linux/urisys.runtime.yaml`.  
+Szczegóły: tellmesh `urisys/docs/PROCESS-ARCHITECTURE.md`, [`integrations.md`](integrations.md).
+
 ---
 
 ## Tabela mapowań
@@ -365,6 +382,7 @@ Generuje infrastrukturę Docker:
 | **LLM** | Job step (shell) | Job (script) | initContainer | Container | shell task | PythonOperator | HTTP Request |
 | **SCRIPT** | Job step (shell) | Job (script) | initContainer | Container | shell task | PythonOperator | Code node |
 | **HUMAN** | Environment (approval) | manual job | Wait container | N/A | pause task | ExternalTaskSensor | Wait node |
+| **—** | — | — | — | — | — | — | urisys export (resolver YAML) |
 
 ---
 
@@ -747,4 +765,4 @@ python3 examples/bpmn_multiagent.py
 
 ---
 
-*Plugin system v0.2.0 — 20 pluginów (8 formatów BPM + 5 adapterów API + 7 integracji) + multi-agent BPMN*
+*Plugin system v0.2.0 — 21 pluginów (8 formatów BPM + 5 adapterów API + 8 integracji) + multi-agent BPMN*

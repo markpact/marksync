@@ -14,6 +14,46 @@
 | **Ansible** | [`ansible.py`](../marksync/plugins/integrations/ansible.py) | Playbook YAML, pause prompts |
 | **Apache Airflow** | [`airflow.py`](../marksync/plugins/integrations/airflow.py) | DAG Python files, sensors |
 | **n8n** | [`n8n.py`](../marksync/plugins/integrations/n8n.py) | Workflow JSON, HTTP/Code/Wait nodes |
+| **urisys** | [`urisys.py`](../marksync/plugins/integrations/urisys.py) | UriProcess → `generated/{linux,server,esp32}/urisys.runtime.yaml` |
+
+## urisys — UriProcess platform export
+
+Most między marksync a [tellmesh/urisys](https://github.com/tellmesh/urisys): materializuje proces Markpact do artefaktów resolvera per platforma.
+
+**Wymaga:** `pip install urisys` (lub checkout tellmesh z `urisys` na `PYTHONPATH`).
+
+```python
+from marksync.plugins import PluginRegistry
+from marksync.plugins.base import PipelineSpec
+
+pipeline = PipelineSpec(
+    name="desktop-automation",
+    metadata={
+        "urisys": {
+            "markpact_path": "markpact-contracts/packs/desktop-automation-processes.markpact.md",
+            "platforms": ["linux", "server", "esp32"],
+            "out_dir": "generated",
+        }
+    },
+)
+
+registry = PluginRegistry()
+registry.discover()
+result = registry.export("urisys", pipeline)
+# result.metadata["files"] — linux/urisys.runtime.yaml, esp32/uri_routes.h, …
+```
+
+Typowy łańcuch z urisys (bez marksync engine):
+
+```bash
+export TELLMESH_ROOT=~/github/tellmesh
+bash tellmesh/urisys/scripts/marksync-materialize.sh \
+  markpact-contracts/packs/desktop-automation-processes.markpact.md
+```
+
+Edge deploy: `URISYS_RESOLVER_CONFIG=generated/linux/urisys.runtime.yaml`.  
+Deploy hook: `registry.get("urisys").deploy(pipeline)` — materialize + opcjonalnie `deploy_dir` / `deploy_script`.  
+Dokumentacja procesu: tellmesh `urisys/docs/PROCESS-ARCHITECTURE.md`.
 
 ## Mapowanie pipeline → system
 

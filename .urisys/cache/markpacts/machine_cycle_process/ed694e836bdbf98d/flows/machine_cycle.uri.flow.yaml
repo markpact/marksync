@@ -1,0 +1,37 @@
+flow:
+  id: machine-cycle
+  description: >
+    Cross-platform machine cycle:
+    check status, optionally capture screen, move axis, verify, report.
+
+defaults:
+  approved: true
+  dry_run: true
+  environment: mock
+  device_profile:
+    axes:
+      x:
+        driver: mock
+    safety:
+      x:
+        max_single_move_steps: 10000
+        max_speed_sps: 1200
+
+do:
+  - stepper://machine-01/axis/x/query/status
+
+  - screen://operator/monitor/primary/query/frame
+
+  - stepper://machine-01/axis/x/command/enable: {}
+
+  - stepper://machine-01/axis/x/command/move-relative:
+      steps: 100
+      direction: cw
+      speed_sps: 200
+
+  - stepper://machine-01/axis/x/query/status
+
+  - tts://local/session/default/command/speak:
+      text: "Machine cycle completed"
+
+  - stepper://machine-01/axis/x/command/stop: {}

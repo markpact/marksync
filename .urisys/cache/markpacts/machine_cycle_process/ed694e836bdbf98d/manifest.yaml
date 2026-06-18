@@ -1,0 +1,42 @@
+id: machine-cycle-process
+version: 0.1.0
+scheme: process
+description: 'Process-level contract that coordinates existing URI packs. Runtime
+  is selected by URI resolver depending on target platform.
+
+  '
+generated_from: markpact
+source_hash: ed694e836bdbf98d09de00a7ebf64bd60a1376fd91fd578f582f9c8bd72ba681
+uri_patterns:
+- pattern: process://machine-cycle/command/run
+  kind: command
+  operation: machine_cycle.run
+  side_effects: true
+  approval: required
+  handler: urisys://flow/machine-cycle
+handlers:
+  python: {}
+  urisys:
+    machine_cycle.run: urisys://flow/machine-cycle
+policy:
+  default: deny_mutations_without_approval
+runtime:
+  default_environment: mock
+  supports:
+  - mock
+  - esp32
+  - edge-linux
+  - desktop-linux
+  - windows
+  - docker
+  - server
+  expose:
+  - pack
+  - service
+  - flow
+  - interface
+  - adapter
+urisys:
+  flows_dir: /home/tom/github/markpact/marksync/.urisys/cache/markpacts/machine_cycle_process/ed694e836bdbf98d/flows
+  flows:
+    machine-cycle: /home/tom/github/markpact/marksync/.urisys/cache/markpacts/machine_cycle_process/ed694e836bdbf98d/flows/machine_cycle.uri.flow.yaml
